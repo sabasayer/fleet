@@ -1,7 +1,7 @@
 # Grilling: the ship file contract
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 03, 05
 
 ## Question

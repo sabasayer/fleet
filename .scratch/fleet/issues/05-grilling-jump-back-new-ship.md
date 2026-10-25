@@ -1,7 +1,7 @@
 # Grilling: the jump-back and new-ship flows
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 01
 
 ## Question

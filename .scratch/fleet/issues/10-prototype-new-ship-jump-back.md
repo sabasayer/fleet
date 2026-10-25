@@ -6,6 +6,9 @@ Blocked by:
 
 ## Question
 
+This ticket refines the look of the v1 UI. It does not block the v1 build tickets in `.scratch/fleet-v1/`: the spec already says what each case does, and this ticket decides how it looks. The captain will take it later, together with the other prototypes.
+
+
 What does the captain see after clicking? Build on the sea view (variant G) and settle these:
 
 - **The new-ship form.** It has three fields: the fleet (pick one or type a new name), the repo folder (pick one or paste a path), and the task (free text or a link). See the jump-back and new-ship ticket.

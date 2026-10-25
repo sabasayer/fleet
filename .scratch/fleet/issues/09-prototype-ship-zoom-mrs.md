@@ -6,6 +6,9 @@ Blocked by:
 
 ## Question
 
+This ticket refines the look of the v1 UI. It does not block the v1 build tickets in `.scratch/fleet-v1/`: the spec already says what each case does, and this ticket decides how it looks. The captain will take it later, together with the other prototypes.
+
+
 What does ship zoom show? Build on the sea view (variant G) and settle these:
 
 - **Several MRs.** How do a ship's MRs show, each with its own state? The ship's state is its least advanced MR (see the ship lifecycle ticket). This includes a feature across several repos, where the MRs have different repos. This may also fill the empty space under the lane at ship zoom.

@@ -19,6 +19,7 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 
 ## Decisions so far
 
+- [Grilling: the ship file contract](issues/06-grilling-ship-file.md): one `~/.crew/<ship>/ship.json` (title, task, fleet, session, MRs with repo, remote, worktree, branch, url) written by a new `crew-ship` command; `crew-status` refreshes the session ID; chain and waiting reason stay in the status files; old runs are hidden
 - [Grilling: the jump-back and new-ship flows](issues/05-grilling-jump-back-new-ship.md): jump to the newest first-mate session by session ID (focus the herdr pane, else resume in a per-fleet herdr workspace, never resume a live one); new ship is a 3-field form that starts `/crew` in herdr; copy-command fallback; localhost-only server with origin check and token
 - [Grilling: a ship's life after crew stops](issues/03-grilling-ship-lifecycle.md): fleet owns the states after crew (sailing, in_review, merged, released, testing, done, plus paused, failed, abandoned); merged is found from the repo host; released comes from an optional per-project release check, else by hand; a ship docks only at done
 - [Research: how to jump back to a running crew session](issues/01-research-jump-back.md): herdr covers all cases by Claude session ID: focus the live pane, resume in a new pane when gone, start a new pane with a fleet-made session ID; Remote Control does not fit v1
@@ -27,12 +28,8 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 
 ## Not yet specified
 
-- Server and data shape, and the UI stack. The sea view is Canvas 2D with HTML on top. The rest waits for the ship file contract.
-- The harbour look, and how a ship at sea looks once its crew stops (sails down, crew still). How many days done ships stay in the harbour.
 - A fleet-level agent, maybe a "vice admiral", that watches and manages crews or fleets: nudges stale crews, starts the next MR, picks the next task. The v1 spec must not block it: the ship file and the actions should work for an agent too.
-- macOS notifications when a ship needs the captain.
-- An optional project config: display names, colours, and the release check command (what "released" means for that project).
-- Where fleet keeps its own ship state, and how it polls the repo host for merged MRs.
+- macOS notifications when a ship needs the captain. crew-board already sends alerts for blocked, failed and stale agents; check whether that is enough.
 - Other visual styles, layouts and navigation for the sea view: 3D, low-poly, isometric, text only, board by state, icons, command palette. All are cheap prototypes to try later. The list is in [sea view experiments](ideas/sea-view-experiments.md). The UI can change at any time, so v1 does not wait for them.
 - Write the v1 spec and split it into build tickets. This is the last step.
 

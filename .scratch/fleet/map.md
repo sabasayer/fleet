@@ -19,6 +19,7 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 
 ## Decisions so far
 
+- [Grilling: the jump-back and new-ship flows](issues/05-grilling-jump-back-new-ship.md): jump to the newest first-mate session by session ID (focus the herdr pane, else resume in a per-fleet herdr workspace, never resume a live one); new ship is a 3-field form that starts `/crew` in herdr; copy-command fallback; localhost-only server with origin check and token
 - [Grilling: a ship's life after crew stops](issues/03-grilling-ship-lifecycle.md): fleet owns the states after crew (sailing, in_review, merged, released, testing, done, plus paused, failed, abandoned); merged is found from the repo host; released comes from an optional per-project release check, else by hand; a ship docks only at done
 - [Research: how to jump back to a running crew session](issues/01-research-jump-back.md): herdr covers all cases by Claude session ID: focus the live pane, resume in a new pane when gone, start a new pane with a fleet-made session ID; Remote Control does not fit v1
 - [Research: pixel-art tooling and rendering for an AI-built sea view](issues/02-research-pixel-tooling.md): live sprites drawn in code (adapted from crew-board), static art with claude-pxl, Canvas 2D with HTML on top; no Aseprite, no PixiJS for v1

@@ -1,7 +1,7 @@
 # Prototype: the harbour and a ship whose crew stopped
 
 Type: prototype
-Status: open
+Status: claimed
 Blocked by:
 
 ## Question

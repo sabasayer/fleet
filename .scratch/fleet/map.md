@@ -33,6 +33,7 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 - macOS notifications when a ship needs the captain.
 - An optional project config: display names, colours, and the release check command (what "released" means for that project).
 - Where fleet keeps its own ship state, and how it polls the repo host for merged MRs.
+- Other visual styles, layouts and navigation for the sea view: 3D, low-poly, isometric, text only, board by state, icons, command palette. All are cheap prototypes to try later. The list is in [sea view experiments](ideas/sea-view-experiments.md). The UI can change at any time, so v1 does not wait for them.
 - Write the v1 spec and split it into build tickets. This is the last step.
 
 ## Out of scope

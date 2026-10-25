@@ -21,10 +21,11 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 
 - [Research: how to jump back to a running crew session](issues/01-research-jump-back.md): herdr covers all cases by Claude session ID: focus the live pane, resume in a new pane when gone, start a new pane with a fleet-made session ID; Remote Control does not fit v1
 - [Research: pixel-art tooling and rendering for an AI-built sea view](issues/02-research-pixel-tooling.md): live sprites drawn in code (adapted from crew-board), static art with claude-pxl, Canvas 2D with HTML on top; no Aseprite, no PixiJS for v1
+- [Prototype: the sea view](issues/04-prototype-sea-view.md): one lane per fleet, one row per ship, one stone per crew member with the ship at the current member; right column has a needs-captain panel and a ships panel with a "Waiting for you" line; calm sea
 
 ## Not yet specified
 
-- Server and data shape, and the UI stack. This comes after the sea view prototype.
+- Server and data shape, and the UI stack. The sea view is Canvas 2D with HTML on top. The rest waits for the ship file contract.
 - The harbour and docked look of finished ships. This follows from the ship lifecycle ticket.
 - A fleet-level agent, maybe a "vice admiral", that watches and manages crews or fleets: nudges stale crews, starts the next MR, picks the next task. The v1 spec must not block it: the ship file and the actions should work for an agent too.
 - macOS notifications when a ship needs the captain.

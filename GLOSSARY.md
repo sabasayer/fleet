@@ -29,3 +29,27 @@ _Avoid_: User, admiral
 
 **First mate**:
 The Claude session that runs one ship's chain and talks to the captain.
+
+## A ship's life
+
+**Sailing**:
+A ship whose crew is still at work.
+
+**Needs captain**:
+A flag on a sailing ship: a gate waits for the captain.
+_Avoid_: Blocked (a crew member's word, not a ship's)
+
+**Released**:
+A ship whose change is live where it can be tested. Each project says what that means.
+_Avoid_: Deployed, pipeline green
+
+**Release check**:
+A project's own test that tells whether a merged change is released.
+
+**Testing**:
+A ship whose released change someone tests in a test environment.
+
+**Harbour**:
+Where done ships go, off the open sea.
+_Avoid_: Archive, dock
+

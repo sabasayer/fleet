@@ -1,7 +1,7 @@
 # Research: how to jump back to a running crew session
 
 Type: research
-Status: open
+Status: resolved
 Blocked by:
 
 ## Question
@@ -16,3 +16,15 @@ Find out:
 - Any other way to reach a session from a browser app on the same machine.
 
 Output: the options per case (session alive, session gone, new ship), with the limits of each.
+
+## Answer
+
+Findings: [research/jump-back.md](https://github.com/sabasayer/fleet/blob/research/jump-back/.scratch/fleet/research/jump-back.md) on branch `research/jump-back`.
+
+- herdr (0.7.3 installed) has a CLI and a JSON socket (`~/.config/herdr/herdr.sock`). Its Claude `SessionStart` hook knows each pane's Claude session ID (`agent list` → `agent_session.value`).
+- Session alive: find the pane by session ID, `agent.focus` it, then `open -a Ghostty`. Never `claude --resume` a live session: the two copies mix into one transcript.
+- Session gone: `agent.start` a pane in the ship's folder and run `claude --resume <id>`. Works while the transcript exists (30 days by default).
+- New ship: `agent.start` a pane in the repo and run `claude --session-id <uuid> -n <ship> ...`. Fleet makes the UUID, so it knows the session from the start.
+- Match ships by session ID, never by PID or command line. The ID changes after `/clear`. `claude agents --json` is the documented list of live sessions.
+- Remote Control is a poor fit for v1: the link ID comes from Anthropic's server.
+- Not confirmed: `agent.focus` was not tested live; the herdr API differs between versions (read `herdr api schema --json` or pin a version); `open -a Ghostty` cannot pick between several windows.

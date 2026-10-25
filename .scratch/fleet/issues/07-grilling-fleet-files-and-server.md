@@ -1,7 +1,7 @@
 # Grilling: fleet's own files and its server
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by:
 
 ## Question

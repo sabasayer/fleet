@@ -1,7 +1,7 @@
 # Grilling: a ship's life after crew stops
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by:
 
 ## Question

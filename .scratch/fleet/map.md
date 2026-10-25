@@ -4,7 +4,7 @@ Label: wayfinder:map
 
 ## Destination
 
-A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet v1 is a local browser app (`npx fleet`). It shows every crew ship on a sea, grouped by project. It lets the captain jump back to a ship's session and start a new ship.
+A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet v1 is a local browser app (`npx crew-fleet`). It shows every crew ship on a sea, grouped by project. It lets the captain jump back to a ship's session and start a new ship.
 
 ## Notes
 
@@ -16,6 +16,10 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 - The captain runs Claude inside herdr inside Ghostty.
 - The captain likes pixel art, but it must be something an AI can build.
 - Skills for grilling tickets: `grilling`, `domain-modeling`. Prototype tickets: `prototype`. Use plain language everywhere.
+
+## Result
+
+The way is clear. [Spec: fleet v1](../fleet-v1/spec.md) and its eight build tickets are in `.scratch/fleet-v1/`.
 
 ## Decisions so far
 
@@ -30,9 +34,8 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 
 ## Not yet specified
 
-- A fleet-level agent, maybe a "vice admiral", that watches and manages crews or fleets: nudges stale crews, starts the next MR, picks the next task. The v1 spec must not block it: the ship file and the actions should work for an agent too.
-- Other visual styles, layouts and navigation for the sea view: 3D, low-poly, isometric, text only, board by state, icons, command palette. All are cheap prototypes to try later. The list is in [sea view experiments](ideas/sea-view-experiments.md). The UI can change at any time, so v1 does not wait for them.
-- Write the v1 spec and split it into build tickets. This is the last step.
+Nothing left. The rest is past v1 (see Out of scope).
+
 
 ## Out of scope
 
@@ -42,3 +45,5 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 - Approving gates from the browser in v1.
 - Fleet's own notifications: crew-board's alerts cover v1. Revisit when the tools merge.
 - Starting fleet at login.
+- A fleet-level agent ("vice admiral") that manages crews or fleets. Past v1; the spec keeps the ship file and server actions usable by an agent.
+- Other visual styles for the sea view ([sea view experiments](ideas/sea-view-experiments.md)). Past v1; the UI can change later.

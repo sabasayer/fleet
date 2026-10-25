@@ -19,6 +19,8 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 
 ## Decisions so far
 
+- [Research: pixel-art tooling and rendering for an AI-built sea view](issues/02-research-pixel-tooling.md): live sprites drawn in code (adapted from crew-board), static art with claude-pxl, Canvas 2D with HTML on top; no Aseprite, no PixiJS for v1
+
 ## Not yet specified
 
 - Server and data shape, and the UI stack. This comes after the sea view prototype.

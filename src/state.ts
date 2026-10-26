@@ -84,7 +84,7 @@ export function colorFor(name: string) {
 function readFleets(home: string): Record<string, Partial<FleetInfo>> {
   const j = readJson(join(home, 'fleets.json'))
 
-  return j && typeof j === 'object' && !Array.isArray(j) ? (j.fleets ?? j) : {}
+  return j && typeof j === 'object' && !Array.isArray(j) ? j : {}
 }
 
 function readShip(root: string, folder: string, folders: string[], now: number): Ship | undefined {

@@ -12,3 +12,11 @@ Spec section 5, the right column: the needs-captain panel, the ships panel (need
 ## Done when
 
 - The captain checks it with a ship blocked on a gate and a ship with a failed member.
+
+## Progress
+
+Built on branch `feat/panels` (from `feat/sea-view`; commit `8c7493b`; not pushed). `npm test`: 26 pass.
+
+Choices: the panels sit in the right grid column, not over the sea; the needs-captain list covers all fleets, the ships list follows the zoom; both sort by longest wait; a click on a panel row zooms the sea to that ship (same as an armada click); the task shows as a link only when it is a URL (the ship file says `task` is a link or `null`); a stale member shows "(stale)" in red; several MRs show one crew (the newest), as on the sea, until "Prototype: ship zoom with several MRs" decides.
+
+Waiting on the captain: the look in the browser with the blocked ship (PORTAL-101) and the failed one (PORTAL-103).

@@ -2,7 +2,7 @@
   "version": 1,
   "ship": "PORTAL-101",
   "title": "Fix SMART launch timeout",
-  "task": null,
+  "task": "https://linear.app/demo/issue/PORTAL-101",
   "fleet": "portal",
   "created": "2026-10-20T09:00:00Z",
   "session": {

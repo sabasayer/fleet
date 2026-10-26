@@ -6,7 +6,24 @@ body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospa
 #sea { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
 #ui { position: absolute; inset: 0; pointer-events: none; }
 #side:empty { display: none; }
-#side { width: 360px; height: 100vh; overflow: auto; }
+#side { width: 360px; height: 100vh; overflow: auto; padding: 12px 12px 12px 0; display: flex; flex-direction: column; gap: 10px; }
+.hud-block { background: #0d1b2aee; border: 2px solid #2c4a66; padding: 10px 12px; flex: none; }
+.needs-panel { border-color: #e5c04b; }
+.needs-panel h3 { color: #e5c04b; }
+.hud-block h3 { margin: 0 0 6px; font-size: 13px; color: #9fc3e6; text-transform: uppercase; letter-spacing: 1px; }
+.hud-block p { margin: 4px 0; }
+.row { cursor: pointer; padding: 3px 4px; border-left: 3px solid transparent; overflow-wrap: anywhere; }
+.row:hover { background: #1b3550; }
+.row.hot { border-left-color: #e5c04b; }
+.row.hot.failed { border-left-color: #e5484d; }
+.row.cur { background: #1b3550; }
+.bar { display: flex; gap: 2px; margin-top: 2px; }
+.bar span { width: 14px; height: 6px; }
+.open { cursor: default; margin-top: 6px; border-top: 1px solid #2c4a66; }
+.open h4 { margin: 6px 0 2px; }
+.crew td { padding: 1px 8px 1px 0; vertical-align: top; }
+.open a { color: #9fc3e6; }
+.slot { margin-top: 6px; padding: 4px 6px; border: 1px dashed #4f7aa3; color: #7d8fa3; font-size: 12px; }
 .hud { position: absolute; background: #0d1b2aee; border: 2px solid #2c4a66; padding: 10px 12px; }
 #crumbs { top: 12px; left: 12px; }
 #crumbs a { color: #9fc3e6; cursor: pointer; text-decoration: underline; }

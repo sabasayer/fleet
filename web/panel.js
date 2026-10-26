@@ -1,0 +1,102 @@
+import { GOLD, memberColor, STATE } from './art.js'
+import { crewOf, currentIndex, focusFleet } from './layout.js'
+
+const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
+
+export const needsColor = needs => (needs?.kind === 'failed' ? STATE.failed : GOLD)
+
+export function updatedAt(ship) {
+  const times = ship.mrs.flatMap(mr => mr.crew.map(m => m.updatedMs)).filter(Number.isFinite)
+
+  return times.length > 0 ? Math.max(...times) : Date.parse(ship.created) || 0
+}
+
+const waitingFirst = (a, b) => updatedAt(a) - updatedAt(b)
+
+export const allShips = fleets => fleets.flatMap(fleet => fleet.ships.map(ship => ({ ship, fleet })))
+
+export const waitingShips = fleets => allShips(fleets).filter(e => e.ship.needsCaptain).sort((a, b) => waitingFirst(a.ship, b.ship))
+
+export function listedShips(view, fleets) {
+  const scope = view.level === 'armada' ? fleets : [focusFleet(view, fleets)].filter(Boolean)
+
+  return allShips(scope).sort((a, b) => Boolean(b.ship.needsCaptain) - Boolean(a.ship.needsCaptain) || waitingFirst(a.ship, b.ship))
+}
+
+export const openShipName = view => (view.level === 'armada' ? null : view.cursor)
+
+export function ago(ms, now) {
+  const minutes = Math.max(0, Math.floor((now - ms) / 60000))
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes} min ago`
+  if (minutes < 1440) return `${Math.floor(minutes / 60)} h ago`
+
+  return `${Math.floor(minutes / 1440)} d ago`
+}
+
+const badge = ship => (ship.needsCaptain ? `<span class="${ship.needsCaptain.kind === 'failed' ? 'fail' : 'needs'}">!</span>` : '')
+
+const bar = crew =>
+  `<div class="bar">${crew.map(m => `<span title="${escapeHtml(m.role)} ${escapeHtml(m.state)}" style="background:${memberColor(m)}"></span>`).join('')}</div>`
+
+const safeUrl = text => (/^https?:\/\//i.test(text ?? '') ? text : null)
+
+function goal(ship) {
+  const url = safeUrl(ship.task)
+  const link = url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(ship.task)}</a>` : escapeHtml(ship.task)
+
+  return `<p>Goal: ${escapeHtml(ship.title)}</p>${ship.task ? `<p class="dim">Task: ${link}</p>` : ''}`
+}
+
+function crewTable(crew) {
+  if (crew.length === 0) return '<p class="dim">No crew yet.</p>'
+  const rows = crew.map(
+    m =>
+      `<tr><td>${escapeHtml(m.role)}</td><td style="color:${memberColor(m)}">● ${escapeHtml(m.stale ? `${m.state} (stale)` : m.state)}</td><td class="dim">${escapeHtml(m.summary ?? m.phase ?? '')}</td></tr>`,
+  )
+
+  return `<table class="crew">${rows.join('')}</table>`
+}
+
+function openView(ship) {
+  return `<div class="open">
+    ${goal(ship)}
+    <p class="dim">${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</p>
+    ${crewTable(crewOf(ship))}
+    <div class="slot" data-slot="state-buttons">state buttons: not built yet</div>
+    <div class="slot" data-slot="jump-back">jump back: not built yet</div>
+  </div>`
+}
+
+function shipRow({ ship, fleet }, open, now, showFleet) {
+  const crew = crewOf(ship)
+  const at = crew[currentIndex(crew)]
+  const need = ship.needsCaptain
+  const phase = at ? `${escapeHtml(at.role)} ${escapeHtml(at.state)}` : crew.length > 0 ? 'crew done' : 'no crew'
+  const fleetName = showFleet ? ` <span class="dim">· ${escapeHtml(fleet.name)}</span>` : ''
+
+  return `<div class="row${need ? ' hot' : ''}${open ? ' cur' : ''}" data-ship="${escapeHtml(ship.ship)}">
+    ${badge(ship)} <b>${escapeHtml(ship.title)}</b>${fleetName}<br>
+    ${need ? `<span style="color:${needsColor(need)}">Waiting for you: ${escapeHtml(need.reason)}</span><br>` : ''}
+    <span class="dim">${phase} · ${ago(updatedAt(ship), now)}</span>
+    ${bar(crew)}
+    ${open ? openView(ship) : ''}
+  </div>`
+}
+
+export function panelHtml({ fleets, view, now }) {
+  if (fleets.length === 0) return ''
+  const waiting = waitingShips(fleets)
+  const openName = openShipName(view)
+  const list = listedShips(view, fleets)
+  const waitingRows = waiting
+    .map(
+      ({ ship }) =>
+        `<div class="row hot${ship.needsCaptain.kind === 'failed' ? ' failed' : ''}" data-ship="${escapeHtml(ship.ship)}">${badge(ship)} ${escapeHtml(ship.title)}<br><span class="dim">${escapeHtml(ship.needsCaptain.reason)}</span></div>`,
+    )
+    .join('')
+  const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada')).join('')
+
+  return `<section class="hud-block needs-panel"><h3>needs captain (${waiting.length})</h3>${waitingRows || '<p class="dim">Nothing waits for you.</p>'}</section>
+  <section class="hud-block ships-panel"><h3>ships</h3>${shipRows}</section>`
+}

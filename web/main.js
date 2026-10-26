@@ -1,18 +1,23 @@
 import { focusFleet, initialView, move, reconcile, toArmada, toFleet, toShip, zoomIn, zoomOut } from './layout.js'
+import { panelHtml } from './panel.js'
 import { createSea } from './sea.js'
 
 const canvas = document.getElementById('sea')
 const ui = document.getElementById('ui')
 const crumbs = document.getElementById('crumbs')
+const side = document.getElementById('side')
 const sea = createSea(canvas, ui)
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
 let fleets = []
+let now = Date.now()
 let view = initialView(fleets)
 let frame = 0
 let pending = 0
 let lastUi = ''
 let lastCrumbs = ''
+let lastSide = ''
+let lastOpen = null
 
 function crumbHtml() {
   if (fleets.length === 0) return 'no ships'
@@ -30,7 +35,20 @@ function render() {
   if (html !== lastUi) ui.innerHTML = lastUi = html
   const crumb = crumbHtml()
   if (crumb !== lastCrumbs) crumbs.innerHTML = lastCrumbs = crumb
+  renderSide()
   if (animating) schedule()
+}
+
+function renderSide() {
+  const html = panelHtml({ fleets, view, now })
+  if (html === lastSide) return
+  const scroll = side.scrollTop
+  side.innerHTML = lastSide = html
+  const open = side.querySelector('.cur')
+  const opened = open?.dataset.ship ?? null
+  if (opened !== lastOpen) open?.scrollIntoView({ block: 'nearest' })
+  else side.scrollTop = scroll
+  lastOpen = opened
 }
 
 function schedule() {
@@ -46,6 +64,11 @@ canvas.addEventListener('click', event => {
   const box = canvas.getBoundingClientRect()
   const ship = sea.hitAt(event.clientX - box.left, event.clientY - box.top)
   if (ship) setView(toShip(ship))
+})
+
+side.addEventListener('click', event => {
+  const row = event.target.closest('[data-ship]')
+  if (row && !event.target.closest('a')) setView(toShip(row.dataset.ship))
 })
 
 document.addEventListener('click', event => {
@@ -76,6 +99,7 @@ async function poll() {
     const state = await (await fetch('/api/state')).json()
     const first = fleets.length === 0
     fleets = state.fleets
+    now = state.now
     view = first ? initialView(fleets) : reconcile(view, fleets)
     schedule()
   } catch {

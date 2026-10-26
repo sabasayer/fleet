@@ -2,12 +2,21 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 
+import { jump, realJumpDeps, type JumpDeps, type JumpResult } from './jump.ts'
 import { applyAction, isAction, isShipName, readStored, writeStored } from './life.ts'
 import { page } from './page.ts'
 import { fleetHome, readState } from './state.ts'
 import type { Watcher } from './watch.ts'
 
 const HOST = '127.0.0.1'
+
+const safeDecode = (text: string) => {
+  try {
+    return decodeURIComponent(text)
+  } catch {
+    return ''
+  }
+}
 const WEB = new URL('../web/', import.meta.url)
 const MAX_BODY = 4096
 
@@ -24,9 +33,10 @@ const readBody = (req: IncomingMessage) =>
 
 export type Running = { port: number; token: string; close: () => Promise<void> }
 
-export async function startServer({ port, env = process.env, watcher }: { port: number; env?: NodeJS.ProcessEnv; watcher?: Watcher }): Promise<Running> {
+export async function startServer({ port, env = process.env, watcher, jumpDeps = realJumpDeps(env) }: { port: number; env?: NodeJS.ProcessEnv; watcher?: Watcher; jumpDeps?: JumpDeps }): Promise<Running> {
   const token = randomBytes(24).toString('hex')
   let own = new Set<string>()
+  const jumping = new Map<string, Promise<JumpResult>>()
 
   const sameOrigin = (req: IncomingMessage) => {
     const origin = req.headers.origin
@@ -102,6 +112,22 @@ export async function startServer({ port, env = process.env, watcher }: { port: 
           () => send(400, 'text/plain', 'bad request'),
         )
 
+        return
+      }
+      const target = /^\/api\/ships\/([^/]+)\/jump$/.exec(url.pathname)?.[1]
+      if (target) {
+        const name = safeDecode(target)
+        const entry = readState(env).fleets.flatMap(fleet => fleet.ships.map(ship => ({ fleet, ship }))).find(e => e.ship.ship === name)
+        if (!entry) return send(404, 'text/plain', 'not found')
+        const running = jumping.get(name) ?? jump(
+          { name, fleetName: entry.fleet.name, sessionId: entry.ship.session?.id ?? null, worktrees: entry.ship.mrs.map(mr => mr.worktree) },
+          jumpDeps,
+        )
+        jumping.set(name, running)
+        running.then(
+          result => send(200, 'application/json', JSON.stringify(result)),
+          () => send(500, 'application/json', JSON.stringify({ status: 'error', message: 'jump failed' })),
+        ).finally(() => jumping.delete(name))
         return
       }
     }

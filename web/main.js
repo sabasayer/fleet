@@ -1,4 +1,5 @@
 import { focusFleet, initialView, move, reconcile, toArmada, toFleet, toShip, zoomIn, zoomOut } from './layout.js'
+import { requestJump } from './jump.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets } from './life.js'
 import { panelHtml } from './panel.js'
@@ -9,6 +10,7 @@ const ui = document.getElementById('ui')
 const crumbs = document.getElementById('crumbs')
 const side = document.getElementById('side')
 const sea = createSea(canvas, ui)
+const token = document.querySelector('meta[name="fleet-token"]')?.content ?? ''
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
 let allFleets = []
@@ -22,6 +24,7 @@ let lastUi = ''
 let lastCrumbs = ''
 let lastSide = ''
 let lastOpen = null
+let jump = null
 
 function crumbHtml() {
   if (fleets.length === 0) return 'no ships'
@@ -44,7 +47,7 @@ function render() {
 }
 
 function renderSide() {
-  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen })
+  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump })
   if (html === lastSide) return
   const scroll = side.scrollTop
   side.innerHTML = lastSide = html
@@ -71,7 +74,27 @@ canvas.addEventListener('click', event => {
   if (ship) setView(toShip(ship))
 })
 
+async function startJump(ship) {
+  if (jump?.busy) return
+  jump = { ship, busy: true }
+  renderSide()
+  jump = { ship, busy: false, result: await requestJump(ship, token) }
+  renderSide()
+}
+
+async function copyCommand(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+    jump = { ...jump, copied: true }
+    renderSide()
+  } catch {}
+}
+
 side.addEventListener('click', async event => {
+  const jumpButton = event.target.closest('[data-jump]')
+  if (jumpButton) return void startJump(jumpButton.dataset.jump)
+  const copyButton = event.target.closest('[data-copy]')
+  if (copyButton) return void copyCommand(copyButton.dataset.copy)
   const button = event.target.closest('button[data-action]')
   if (button) {
     button.disabled = true

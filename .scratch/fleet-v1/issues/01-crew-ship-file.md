@@ -1,7 +1,7 @@
 # Crew: the ship file and `crew-ship`
 
 Repo: sabasayer/crew
-Status: ready-for-agent
+Status: closed
 Blocked by:
 Assignee: salih (Sonnet agent)
 
@@ -27,4 +27,4 @@ Check result: in a sub-agent's Bash, `CLAUDE_CODE_SESSION_ID` is set and `CLAUDE
 
 Choices the spec left open: `crew-ship add-mr` numbers the MR itself; `session` is `null` when the ID is missing; `crew-status` finds the ship folder by dropping `-mr<N>` from the run folder name.
 
-Waiting on the captain: the session ID after `/clear`, and crew-board with a real `ship.json`.
+The captain checked both by hand: the session ID changes after `/clear`, and crew-board does not show `ship`. PR: https://github.com/sabasayer/crew/pull/14

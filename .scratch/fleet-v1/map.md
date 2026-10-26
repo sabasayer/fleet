@@ -17,6 +17,8 @@ Fleet v1 is built as the [spec](spec.md) says. The captain uses it on his own cr
 
 ## Decisions so far
 
+- [Crew: the ship file and `crew-ship`](issues/01-crew-ship-file.md): built (crew PR 14); `crew-status` skips the session refresh in sub-agents; `add-mr` numbers MRs itself
+
 ## Not yet specified
 
 - Gaps the build will find: a herdr API call that does not work as the research says, a crew-board helper that does not copy cleanly, the sub-agent session ID rule. Each becomes a ticket when a build hits it.

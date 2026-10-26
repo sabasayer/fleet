@@ -6,7 +6,7 @@ import { test } from 'node:test'
 
 import { readStored } from '../src/life.ts'
 import { readState } from '../src/state.ts'
-import { realDeps, startWatcher, type CheckOptions, type CheckResult, type CliResult, type Deps } from '../src/watch.ts'
+import { hostArgs, realDeps, startWatcher, type CheckOptions, type CheckResult, type CliResult, type Deps } from '../src/watch.ts'
 
 const write = (path: string, data: unknown) => {
   mkdirSync(join(path, '..'), { recursive: true })
@@ -184,4 +184,8 @@ test('real runner passes data only through env and returns the exit code', async
   const bad = await realDeps.check('exit 3', { env: {}, cwd: tmpdir(), timeoutMs: 5000 })
   assert.equal(ok.code, 0)
   assert.equal(bad.code, 3)
+})
+
+test('glab gets the MR number and the project URL, since it cannot take an MR URL', () => {
+  assert.deepEqual(hostArgs('glab', 'https://gitlab.com/group/sub/repo/-/merge_requests/22'), ['mr', 'view', '22', '-R', 'https://gitlab.com/group/sub/repo', '--output', 'json'])
 })

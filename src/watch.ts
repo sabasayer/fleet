@@ -80,8 +80,13 @@ export function parseHost(file: 'glab' | 'gh', stdout: string): Seen2 | null {
   return state === 'closed' ? { state: 'abandoned', sha: null } : state === 'opened' || state === 'locked' ? { state: 'open', sha: null } : null
 }
 
+const glabArgs = (url: string) => {
+  const m = /^(https?:\/\/[^/]+\/.+?)\/-\/merge_requests\/(\d+)/.exec(url)
+  return m ? ['mr', 'view', m[2], '-R', m[1], '--output', 'json'] : ['mr', 'view', url, '--output', 'json']
+}
+
 export const hostArgs = (file: 'glab' | 'gh', url: string) =>
-  file === 'gh' ? ['pr', 'view', url, '--json', 'state,mergeCommit'] : ['mr', 'view', url, '--output', 'json']
+  file === 'gh' ? ['pr', 'view', url, '--json', 'state,mergeCommit'] : glabArgs(url)
 
 export type Watcher = { tick: () => Promise<void>; seen: (ship: string) => Seen[]; stop: () => void }
 

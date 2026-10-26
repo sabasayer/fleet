@@ -66,12 +66,14 @@ function face(put, x, top, member) {
 }
 
 export function flagColor(ship, fleetColor) {
+  if (ship.life?.state === 'failed') return STATE.failed
   if (ship.needsCaptain) return ship.needsCaptain.kind === 'failed' ? STATE.failed : GOLD
 
   return fleetColor
 }
 
-export function shipGrid(crew, flag, frame, detail) {
+export function shipGrid(crew, flag, frame, detail, life = 'sailing') {
+  const sailing = life === 'sailing'
   const faces = detail === 'faces'
   const step = faces ? 6 : 4
   const width = crew.length * step + 10
@@ -92,14 +94,16 @@ export function shipGrid(crew, flag, frame, detail) {
     put(x, deckTop, HULL)
   }
   for (let y = 0; y < deckTop + 2; y++) put(3, y, WOOD)
-  put(4, 0, flag)
-  put(5, 0, flag)
-  if (frame % 2) put(6, 0, flag)
-  else put(5, 1, flag)
-  for (let y = 2; y < deckTop; y++) for (let x = Math.max(0, 4 - y); x <= 2; x++) put(x, y, SAIL)
+  const flagRow = sailing ? 0 : 3
+  put(4, flagRow, flag)
+  put(5, flagRow, flag)
+  if (sailing && frame % 2) put(6, flagRow, flag)
+  else put(5, flagRow + 1, flag)
+  if (sailing) for (let y = 2; y < deckTop; y++) for (let x = Math.max(0, 4 - y); x <= 2; x++) put(x, y, SAIL)
+  else for (let x = 0; x <= 2; x++) put(x, deckTop - 1, SAIL)
 
   crew.forEach((member, i) => {
-    const hop = member.state === 'running' && !member.stale && (frame + i) % 2 ? 1 : 0
+    const hop = sailing && member.state === 'running' && !member.stale && (frame + i) % 2 ? 1 : 0
     const x = 6 + i * step
     if (faces) return face(put, x, deckTop - 4 - hop, member)
     const hat = hatFor(member.role)
@@ -108,8 +112,23 @@ export function shipGrid(crew, flag, frame, detail) {
     put(x + 1, deckTop + 1, memberColor(member))
   })
 
-  return grid
+  return life === 'abandoned' ? wreck(grid, deckTop) : grid
 }
+
+function wreck(grid, deckTop) {
+  const grey = color => {
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(color.slice(i, i + 2), 16))
+    const v = Math.round((r * 0.3 + g * 0.59 + b * 0.11) * 0.6 + 40)
+    const hex = v.toString(16).padStart(2, '0')
+
+    return `#${hex}${hex}${hex}`
+  }
+  for (let y = 0; y < deckTop - 2; y++) grid[y].fill(null)
+
+  return grid.map(row => row.map(color => (color?.startsWith('#') ? grey(color) : color)))
+}
+
+export const ANCHOR = ['..X..', '.XXX.', '..X..', 'X.X.X', '.XXX.'].map(row => [...row].map(ch => (ch === 'X' ? '#c9d6e3' : null)))
 
 export const BANG = ['.XXX.', 'XX.XX', 'XX.XX', 'XX.XX', 'XXXXX', 'XX.XX', '.XXX.'].map(row =>
   [...row].map(ch => (ch === 'X' ? 'beacon' : ch === '.' ? '#2a1d00' : null)),

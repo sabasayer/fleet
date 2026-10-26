@@ -1,3 +1,5 @@
+import { CREW_SHARE, lifeStage, ZONES } from './life.js'
+
 export const LEVEL_SCALE = { armada: 2, fleet: 4, ship: 8 }
 export const TWEEN_MS = 450
 export const LABEL_COLUMN = 170
@@ -22,6 +24,19 @@ export function shipX(crew, left, right) {
   const at = currentIndex(crew)
 
   return at < 0 ? right + 46 : stoneX(at, crew.length, left, right)
+}
+
+export const crewRight = (left, right) => left + (right - left) * CREW_SHARE
+
+export const zoneEdge = (index, left, right) => crewRight(left, right) + (index / ZONES.length) * (right - crewRight(left, right))
+
+export function shipPlaceX(ship, crew, left, right) {
+  const zone = ZONES.indexOf(lifeStage(ship))
+  if (zone >= 0) return (zoneEdge(zone, left, right) + zoneEdge(zone + 1, left, right)) / 2
+  const stop = crewRight(left, right)
+  if (crew.length > 0 && currentIndex(crew) < 0) return stoneX(crew.length - 1, crew.length, left, stop)
+
+  return shipX(crew, left, stop)
 }
 
 export const initialView = fleets => ({ level: 'armada', cursor: fleets[0]?.id ?? null })

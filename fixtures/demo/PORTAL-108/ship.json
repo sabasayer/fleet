@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "ship": "PORTAL-108",
+  "title": "Fix date format",
+  "task": null,
+  "fleet": "portal",
+  "created": "2026-10-15T09:00:00Z",
+  "session": null,
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/portal",
+      "remote": "gitlab.com/demo/portal",
+      "worktree": "/work/portal-PORTAL-108",
+      "branch": "feat/PORTAL-108",
+      "url": "https://gitlab.com/demo/portal/-/merge_requests/1081"
+    }
+  ]
+}

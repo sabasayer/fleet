@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "ship": "PORTAL-106",
+  "title": "Test the new consent screen",
+  "task": null,
+  "fleet": "portal",
+  "created": "2026-10-21T13:00:00Z",
+  "session": null,
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/portal",
+      "remote": "gitlab.com/demo/portal",
+      "worktree": "/work/portal-PORTAL-106",
+      "branch": "feat/PORTAL-106",
+      "url": "https://gitlab.com/demo/portal/-/merge_requests/1061"
+    }
+  ]
+}

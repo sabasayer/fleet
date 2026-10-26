@@ -1,5 +1,6 @@
 import { GOLD, memberColor, STATE } from './art.js'
 import { crewOf, currentIndex, focusFleet } from './layout.js'
+import { buttonsHtml, harbourOf, lifeState, LIFE_COLOR, LIFE_TAG, seaFleets, ZONE_NAME, ZONES } from './life.js'
 
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
@@ -17,10 +18,12 @@ export const allShips = fleets => fleets.flatMap(fleet => fleet.ships.map(ship =
 
 export const waitingShips = fleets => allShips(fleets).filter(e => e.ship.needsCaptain).sort((a, b) => waitingFirst(a.ship, b.ship))
 
+const rank = ship => (ship.needsCaptain ? 0 : lifeState(ship) === 'sailing' ? 1 : ZONES.includes(lifeState(ship)) ? 2 : 3)
+
 export function listedShips(view, fleets) {
   const scope = view.level === 'armada' ? fleets : [focusFleet(view, fleets)].filter(Boolean)
 
-  return allShips(scope).sort((a, b) => Boolean(b.ship.needsCaptain) - Boolean(a.ship.needsCaptain) || waitingFirst(a.ship, b.ship))
+  return allShips(scope).sort((a, b) => rank(a.ship) - rank(b.ship) || waitingFirst(a.ship, b.ship))
 }
 
 export const openShipName = view => (view.level === 'armada' ? null : view.cursor)
@@ -36,8 +39,10 @@ export function ago(ms, now) {
 
 const badge = ship => (ship.needsCaptain ? `<span class="${ship.needsCaptain.kind === 'failed' ? 'fail' : 'needs'}">!</span>` : '')
 
-const bar = crew =>
-  `<div class="bar">${crew.map(m => `<span title="${escapeHtml(m.role)} ${escapeHtml(m.state)}" style="background:${memberColor(m)}"></span>`).join('')}</div>`
+const reached = ship => (ship.life?.stage === 'done' ? ZONES.length : ZONES.indexOf(ship.life?.stage) + 1)
+
+const bar = (crew, ship) =>
+  `<div class="bar">${crew.map(m => `<span title="${escapeHtml(m.role)} ${escapeHtml(m.state)}" style="background:${memberColor(m)}"></span>`).join('')}${ZONES.map((zone, k) => `<span class="zone-step" title="${ZONE_NAME[zone]}" style="opacity:${k < reached(ship) ? 1 : 0.2}"></span>`).join('')}</div>`
 
 const safeUrl = text => (/^https?:\/\//i.test(text ?? '') ? text : null)
 
@@ -58,12 +63,16 @@ function crewTable(crew) {
   return `<table class="crew">${rows.join('')}</table>`
 }
 
+const mrStates = ship =>
+  ship.mrs.length > 1 && ship.life ? `<p class="dim">${ship.life.mrs.map(m => `MR ${m.n}: ${ZONE_NAME[m.state] ?? m.state}`).join(' · ')}</p>` : ''
+
 function openView(ship) {
   return `<div class="open">
     ${goal(ship)}
     <p class="dim">${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</p>
+    ${mrStates(ship)}
     ${crewTable(crewOf(ship))}
-    <div class="slot" data-slot="state-buttons">state buttons: not built yet</div>
+    <div class="buttons" data-slot="state-buttons">${buttonsHtml(ship, escapeHtml)}</div>
     <div class="slot" data-slot="jump-back">jump back: not built yet</div>
   </div>`
 }
@@ -72,22 +81,46 @@ function shipRow({ ship, fleet }, open, now, showFleet) {
   const crew = crewOf(ship)
   const at = crew[currentIndex(crew)]
   const need = ship.needsCaptain
-  const phase = at ? `${escapeHtml(at.role)} ${escapeHtml(at.state)}` : crew.length > 0 ? 'crew done' : 'no crew'
+  const life = lifeState(ship)
+  const phase = LIFE_TAG[life]
+    ? `<span style="color:${LIFE_COLOR[life]}">${LIFE_TAG[life]}</span>`
+    : at
+      ? `${escapeHtml(at.role)} ${escapeHtml(at.state)}`
+      : crew.length > 0
+        ? 'crew done'
+        : 'no crew'
   const fleetName = showFleet ? ` <span class="dim">· ${escapeHtml(fleet.name)}</span>` : ''
 
   return `<div class="row${need ? ' hot' : ''}${open ? ' cur' : ''}" data-ship="${escapeHtml(ship.ship)}">
     ${badge(ship)} <b>${escapeHtml(ship.title)}</b>${fleetName}<br>
     ${need ? `<span style="color:${needsColor(need)}">Waiting for you: ${escapeHtml(need.reason)}</span><br>` : ''}
     <span class="dim">${phase} · ${ago(updatedAt(ship), now)}</span>
-    ${bar(crew)}
+    ${bar(crew, ship)}
     ${open ? openView(ship) : ''}
   </div>`
 }
 
-export function panelHtml({ fleets, view, now }) {
-  if (fleets.length === 0) return ''
+function harbourRow({ ship, fleet }, open, now) {
+  return `<div class="row${open ? ' cur' : ''}" data-ship="${escapeHtml(ship.ship)}" data-harbour>
+    <b>${escapeHtml(ship.title)}</b> <span class="dim">· ${escapeHtml(fleet.name)}</span><br>
+    <span class="dim">docked ${ago(ship.life.endedAt, now)} · ${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</span>
+    ${open ? openView(ship) : ''}
+  </div>`
+}
+
+function harbourSection(fleets, view, now, opened) {
+  const scope = view.level === 'armada' ? fleets : fleets.filter(f => f.id === focusFleet(view, fleets)?.id)
+  const { docked, hidden } = harbourOf(scope, now)
+  const rows = docked.map(entry => harbourRow(entry, entry.ship.ship === opened, now)).join('')
+
+  return `<section class="hud-block harbour-panel"><h3>⚓ harbour (${docked.length})${hidden ? ` <span class="dim">+${hidden} hidden</span>` : ''}</h3>${rows || '<p class="dim">No ships docked.</p>'}</section>`
+}
+
+export function panelHtml({ fleets: all, view, now, opened = null }) {
+  if (all.length === 0) return ''
+  const fleets = seaFleets(all, now)
   const waiting = waitingShips(fleets)
-  const openName = openShipName(view)
+  const openName = opened ?? openShipName(view)
   const list = listedShips(view, fleets)
   const waitingRows = waiting
     .map(
@@ -98,5 +131,6 @@ export function panelHtml({ fleets, view, now }) {
   const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada')).join('')
 
   return `<section class="hud-block needs-panel"><h3>needs captain (${waiting.length})</h3>${waitingRows || '<p class="dim">Nothing waits for you.</p>'}</section>
-  <section class="hud-block ships-panel"><h3>ships</h3>${shipRows}</section>`
+  <section class="hud-block ships-panel"><h3>ships</h3>${shipRows || '<p class="dim">No ships at sea.</p>'}</section>
+  ${harbourSection(all, view, now, opened)}`
 }

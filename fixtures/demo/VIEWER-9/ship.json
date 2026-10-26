@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "ship": "VIEWER-9",
+  "title": "Series sync, two MRs",
+  "task": null,
+  "fleet": "viewer",
+  "created": "2026-10-21T11:00:00Z",
+  "session": null,
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/viewer",
+      "remote": "gitlab.com/demo/viewer",
+      "worktree": "/work/viewer-VIEWER-9",
+      "branch": "feat/VIEWER-9",
+      "url": "https://gitlab.com/demo/viewer/-/merge_requests/91"
+    },
+    {
+      "n": 2,
+      "repo": "/work/viewer",
+      "remote": "gitlab.com/demo/viewer",
+      "worktree": "/work/viewer-VIEWER-9",
+      "branch": "feat/VIEWER-9",
+      "url": "https://gitlab.com/demo/viewer/-/merge_requests/92"
+    }
+  ]
+}

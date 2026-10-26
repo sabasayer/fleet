@@ -23,6 +23,11 @@ body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospa
 .open h4 { margin: 6px 0 2px; }
 .crew td { padding: 1px 8px 1px 0; vertical-align: top; }
 .open a { color: #9fc3e6; }
+.buttons { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.buttons button { font: inherit; font-size: 12px; background: #2c4a66; color: #e8e4d8; border: 2px solid #4f7aa3; padding: 3px 8px; cursor: pointer; }
+.buttons button:hover { background: #3b5f84; }
+.buttons button:disabled { opacity: 0.5; cursor: default; }
+.zone-step { background: #c9d6e3; width: 8px !important; }
 .slot { margin-top: 6px; padding: 4px 6px; border: 1px dashed #4f7aa3; color: #7d8fa3; font-size: 12px; }
 .hud { position: absolute; background: #0d1b2aee; border: 2px solid #2c4a66; padding: 10px 12px; }
 #crumbs { top: 12px; left: 12px; }

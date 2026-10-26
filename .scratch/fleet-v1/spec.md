@@ -45,7 +45,7 @@ Decision: [Grilling: fleet's own files and its server](../fleet/issues/07-grilli
 
 Decision: [Grilling: a ship's life after crew stops](../fleet/issues/03-grilling-ship-lifecycle.md).
 
-- States: `sailing`, `in_review`, `merged`, `released`, `testing`, `done`, plus `paused`, `failed`, `abandoned`. "Needs captain" is a flag on a sailing ship: a crew member is `blocked`.
+- States: `sailing`, `in_review`, `merged`, `released`, `testing`, `done`, plus `paused`, `failed`, `abandoned`. "Needs captain" is a flag on a sailing ship: a crew member is `blocked` or `failed` (red when failed). The ship stays `sailing`.
 - `sailing` → `in_review`: automatic, when every crew member is `done` and an MR `url` exists.
 - `in_review` → `merged` or `abandoned`: automatic. Fleet asks `glab` or `gh` every 2 minutes for MRs in `in_review`. If no CLI works, the captain marks it.
 - `merged` → `released`: the fleet's `release_check` runs every 2 minutes for merged MRs, with `FLEET_SHA`, `FLEET_REPO`, `FLEET_REMOTE`, `FLEET_BRANCH` and `FLEET_MR_URL` set and a 60-second limit. Exit code 0 means released. No check means the captain marks it. Fleet never guesses from the main pipeline.

@@ -2,12 +2,11 @@
 
 Type: prototype
 Status: open
-Blocked by:
+Blocked by: 04
 
 ## Question
 
-This ticket refines the look of the v1 UI. It does not block the v1 build tickets in `.scratch/fleet-v1/`: the spec already says what each case does, and this ticket decides how it looks. The captain will take it later, together with the other prototypes.
-
+This ticket refines the look of the v1 UI. It builds on the real code, not the throwaway prototype. The spec already says what each case does; this ticket decides how it looks.
 
 What does ship zoom show? Build on the sea view (variant G) and settle these:
 

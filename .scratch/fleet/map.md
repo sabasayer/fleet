@@ -21,6 +21,8 @@ A build-ready spec for fleet v1, plus build tickets that `/crew` can run. Fleet 
 
 The way is clear. [Spec: fleet v1](../fleet-v1/spec.md) and its eight build tickets are in `.scratch/fleet-v1/`.
 
+The build continues in [Map: fleet v1 build](../fleet-v1/map.md). The two open prototype tickets moved there (09 and 10).
+
 ## Decisions so far
 
 - [Grilling: fleet's own files and its server](issues/07-grilling-fleet-files-and-server.md): own repo with copied crew-board helpers; `~/.fleet/ships/<ship>.json` per ship and a hand-edited `~/.fleet/fleets.json` with `release_check`; poll files every 2 s and the repo host every 2 min; `npx crew-fleet` on port 4932, Node 22.18+, no dependencies; no notifications of its own

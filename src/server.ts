@@ -1,10 +1,12 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 
 import { page } from './page.ts'
 import { readState } from './state.ts'
 
 const HOST = '127.0.0.1'
+const WEB = new URL('../web/', import.meta.url)
 
 export type Running = { port: number; token: string; close: () => Promise<void> }
 
@@ -36,6 +38,14 @@ export async function startServer({ port, env = process.env }: { port: number; e
     if (!sameOrigin(req)) return send(403, 'text/plain', 'forbidden')
 
     if (req.method === 'GET' && url.pathname === '/') return send(200, 'text/html; charset=utf-8', page(token))
+    const asset = req.method === 'GET' ? /^\/web\/([a-z]+\.js)$/.exec(url.pathname)?.[1] : undefined
+    if (asset) {
+      try {
+        return send(200, 'text/javascript; charset=utf-8', readFileSync(new URL(asset, WEB), 'utf8'))
+      } catch {
+        return send(404, 'text/plain', 'not found')
+      }
+    }
     if (req.method === 'GET' && url.pathname === '/api/state') return send(200, 'application/json', JSON.stringify(readState(env)))
     if (req.method === 'POST') {
       if (!validToken(req)) return send(403, 'text/plain', 'forbidden')

@@ -2,17 +2,27 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 
+import { jump, realJumpDeps, type JumpDeps, type JumpResult } from './jump.ts'
 import { page } from './page.ts'
 import { readState } from './state.ts'
 
 const HOST = '127.0.0.1'
+
+const safeDecode = (text: string) => {
+  try {
+    return decodeURIComponent(text)
+  } catch {
+    return ''
+  }
+}
 const WEB = new URL('../web/', import.meta.url)
 
 export type Running = { port: number; token: string; close: () => Promise<void> }
 
-export async function startServer({ port, env = process.env }: { port: number; env?: NodeJS.ProcessEnv }): Promise<Running> {
+export async function startServer({ port, env = process.env, jumpDeps = realJumpDeps(env) }: { port: number; env?: NodeJS.ProcessEnv; jumpDeps?: JumpDeps }): Promise<Running> {
   const token = randomBytes(24).toString('hex')
   let own = new Set<string>()
+  const jumping = new Map<string, Promise<JumpResult>>()
 
   const sameOrigin = (req: IncomingMessage) => {
     const origin = req.headers.origin
@@ -50,6 +60,22 @@ export async function startServer({ port, env = process.env }: { port: number; e
     if (req.method === 'POST') {
       if (!validToken(req)) return send(403, 'text/plain', 'forbidden')
       if (url.pathname === '/api/ping') return send(200, 'application/json', '{"ok":true}')
+      const target = /^\/api\/ships\/([^/]+)\/jump$/.exec(url.pathname)?.[1]
+      if (target) {
+        const name = safeDecode(target)
+        const entry = readState(env).fleets.flatMap(fleet => fleet.ships.map(ship => ({ fleet, ship }))).find(e => e.ship.ship === name)
+        if (!entry) return send(404, 'text/plain', 'not found')
+        const running = jumping.get(name) ?? jump(
+          { name, fleetName: entry.fleet.name, sessionId: entry.ship.session?.id ?? null, worktrees: entry.ship.mrs.map(mr => mr.worktree) },
+          jumpDeps,
+        )
+        jumping.set(name, running)
+        running.then(
+          result => send(200, 'application/json', JSON.stringify(result)),
+          () => send(500, 'application/json', JSON.stringify({ status: 'error', message: 'jump failed' })),
+        ).finally(() => jumping.delete(name))
+        return
+      }
     }
     send(404, 'text/plain', 'not found')
   })

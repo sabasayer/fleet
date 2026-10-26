@@ -1,4 +1,5 @@
 import { GOLD, memberColor, STATE } from './art.js'
+import { jumpHtml } from './jump.js'
 import { crewOf, currentIndex, focusFleet } from './layout.js'
 
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
@@ -58,17 +59,17 @@ function crewTable(crew) {
   return `<table class="crew">${rows.join('')}</table>`
 }
 
-function openView(ship) {
+function openView(ship, jump) {
   return `<div class="open">
     ${goal(ship)}
     <p class="dim">${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</p>
     ${crewTable(crewOf(ship))}
     <div class="slot" data-slot="state-buttons">state buttons: not built yet</div>
-    <div class="slot" data-slot="jump-back">jump back: not built yet</div>
+    ${jumpHtml(ship, jump)}
   </div>`
 }
 
-function shipRow({ ship, fleet }, open, now, showFleet) {
+function shipRow({ ship, fleet }, open, now, showFleet, jump) {
   const crew = crewOf(ship)
   const at = crew[currentIndex(crew)]
   const need = ship.needsCaptain
@@ -80,11 +81,11 @@ function shipRow({ ship, fleet }, open, now, showFleet) {
     ${need ? `<span style="color:${needsColor(need)}">Waiting for you: ${escapeHtml(need.reason)}</span><br>` : ''}
     <span class="dim">${phase} · ${ago(updatedAt(ship), now)}</span>
     ${bar(crew)}
-    ${open ? openView(ship) : ''}
+    ${open ? openView(ship, jump) : ''}
   </div>`
 }
 
-export function panelHtml({ fleets, view, now }) {
+export function panelHtml({ fleets, view, now, jump }) {
   if (fleets.length === 0) return ''
   const waiting = waitingShips(fleets)
   const openName = openShipName(view)
@@ -95,7 +96,7 @@ export function panelHtml({ fleets, view, now }) {
         `<div class="row hot${ship.needsCaptain.kind === 'failed' ? ' failed' : ''}" data-ship="${escapeHtml(ship.ship)}">${badge(ship)} ${escapeHtml(ship.title)}<br><span class="dim">${escapeHtml(ship.needsCaptain.reason)}</span></div>`,
     )
     .join('')
-  const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada')).join('')
+  const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada', jump)).join('')
 
   return `<section class="hud-block needs-panel"><h3>needs captain (${waiting.length})</h3>${waitingRows || '<p class="dim">Nothing waits for you.</p>'}</section>
   <section class="hud-block ships-panel"><h3>ships</h3>${shipRows}</section>`

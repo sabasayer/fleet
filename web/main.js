@@ -1,5 +1,7 @@
 import { focusFleet, initialView, move, reconcile, toArmada, toFleet, toShip, zoomIn, zoomOut } from './layout.js'
 import { requestJump } from './jump.js'
+import { sendAction } from './actions.js'
+import { onSea, seaFleets } from './life.js'
 import { panelHtml } from './panel.js'
 import { createSea } from './sea.js'
 
@@ -11,7 +13,9 @@ const sea = createSea(canvas, ui)
 const token = document.querySelector('meta[name="fleet-token"]')?.content ?? ''
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
+let allFleets = []
 let fleets = []
+let harbourOpen = null
 let now = Date.now()
 let view = initialView(fleets)
 let frame = 0
@@ -43,7 +47,7 @@ function render() {
 }
 
 function renderSide() {
-  const html = panelHtml({ fleets, view, now, jump })
+  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump })
   if (html === lastSide) return
   const scroll = side.scrollTop
   side.innerHTML = lastSide = html
@@ -59,6 +63,7 @@ function schedule() {
 }
 
 function setView(next) {
+  harbourOpen = null
   view = next
   schedule()
 }
@@ -85,11 +90,26 @@ async function copyCommand(text) {
   } catch {}
 }
 
-side.addEventListener('click', event => {
+side.addEventListener('click', async event => {
   const jumpButton = event.target.closest('[data-jump]')
   if (jumpButton) return void startJump(jumpButton.dataset.jump)
   const copyButton = event.target.closest('[data-copy]')
   if (copyButton) return void copyCommand(copyButton.dataset.copy)
+  const button = event.target.closest('button[data-action]')
+  if (button) {
+    button.disabled = true
+    await sendAction(button.dataset.ship, button.dataset.action)
+    poll()
+
+    return
+  }
+  const harbour = event.target.closest('[data-harbour]')
+  if (harbour) {
+    harbourOpen = harbourOpen === harbour.dataset.ship ? null : harbour.dataset.ship
+    schedule()
+
+    return
+  }
   const row = event.target.closest('[data-ship]')
   if (row && !event.target.closest('a')) setView(toShip(row.dataset.ship))
 })
@@ -121,9 +141,20 @@ async function poll() {
   try {
     const state = await (await fetch('/api/state')).json()
     const first = fleets.length === 0
-    fleets = state.fleets
+    const wasOnSea = view.level !== 'armada' ? view.cursor : null
+    allFleets = state.fleets
     now = state.now
-    view = first ? initialView(fleets) : reconcile(view, fleets)
+    fleets = seaFleets(allFleets, now)
+    const docked = wasOnSea && !fleets.some(f => f.ships.some(s => s.ship === wasOnSea)) ? allFleets.find(f => f.ships.some(s => s.ship === wasOnSea)) : null
+    if (docked) {
+      harbourOpen = wasOnSea
+      view = fleets.some(f => f.id === docked.id) ? toFleet(initialView(fleets), fleets, docked.id) : initialView(fleets)
+    } else view = first ? initialView(fleets) : reconcile(view, fleets)
+    const opened = allFleets.flatMap(f => f.ships).find(s => s.ship === harbourOpen)
+    if (opened && onSea(opened, now)) {
+      view = toShip(opened.ship)
+      harbourOpen = null
+    } else if (!opened) harbourOpen = null
     schedule()
   } catch {
     crumbs.textContent = 'server not reachable'

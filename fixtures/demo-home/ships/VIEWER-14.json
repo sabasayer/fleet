@@ -1,0 +1,15 @@
+{
+  "ship": "VIEWER-14",
+  "version": 1,
+  "mrs": {
+    "1": {
+      "state": "abandoned",
+      "sha": null,
+      "changed": "2026-10-01T09:00:00Z"
+    }
+  },
+  "paused": false,
+  "failed": false,
+  "docked": null,
+  "backToSea": null
+}

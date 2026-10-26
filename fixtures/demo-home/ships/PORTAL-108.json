@@ -1,0 +1,15 @@
+{
+  "ship": "PORTAL-108",
+  "version": 1,
+  "mrs": {
+    "1": {
+      "state": "done",
+      "sha": null,
+      "changed": "2099-01-01T00:00:00Z"
+    }
+  },
+  "paused": false,
+  "failed": false,
+  "docked": "2099-01-01T00:00:00Z",
+  "backToSea": null
+}

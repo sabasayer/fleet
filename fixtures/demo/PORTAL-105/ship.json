@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "ship": "PORTAL-105",
+  "title": "Rate limit login",
+  "task": null,
+  "fleet": "portal",
+  "created": "2026-10-21T10:00:00Z",
+  "session": null,
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/portal",
+      "remote": "gitlab.com/demo/portal",
+      "worktree": "/work/portal-PORTAL-105",
+      "branch": "feat/PORTAL-105",
+      "url": "https://gitlab.com/demo/portal/-/merge_requests/1051"
+    }
+  ]
+}

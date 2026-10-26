@@ -1,7 +1,7 @@
 # Fleet: the sea view
 
 Repo: sabasayer/fleet
-Status: ready-for-agent
+Status: closed
 Blocked by: 02
 Assignee: salih (Sonnet agent)
 
@@ -20,4 +20,4 @@ Built on branch `feat/sea-view` (from `feat/server`; commits `607350e`, `a97e53d
 
 Changes from variant D: the `!` and flag are red when a member failed; a stale member is red and does not hop; pixel sizes round to whole device pixels; the right column is a grid column, not an overlay; the cursor row scrolls into view.
 
-Waiting on the captain: the look in the browser, and three choices (which MR a ship shows, where a ship sits when its crew is done, how a click zooms from armada).
+Captain accepted the look and chose: a ship shows its newest MR with crew; a ship whose crew is done sits at the end of its row until the lifecycle ticket; a click in the armada zooms straight to the ship.

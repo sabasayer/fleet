@@ -21,6 +21,7 @@ Fleet v1 is built as the [spec](spec.md) says. The captain uses it on his own cr
 - [Fleet: server and plain ship list](issues/02-fleet-server-tracer.md): built (fleet PR 1); `fleets.json` is a flat map; a failed crew member flags the ship in red
 - [Fleet: the sea view](issues/03-fleet-sea-view.md): built (fleet PR 2); a ship shows its newest MR with crew; armada click zooms straight to the ship
 - [Fleet: the needs-captain and ships panels](issues/04-fleet-panels.md): built (fleet PR 3); panels in their own column; longest wait first; a panel click zooms to the ship
+- [Fleet: a ship's life and the harbour](issues/07-fleet-lifecycle.md): built (fleet PR 4); resume clears paused and failed; a state button moves every MR at the current stage; harbour keeps 3 days fixed
 
 ## Not yet specified
 

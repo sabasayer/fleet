@@ -3,6 +3,7 @@
 Repo: sabasayer/fleet
 Status: ready-for-agent
 Blocked by: 07
+Assignee: salih (Sonnet agent)
 
 ## What
 

@@ -1,7 +1,7 @@
 # Fleet: a ship's life and the harbour
 
 Repo: sabasayer/fleet
-Status: ready-for-agent
+Status: closed
 Blocked by: 04
 Assignee: salih (Sonnet agent)
 
@@ -22,4 +22,4 @@ Choices the spec left open: "resume" clears both `paused` and `failed`; pause is
 
 Merge: conflicts with `feat/jump-back` in `src/page.ts`, `src/server.ts`, `web/main.js`, `web/panel.js`. Fix when both are accepted.
 
-Waiting on the captain: walk one ship from in review to the harbour in the demo.
+The captain walked a ship from in review to the harbour in the demo and accepted it.

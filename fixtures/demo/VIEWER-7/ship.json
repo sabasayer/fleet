@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "ship": "VIEWER-7",
+  "title": "Show DICOM tags",
+  "task": null,
+  "fleet": "viewer",
+  "created": "2026-10-21T09:00:00Z",
+  "session": {
+    "id": "00000000-0000-4000-8000-000000000008",
+    "updated": "2099-01-01T00:00:00Z"
+  },
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/viewer",
+      "remote": "gitlab.com/demo/viewer",
+      "worktree": "/work/viewer-VIEWER-7",
+      "branch": "feat/VIEWER-7",
+      "url": null
+    }
+  ]
+}

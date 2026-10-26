@@ -119,7 +119,7 @@ export function createSea(canvas, ui) {
         }
         if (place.a > 0.5) hits.push({ x: sx, y: sy, w: grid[0].length * rowPx, h: grid.length * rowPx + 10, ship: ship.ship })
         const tag = LIFE_SHORT[life] ? `${view.level === 'armada' ? ' ' : '<br>'}<span style="color:${LIFE_COLOR[life]};font-size:11px">${LIFE_SHORT[life]}</span>` : ''
-        html += label(left - 6, rowY + 2, `${needsBadge(ship)} ${escapeHtml(ship.title)}${tag}`, `text-align:right;transform:translateX(-100%);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:${view.level === 'armada' ? 'nowrap' : 'normal'};${opacity(alpha)}`)
+        html += label(left - 6, rowY + 2, `${view.level === 'armada' ? '' : `<span class="dim ship-id">${escapeHtml(ship.ship)}</span><br>`}${needsBadge(ship)} ${escapeHtml(ship.title)}${tag}`, `text-align:right;transform:translateX(-100%);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:${view.level === 'armada' ? 'nowrap' : 'normal'};${opacity(alpha)}`)
       })
     })
     ctx.globalAlpha = 1

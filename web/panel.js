@@ -92,7 +92,7 @@ function shipRow({ ship, fleet }, open, now, showFleet) {
   const fleetName = showFleet ? ` <span class="dim">· ${escapeHtml(fleet.name)}</span>` : ''
 
   return `<div class="row${need ? ' hot' : ''}${open ? ' cur' : ''}" data-ship="${escapeHtml(ship.ship)}">
-    ${badge(ship)} <b>${escapeHtml(ship.title)}</b>${fleetName}<br>
+    ${badge(ship)} <b>${escapeHtml(ship.title)}</b> <span class="dim">${escapeHtml(ship.ship)}</span>${fleetName}<br>
     ${need ? `<span style="color:${needsColor(need)}">Waiting for you: ${escapeHtml(need.reason)}</span><br>` : ''}
     <span class="dim">${phase} · ${ago(updatedAt(ship), now)}</span>
     ${bar(crew, ship)}
@@ -102,7 +102,7 @@ function shipRow({ ship, fleet }, open, now, showFleet) {
 
 function harbourRow({ ship, fleet }, open, now) {
   return `<div class="row${open ? ' cur' : ''}" data-ship="${escapeHtml(ship.ship)}" data-harbour>
-    <b>${escapeHtml(ship.title)}</b> <span class="dim">· ${escapeHtml(fleet.name)}</span><br>
+    <b>${escapeHtml(ship.title)}</b> <span class="dim">${escapeHtml(ship.ship)} · ${escapeHtml(fleet.name)}</span><br>
     <span class="dim">docked ${ago(ship.life.endedAt, now)} · ${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</span>
     ${open ? openView(ship) : ''}
   </div>`
@@ -125,7 +125,7 @@ export function panelHtml({ fleets: all, view, now, opened = null }) {
   const waitingRows = waiting
     .map(
       ({ ship }) =>
-        `<div class="row hot${ship.needsCaptain.kind === 'failed' ? ' failed' : ''}" data-ship="${escapeHtml(ship.ship)}">${badge(ship)} ${escapeHtml(ship.title)}<br><span class="dim">${escapeHtml(ship.needsCaptain.reason)}</span></div>`,
+        `<div class="row hot${ship.needsCaptain.kind === 'failed' ? ' failed' : ''}" data-ship="${escapeHtml(ship.ship)}">${badge(ship)} ${escapeHtml(ship.title)} <span class="dim">${escapeHtml(ship.ship)}</span><br><span class="dim">${escapeHtml(ship.needsCaptain.reason)}</span></div>`,
     )
     .join('')
   const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada')).join('')

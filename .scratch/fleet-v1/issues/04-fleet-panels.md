@@ -1,7 +1,7 @@
 # Fleet: the needs-captain and ships panels
 
 Repo: sabasayer/fleet
-Status: ready-for-agent
+Status: closed
 Blocked by: 03
 Assignee: salih (Sonnet agent)
 
@@ -19,4 +19,4 @@ Built on branch `feat/panels` (from `feat/sea-view`; commit `8c7493b`; not pushe
 
 Choices: the panels sit in the right grid column, not over the sea; the needs-captain list covers all fleets, the ships list follows the zoom; both sort by longest wait; a click on a panel row zooms the sea to that ship (same as an armada click); the task shows as a link only when it is a URL (the ship file says `task` is a link or `null`); a stale member shows "(stale)" in red; several MRs show one crew (the newest), as on the sea, until "Prototype: ship zoom with several MRs" decides.
 
-Waiting on the captain: the look in the browser with the blocked ship (PORTAL-101) and the failed one (PORTAL-103).
+The captain checked the look in the browser and accepted it.

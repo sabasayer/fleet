@@ -20,6 +20,7 @@ Fleet v1 is built as the [spec](spec.md) says. The captain uses it on his own cr
 - [Crew: the ship file and `crew-ship`](issues/01-crew-ship-file.md): built (crew PR 14); `crew-status` skips the session refresh in sub-agents; `add-mr` numbers MRs itself
 - [Fleet: server and plain ship list](issues/02-fleet-server-tracer.md): built (fleet PR 1); `fleets.json` is a flat map; a failed crew member flags the ship in red
 - [Fleet: the sea view](issues/03-fleet-sea-view.md): built (fleet PR 2); a ship shows its newest MR with crew; armada click zooms straight to the ship
+- [Fleet: the needs-captain and ships panels](issues/04-fleet-panels.md): built (fleet PR 3); panels in their own column; longest wait first; a panel click zooms to the ship
 
 ## Not yet specified
 

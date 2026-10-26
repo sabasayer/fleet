@@ -18,3 +18,13 @@ What `CLAUDE_CODE_SESSION_ID` and `CLAUDE_CODE_CHILD_SESSION` show in a sub-agen
 - `crew-ship` refuses bad input and never needs hand-written JSON.
 - A test run writes a valid `ship.json`, and the session ID follows a `/clear`.
 - crew-board does not show `ship` as a crew member.
+
+## Progress
+
+Built on branch `feat/ship-file` in crew (commit `0f381ca`, not pushed). Tests pass: `claude plugin test mods/board` (17) and `python3 mods/board/test/crew_ship_test.py` (4).
+
+Check result: in a sub-agent's Bash, `CLAUDE_CODE_SESSION_ID` is set and `CLAUDE_CODE_CHILD_SESSION=1`. Rule: `crew-status` skips the session refresh when `CLAUDE_CODE_CHILD_SESSION` is set.
+
+Choices the spec left open: `crew-ship add-mr` numbers the MR itself; `session` is `null` when the ID is missing; `crew-status` finds the ship folder by dropping `-mr<N>` from the run folder name.
+
+Waiting on the captain: the session ID after `/clear`, and crew-board with a real `ship.json`.

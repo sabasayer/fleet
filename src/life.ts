@@ -159,3 +159,11 @@ export function writeStored(home: string, ship: string, stored: Stored) {
   writeFileSync(temp, `${JSON.stringify({ ship, ...stored }, null, 2)}\n`)
   renameSync(temp, path)
 }
+
+export function observeMr(stored: Stored, n: number, to: 'merged' | 'abandoned' | 'released', sha: string | null, now: string): Stored | null {
+  const kept = stored.mrs[String(n)]
+  const allowed = to === 'released' ? kept?.state === 'merged' : kept === undefined
+  if (!allowed) return null
+
+  return { ...stored, mrs: { ...stored.mrs, [String(n)]: { state: to, sha: sha ?? kept?.sha ?? null, changed: now } } }
+}

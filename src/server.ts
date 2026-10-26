@@ -5,6 +5,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http'
 import { applyAction, isAction, isShipName, readStored, writeStored } from './life.ts'
 import { page } from './page.ts'
 import { fleetHome, readState } from './state.ts'
+import type { Watcher } from './watch.ts'
 
 const HOST = '127.0.0.1'
 const WEB = new URL('../web/', import.meta.url)
@@ -23,7 +24,7 @@ const readBody = (req: IncomingMessage) =>
 
 export type Running = { port: number; token: string; close: () => Promise<void> }
 
-export async function startServer({ port, env = process.env }: { port: number; env?: NodeJS.ProcessEnv }): Promise<Running> {
+export async function startServer({ port, env = process.env, watcher }: { port: number; env?: NodeJS.ProcessEnv; watcher?: Watcher }): Promise<Running> {
   const token = randomBytes(24).toString('hex')
   let own = new Set<string>()
 
@@ -39,6 +40,17 @@ export async function startServer({ port, env = process.env }: { port: number; e
     const want = Buffer.from(token)
 
     return sent.length === want.length && timingSafeEqual(sent, want)
+  }
+
+  const stateWithChecks = () => {
+    const state = readState(env)
+    if (!watcher) return state
+    for (const ship of state.fleets.flatMap(f => f.ships)) {
+      const stateOf = (n: number) => ship.life.mrs.find(m => m.n === n)?.state
+      ;(ship as any).checks = watcher.seen(ship.ship).filter(c => stateOf(c.n) === (c.kind === 'merge' ? 'in_review' : 'merged'))
+    }
+
+    return state
   }
 
   const shipAction = (body: string, send: (status: number, type: string, body: string) => void) => {
@@ -80,7 +92,7 @@ export async function startServer({ port, env = process.env }: { port: number; e
         return send(404, 'text/plain', 'not found')
       }
     }
-    if (req.method === 'GET' && url.pathname === '/api/state') return send(200, 'application/json', JSON.stringify(readState(env)))
+    if (req.method === 'GET' && url.pathname === '/api/state') return send(200, 'application/json', JSON.stringify(stateWithChecks()))
     if (req.method === 'POST') {
       if (!validToken(req)) return send(403, 'text/plain', 'forbidden')
       if (url.pathname === '/api/ping') return send(200, 'application/json', '{"ok":true}')

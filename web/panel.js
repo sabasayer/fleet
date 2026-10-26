@@ -71,6 +71,7 @@ function openView(ship) {
     ${goal(ship)}
     <p class="dim">${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</p>
     ${mrStates(ship)}
+    ${(ship.checks ?? []).map(c => `<p class="dim">MR ${c.n} ${escapeHtml(c.text)} · ${ago(c.at, Date.now())}</p>`).join('')}
     ${crewTable(crewOf(ship))}
     <div class="buttons" data-slot="state-buttons">${buttonsHtml(ship, escapeHtml)}</div>
     <div class="slot" data-slot="jump-back">jump back: not built yet</div>

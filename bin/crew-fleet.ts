@@ -2,6 +2,7 @@
 import { parseArgs } from 'node:util'
 
 import { startServer } from '../src/server.ts'
+import { startWatcher } from '../src/watch.ts'
 
 const { values } = parseArgs({ options: { port: { type: 'string', default: '4932' } } })
 const port = Number(values.port)
@@ -10,5 +11,5 @@ if (!Number.isInteger(port) || port < 0 || port > 65535) {
   process.exit(1)
 }
 
-const server = await startServer({ port })
+const server = await startServer({ port, watcher: startWatcher() })
 console.log(`crew-fleet: http://127.0.0.1:${server.port}`)

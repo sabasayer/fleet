@@ -18,8 +18,8 @@ Spec section 4, the automatic steps: every 2 minutes, ask `glab` or `gh` about M
 
 Built on branch `feat/auto-states` (from `feat/lifecycle`; commit `667d67a`), then merged with `feat/jump-back` (`38d1add`). Not pushed. `npm test`: 100 pass for the merged code.
 
-Commands: `gh pr view <url> --json state,mergeCommit` (checked on a real merged PR: `MERGED` plus `mergeCommit.oid`); `glab mr view <url> --output json`, using `state` and `merge_commit_sha`, then `squash_commit_sha`, then `sha`. A host name with "github" uses `gh`; any other host uses `glab`.
+Commands: `gh pr view <url> --json state,mergeCommit` (checked on a real merged PR: `MERGED` plus `mergeCommit.oid`); `glab mr view <n> -R <project URL> --output json`, using `state` and `merge_commit_sha`, then `squash_commit_sha`, then `sha`. A host name with "github" uses `gh`; any other host uses `glab`.
 
 Choices: an MR marked merged by hand has no SHA, so `FLEET_SHA` is empty; check results live in memory only; a login or parse error only shows as the last result.
 
-Waiting on the captain: does `glab mr view` take a URL? Check it live with one real merged GitLab MR.
+`glab mr view` does not take an MR URL. Fleet now calls `glab mr view <n> -R <project URL> --output json` (checked on a real merged GitLab MR: `state: merged` plus `merge_commit_sha`).

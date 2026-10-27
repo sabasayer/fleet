@@ -10,6 +10,9 @@ import { fleetHome, readState } from './state.ts'
 import type { Watcher } from './watch.ts'
 
 const HOST = '127.0.0.1'
+const STARTING_TTL_MS = 30 * 60 * 1000
+
+type Starting = { ship: string; fleet: string; sessionId: string; startedAt: number }
 
 const safeDecode = (text: string) => {
   try {
@@ -34,10 +37,11 @@ const readBody = (req: IncomingMessage) =>
 
 export type Running = { port: number; token: string; close: () => Promise<void> }
 
-export async function startServer({ port, env = process.env, watcher, jumpDeps = realJumpDeps(env), newShipDeps = realNewShipDeps }: { port: number; env?: NodeJS.ProcessEnv; watcher?: Watcher; jumpDeps?: JumpDeps; newShipDeps?: NewShipDeps }): Promise<Running> {
+export async function startServer({ port, env = process.env, watcher, jumpDeps = realJumpDeps(env), newShipDeps = realNewShipDeps, clock = Date.now }: { port: number; env?: NodeJS.ProcessEnv; watcher?: Watcher; jumpDeps?: JumpDeps; newShipDeps?: NewShipDeps; clock?: () => number }): Promise<Running> {
   const token = randomBytes(24).toString('hex')
   let own = new Set<string>()
   const jumping = new Map<string, Promise<JumpResult>>()
+  let starting: Starting[] = []
 
   const sameOrigin = (req: IncomingMessage) => {
     const origin = req.headers.origin
@@ -54,14 +58,17 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
   }
 
   const stateWithChecks = () => {
-    const state = readState(env)
-    if (!watcher) return state
+    const state = readState(env, clock())
+    const seen = new Set(state.fleets.flatMap(f => f.ships.map(s => s.session?.id?.toLowerCase())))
+    starting = starting.filter(e => state.now - e.startedAt < STARTING_TTL_MS && !seen.has(e.sessionId.toLowerCase()))
+    const withStarting = { ...state, starting }
+    if (!watcher) return withStarting
     for (const ship of state.fleets.flatMap(f => f.ships)) {
       const stateOf = (n: number) => ship.life.mrs.find(m => m.n === n)?.state
       ;(ship as any).checks = watcher.seen(ship.ship).filter(c => stateOf(c.n) === (c.kind === 'merge' ? 'in_review' : 'merged'))
     }
 
-    return state
+    return withStarting
   }
 
   const shipAction = (body: string, send: (status: number, type: string, body: string) => void) => {
@@ -126,7 +133,10 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
               return send(400, 'text/plain', 'bad json')
             }
             startNewShip(input, readState(env).fleets, jumpDeps, newShipDeps).then(
-              result => send(200, 'application/json', JSON.stringify(result)),
+              result => {
+                if (result.status === 'started') starting.push({ ship: result.ship, fleet: result.fleet, sessionId: result.sessionId, startedAt: clock() })
+                send(200, 'application/json', JSON.stringify(result))
+              },
               () => send(500, 'application/json', JSON.stringify({ status: 'error', message: 'start failed' })),
             )
           },

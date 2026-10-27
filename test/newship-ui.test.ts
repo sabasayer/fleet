@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { newShipFormHtml, preselectedRepo, repoChoices, requestNewShip, startingHtml, stillStarting, WAIT_MS } from '../web/newship.js'
+import { newShipFormHtml, preselectedRepo, repoChoices, requestNewShip, startingHtml, WAIT_MS } from '../web/newship.js'
 import { panelHtml } from '../web/panel.js'
 
 const ID = '11111111-2222-3333-4444-555555555555'
@@ -57,22 +57,20 @@ test('the start button is disabled while busy', () => {
   assert.match(newShipFormHtml({ fleets, form: { fleet: '', folder: '', task: '' }, busy: true, result: null }), /type="submit" disabled/)
 })
 
-test('the starting note shows until a ship with that session ID appears', () => {
-  const starting = [{ ship: 'fix-abcd', sessionId: '99999999-2222-3333-4444-555555555555', at: 1000 }]
-  assert.match(startingHtml(starting, fleets, 2000), /starting fix-abcd…/)
-  assert.doesNotMatch(startingHtml(starting, fleets, 2000), /not seen yet/)
-  const seen = [{ ship: 'fix-abcd', sessionId: ID.toUpperCase(), at: 1000 }]
-  assert.equal(startingHtml(seen, fleets, 2000), '')
-  assert.deepEqual(stillStarting(seen, fleets), [])
+test('the starting note shows the ship', () => {
+  const starting = [{ ship: 'fix-abcd', sessionId: ID, startedAt: 1000 }]
+  assert.match(startingHtml(starting, 2000), /starting fix-abcd…/)
+  assert.doesNotMatch(startingHtml(starting, 2000), /not seen yet/)
+  assert.equal(startingHtml([], 2000), '')
 })
 
 test('after three minutes the note says not seen yet and to jump back', () => {
-  const starting = [{ ship: 'fix-abcd', sessionId: '99999999-2222-3333-4444-555555555555', at: 1000 }]
-  assert.match(startingHtml(starting, fleets, 1000 + WAIT_MS), /not seen yet\. Jump back to check\./)
+  const starting = [{ ship: 'fix-abcd', sessionId: ID, startedAt: 1000 }]
+  assert.match(startingHtml(starting, 1000 + WAIT_MS), /not seen yet\. Jump back to check\./)
 })
 
 test('the panel shows the starting note even with no ships yet', () => {
-  const starting = [{ ship: 'fix-abcd', sessionId: ID, at: 1000 }]
+  const starting = [{ ship: 'fix-abcd', sessionId: ID, startedAt: 1000 }]
   assert.match(panelHtml({ fleets: [], view: { level: 'armada' }, now: 2000, jump: null, starting }), /starting fix-abcd…/)
   assert.equal(panelHtml({ fleets: [], view: { level: 'armada' }, now: 2000, jump: null }), '')
 })

@@ -2,7 +2,7 @@ import { focusFleet, initialView, move, reconcile, toArmada, toFleet, toShip, zo
 import { requestJump } from './jump.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets } from './life.js'
-import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml, stillStarting } from './newship.js'
+import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml } from './newship.js'
 import { panelHtml } from './panel.js'
 import { createSea } from './sea.js'
 
@@ -113,9 +113,8 @@ async function submitNewShip() {
   if (!newShip) return
   newShip = { form, busy: false, result }
   if (result.status === 'started') {
-    starting = [...starting, { ship: result.ship, sessionId: result.sessionId, at: Date.now() }]
     closeNewShip()
-    renderSide()
+    poll()
 
     return
   }
@@ -229,7 +228,7 @@ async function poll() {
       view = toShip(opened.ship)
       harbourOpen = null
     } else if (!opened) harbourOpen = null
-    starting = stillStarting(starting, allFleets)
+    starting = state.starting ?? []
     schedule()
   } catch {
     crumbs.textContent = 'server not reachable'

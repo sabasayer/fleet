@@ -120,7 +120,7 @@ function harbourSection(fleets, view, now, opened, jump) {
 }
 
 export function panelHtml({ fleets: all, view, now, opened = null, jump, starting = [] }) {
-  const startingBlock = startingHtml(starting, all, now)
+  const startingBlock = startingHtml(starting, now)
   if (all.length === 0) return startingBlock
   const fleets = seaFleets(all, now)
   const waiting = waitingShips(fleets)

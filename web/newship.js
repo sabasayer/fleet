@@ -59,16 +59,10 @@ export function newShipFormHtml({ fleets, form, busy, result }) {
   </form>`
 }
 
-const hasSession = (fleets, sessionId) =>
-  fleets.some(f => f.ships.some(s => s.session?.id?.toLowerCase() === sessionId.toLowerCase()))
-
-export const stillStarting = (starting, fleets) => starting.filter(entry => !hasSession(fleets, entry.sessionId))
-
-export function startingHtml(starting, fleets, now) {
-  const rows = stillStarting(starting, fleets)
-  if (rows.length === 0) return ''
-  const lines = rows.map(entry =>
-    now - entry.at >= WAIT_MS
+export function startingHtml(starting, now) {
+  if (starting.length === 0) return ''
+  const lines = starting.map(entry =>
+    now - entry.startedAt >= WAIT_MS
       ? `<p class="jump-msg warn">${escapeHtml(entry.ship)}: not seen yet. Jump back to check.</p>`
       : `<p class="dim">starting ${escapeHtml(entry.ship)}…</p>`,
   )

@@ -16,4 +16,4 @@ What does ship zoom show? Build on the sea view (variant G) and settle these:
 
 ## Seen in use (2026-10-27)
 
-With a real 11-member crew (ENG-711) at ship zoom: the role names under the stones overlap each other, and the big ship sprite covers the ship's title. Settle both here.
+The overlap is now a bug ticket: [Fleet: the sea fits long crews and any window width](11-fleet-sea-fits-long-crews.md). This ticket keeps only the several-MRs question.

@@ -30,13 +30,17 @@ _Avoid_: User, admiral
 **First mate**:
 The Claude session that runs one ship's chain and talks to the captain.
 
+**Scout**:
+A Claude session that looks into a bug report or a bug's cause before any crew run. It either becomes a ship (same name, same session) or goes to the harbour with a one-line outcome.
+_Avoid_: Investigation, triage (they name the activity, not the thing on the sea)
+
 ## A ship's life
 
 **Sailing**:
 A ship whose crew is still at work.
 
 **Needs captain**:
-A flag on a sailing ship: a gate waits for the captain.
+A flag on a sailing ship: a gate waits for the captain, or a crew member failed.
 _Avoid_: Blocked (a crew member's word, not a ship's)
 
 **Released**:

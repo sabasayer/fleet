@@ -32,3 +32,5 @@ Fleet v1 is built as the [spec](spec.md) says. The captain uses it on his own cr
 ## Out of scope
 
 The planning map's Out of scope list still holds. The spec's "Not in v1" section repeats it.
+
+Scouts (a session that looks into a bug before any crew run) come after v1 as their own map. Decisions so far are in [Idea: scouts](../fleet/ideas/scouts.md).

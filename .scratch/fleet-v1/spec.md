@@ -54,7 +54,7 @@ Decision: [Grilling: a ship's life after crew stops](../fleet/issues/03-grilling
 
 ## 5. The page
 
-Decisions: [Prototype: the sea view](../fleet/issues/04-prototype-sea-view.md) (variant D) and [Prototype: the harbour and a ship whose crew stopped](../fleet/issues/08-prototype-harbour.md) (variant G). The reference is `prototype/sea-view.html` on branch `prototype/sea-view` (`?variant=G`). Rendering follows [Research: pixel-art tooling](../fleet/issues/02-research-pixel-tooling.md): Canvas 2D with HTML on top, sprites drawn in code, whole-number pixel scale, sized by `devicePixelRatio`.
+Decisions: [Prototype: the sea view](../fleet/issues/04-prototype-sea-view.md) (variant D) and [Prototype: the harbour and a ship whose crew stopped](../fleet/issues/08-prototype-harbour.md) (variant G). The reference is [`.scratch/fleet/prototype/sea-view.html`](../fleet/prototype/sea-view.html) (`?variant=G`). Rendering follows [Research: pixel-art tooling](../fleet/issues/02-research-pixel-tooling.md): Canvas 2D with HTML on top, sprites drawn in code, whole-number pixel scale, sized by `devicePixelRatio`.
 
 - **Sea.** One lane per fleet. One row per ship. Left part "crew at work": one stone per crew member in chain order, coloured by state, and the ship on the stone of the member who works now. Right part: four labelled zones (in review, merged, released, testing). A ship whose crew stopped sits in its zone.
 - **Zoom.** Armada (all lanes, small ships), fleet (one lane, role names), ship (one row, crew faces). Click or `→`/`Enter` zooms in, `←`/`Esc` zooms out, `↑`/`↓` move the cursor. A breadcrumb shows the level. Every change tweens for about 450 ms.

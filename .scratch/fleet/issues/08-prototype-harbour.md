@@ -10,7 +10,7 @@ How does a ship look at sea once its crew stops (`in_review`, `merged`, `release
 
 ## Answer
 
-Prototype: variants E, F and G in `prototype/sea-view.html` on branch [`prototype/sea-view`](https://github.com/sabasayer/fleet/blob/prototype/sea-view/prototype/sea-view.html). Open the file with `?variant=G`. All three build on the sea view (variant D).
+Prototype: variants E, F and G in [`.scratch/fleet/prototype/sea-view.html`](../prototype/sea-view.html). Open the file with `?variant=G`. All three build on the sea view (variant D).
 
 The captain picked **G**. **F** is a good second choice. The captain accepted the rest as built ("all good for now").
 

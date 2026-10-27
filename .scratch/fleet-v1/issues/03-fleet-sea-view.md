@@ -7,7 +7,7 @@ Assignee: salih (Sonnet agent)
 
 ## What
 
-Spec section 5, the sea only: lanes, rows, crew stones, the ship sprite with crew faces, the three zoom levels with the 450 ms tween, keyboard navigation, the breadcrumb and the needs-captain `!`. Port it from `prototype/sea-view.html` (branch `prototype/sea-view`, variant D). Copy the hats, faces and state colours from crew-board's `hooks/ship.ts`. Use real data from `/api/state`.
+Spec section 5, the sea only: lanes, rows, crew stones, the ship sprite with crew faces, the three zoom levels with the 450 ms tween, keyboard navigation, the breadcrumb and the needs-captain `!`. Port it from [`.scratch/fleet/prototype/sea-view.html`](../../fleet/prototype/sea-view.html) (variant D). Copy the hats, faces and state colours from crew-board's `hooks/ship.ts`. Use real data from `/api/state`.
 
 ## Done when
 

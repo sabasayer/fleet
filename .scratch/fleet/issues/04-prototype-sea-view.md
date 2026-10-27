@@ -10,7 +10,7 @@ How should the sea view look and behave? Decide the layout of fleets on the sea 
 
 ## Answer
 
-Prototype: `prototype/sea-view.html` on branch [`prototype/sea-view`](https://github.com/sabasayer/fleet/blob/prototype/sea-view/prototype/sea-view.html). Open the file and use `?variant=D`.
+Prototype: [`.scratch/fleet/prototype/sea-view.html`](../prototype/sea-view.html). Open the file and use `?variant=D`.
 
 The captain picked variant D ("for now"). It mixes parts of A, B and C after the captain's feedback:
 

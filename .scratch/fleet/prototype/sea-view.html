@@ -1,0 +1,766 @@
+<!doctype html>
+<!--
+PROTOTYPE, throw away. Answers ticket "Prototype: the sea view".
+Three variants of the sea view, switch with ?variant=A|B|C or the arrow keys.
+Fake data only. Canvas 2D for pixels, HTML on top for text and buttons.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>fleet: sea view prototype</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospace, Menlo, monospace; overflow: hidden; }
+  canvas { display: block; image-rendering: pixelated; }
+  .hud { position: fixed; background: #0d1b2aee; border: 2px solid #2c4a66; padding: 10px 12px; }
+  .hud h3 { margin: 0 0 6px; font-size: 13px; color: #9fc3e6; text-transform: uppercase; letter-spacing: 1px; }
+  .crumbs { top: 12px; left: 12px; }
+  .crumbs a { color: #9fc3e6; cursor: pointer; text-decoration: underline; }
+  .needs { color: #0d1b2a; background: #e5c04b; padding: 0 5px; font-weight: bold; }
+  .fail { color: #fff; background: #e5484d; padding: 0 5px; font-weight: bold; }
+  .row { cursor: pointer; padding: 3px 4px; border-left: 3px solid transparent; }
+  .row:hover { background: #1b3550; }
+  .row.hot { border-left-color: #e5c04b; }
+  .dim { color: #7d8fa3; }
+  button { font: inherit; background: #2c4a66; color: #e8e4d8; border: 2px solid #4f7aa3; padding: 4px 10px; cursor: pointer; }
+  button:hover { background: #3b5f84; }
+  .label { position: fixed; pointer-events: none; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 0 #000; transform: translateX(-50%); }
+  .label.side { transform: none; }
+  .label.side[style*="translateX(-100%)"] { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+  .label.big { font-size: 15px; color: #9fc3e6; letter-spacing: 1px; }
+  .crew td { padding: 1px 8px 1px 0; }
+  #switcher { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%); background: #fff; color: #111; border-radius: 99px; padding: 6px 10px; box-shadow: 0 4px 14px #0008; display: flex; gap: 10px; align-items: center; z-index: 99; font-family: system-ui; }
+  #switcher button { background: #eee; color: #111; border: none; border-radius: 99px; padding: 2px 10px; }
+</style>
+</head>
+<body>
+<canvas id="sea"></canvas>
+<div id="ui"></div>
+<div id="panel"></div>
+<div id="switcher"><button id="prev">←</button><span id="vlabel"></span><button id="next">→</button></div>
+
+<script>
+// ---------- fake data ----------
+const now = Date.now()
+const min = m => now - m * 60000
+const PROJECTS = [
+  { id: 'fhp', name: 'FHP portal', color: '#d96fa8' },
+  { id: 'xds', name: 'xds-viewer', color: '#3fb3a0' },
+  { id: 'fleet', name: 'fleet', color: '#e08a3c' },
+]
+const ship = (project, id, title, goal, crew, extra = {}) => ({ project, id, title, goal, crew, mrs: 1, updated: min(5), life: 'sailing', ...extra })
+const c = (role, state) => ({ role, state })
+const SHIPS = [
+  ship('fhp', 'smart-launch', 'Fix SMART launch timeout', 'Launch from the EHR in under 3 s', [c('red', 'done'), c('green', 'done'), c('review-spec', 'done'), c('gate', 'blocked')], { needs: 'Gate: approve the MR' }),
+  ship('fhp', 'pdf-download', 'Failing PDF downloads', 'Large PDFs download without 502', [c('red', 'done'), c('green', 'running'), c('review-spec', 'queued'), c('gate', 'queued')]),
+  ship('fhp', 'audit-log', 'Audit log export', 'Export audit log as CSV', [c('red', 'done'), c('green', 'failed'), c('fixer', 'queued')], { needs: 'green failed twice', updated: min(40) }),
+  ship('fhp', 'i18n-nl', 'Dutch copy pass', 'All screens read in Dutch', [c('red', 'done'), c('green', 'done'), c('review-spec', 'done'), c('gate', 'done')], { life: 'in_review', mrs: 2 }),
+  ship('xds', 'viewer-zoom', 'Viewer pinch zoom', 'Pinch zoom on tablets', [c('red', 'running'), c('green', 'queued'), c('review-spec', 'queued')]),
+  ship('xds', 'dicom-tags', 'Show DICOM tags', 'Tag panel next to the image', [c('red', 'done'), c('green', 'done'), c('browser', 'running'), c('review-spec', 'queued'), c('gate', 'queued')]),
+  ship('xds', 'oom', 'Pod OOM on big studies', 'Stream studies, keep memory flat', [c('red', 'done'), c('pin', 'done'), c('green', 'blocked')], { needs: 'Question: may we raise the limit?', updated: min(18), mrs: 3 }),
+  ship('fhp', 'consent', 'Cookie consent banner', 'Ask consent before analytics', [c('red', 'done'), c('green', 'done'), c('review-spec', 'done')], { life: 'merged' }),
+  ship('fhp', 'expiry', 'Session expiry warning', 'Warn 2 min before logout', [c('red', 'done'), c('green', 'done'), c('gate', 'done')], { life: 'released' }),
+  ship('fhp', 'login', 'Login redesign', 'New login screen', [c('red', 'done'), c('green', 'failed'), c('fixer', 'failed')], { life: 'failed', updated: min(300) }),
+  ship('fhp', 'pdf-preview', 'PDF preview', 'Preview before download', [c('red', 'done'), c('green', 'done')], { life: 'done', docked: 1 }),
+  ship('fhp', 'nav', 'Side nav cleanup', 'Fewer menu items', [c('red', 'done'), c('green', 'done')], { life: 'done', docked: 4 }),
+  ship('xds', 'thumbs', 'Series thumbnails', 'Thumbnails in the series list', [c('red', 'done'), c('green', 'done'), c('review-spec', 'done')], { life: 'testing' }),
+  ship('xds', 'measure', 'Measure tool', 'Measure lengths on the image', [c('red', 'done'), c('green', 'queued'), c('review-spec', 'queued')], { life: 'paused', updated: min(1440) }),
+  ship('xds', 'dicom-export', 'DICOM export', 'Export a study as a zip', [c('red', 'done'), c('green', 'done')], { life: 'done', docked: 2 }),
+  ship('fleet', 'glossary', 'Glossary page', 'Glossary in the README', [c('red', 'done'), c('green', 'done')], { life: 'abandoned', docked: 1 }),
+  ship('fleet', 'board-hats', 'Board hats', 'Hats per role', [c('red', 'done'), c('green', 'done')], { life: 'done', docked: 6 }),
+  ship('fleet', 'sea-proto', 'Sea view prototype', 'Pick a sea layout', [c('red', 'done'), c('green', 'running'), c('review-code', 'queued'), c('review-spec', 'queued'), c('gate', 'queued'), c('move', 'queued')]),
+]
+const fleetOf = p => SHIPS.filter(s => s.project === p.id)
+const needsCount = list => list.filter(s => s.needs).length
+const done = s => s.crew.filter(m => m.state === 'done').length
+const phase = s => s.crew.find(m => m.state !== 'done') ?? { role: 'all', state: 'done' }
+
+// ---------- pixel art (adapted from crew-board ship.ts) ----------
+const WOOD = '#8b5a2b', HULL = '#5c3a1c', DECK = '#a87a4a', SAIL = '#e8e4d8', EYE = '#222', MOUTH = '#6b2d2d', GOLD = '#e5c04b', BAND = '#3b5fa8', SLEEPY = '#9a9a9a'
+const SEA_A = '#1f4e79', SEA_B = '#24598a', FOAM = '#6fa8dc'
+const SKINS = ['#f2c9a0', '#e0ac7e', '#c68642', '#8d5524', '#ffdbac']
+const HATS = ['#4f8fd9', '#9b6fd1', '#3fb3a0', '#d96fa8', '#e08a3c', '#8a8a8a']
+const STATE = { queued: '#8a8a8a', running: '#33c3d6', blocked: '#e5c04b', done: '#4fbf6f', failed: '#e5484d' }
+const HAT_SHAPES = {
+  gate: { rows: ['.XXX.', 'XXGXX'], color: '#e8e4d8' }, red: { rows: ['....X', 'XXXXX'], color: '#d9534f' }, pin: { rows: ['....X', 'XXXXX'], color: '#d9534f' },
+  green: { rows: ['X.X.X', 'XXXXX'], color: '#4fbf6f' }, move: { rows: ['X.X.X', 'XXXXX'], color: '#4fbf6f' }, review: { rows: ['..X..', '.XXX.'] },
+  fixer: { rows: ['.XGX.', 'XXXXX'], color: GOLD }, browser: { rows: ['XXXXX', 'BBBBB'], color: '#e8e4d8' },
+}
+const hash = t => [...t].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7)
+const hatFor = role => {
+  const fam = Object.keys(HAT_SHAPES).find(n => role === n || role.startsWith(n + '-'))
+  const shape = fam ? HAT_SHAPES[fam] : { rows: ['.XXX.', 'XXXXX'] }
+  return { rows: shape.rows, color: shape.color ?? HATS[hash(role) % HATS.length] }
+}
+function face(put, x, top, m) {
+  const skin = m.state === 'queued' ? SLEEPY : SKINS[(hash(m.role) >>> 3) % SKINS.length]
+  const hat = hatFor(m.role)
+  const paint = ch => ch === 'X' ? hat.color : ch === 'G' ? GOLD : ch === 'B' ? BAND : null
+  hat.rows.forEach((row, r) => [...row].forEach((ch, cc) => paint(ch) && put(x + cc, top + r, paint(ch))))
+  for (let i = 0; i < 5; i++) { put(x + i, top + 2, skin); put(x + i, top + 3, skin) }
+  for (let i = 1; i <= 3; i++) put(x + i, top + 4, skin)
+  const eye = m.state === 'failed' ? STATE.failed : EYE
+  put(x + 1, top + 2, eye); put(x + 3, top + 2, eye)
+  if (m.state === 'done') { put(x + 1, top + 3, MOUTH); put(x + 3, top + 3, MOUTH); put(x + 2, top + 4, MOUTH) }
+  else if (m.state === 'failed') { put(x + 2, top + 3, MOUTH); put(x + 1, top + 4, MOUTH); put(x + 3, top + 4, MOUTH) }
+  else if (m.state === 'blocked') for (let i = 1; i <= 3; i++) put(x + i, top + 3, MOUTH)
+  else if (m.state === 'running') put(x + 2, top + 3, MOUTH)
+  for (let i = 1; i <= 3; i++) put(x + i, top + 5, STATE[m.state])
+}
+
+// Three-quarter top-down ship: deck seen from above, crew faces looking at the viewer.
+// detail 'tiny' = armada dot-boat, 'deck' = hats only, 'faces' = full faces.
+function shipGrid(s, frame, detail) {
+  const n = s.crew.length
+  const flagC = s.life === 'failed' || s.crew.some(m => m.state === 'failed') ? STATE.failed : s.needs ? GOLD : PROJECTS.find(p => p.id === s.project).color
+  if (detail === 'tiny') {
+    const g = Array.from({ length: 6 }, () => Array(9).fill(null))
+    const put = (x, y, col) => { if (g[y]?.[x] !== undefined) g[y][x] = col }
+    for (let y = 0; y < 3; y++) put(3, y, WOOD)
+    put(4, 0, flagC); if (frame % 2) put(5, 0, flagC)
+    for (let x = 1; x < 8; x++) put(x, 3, DECK)
+    for (let x = 0; x < 9; x++) put(x, 4, HULL)
+    for (let x = 2; x < 7; x++) put(x, 5, HULL)
+    return g
+  }
+  const step = detail === 'faces' ? 6 : 4
+  const crewW = n * step
+  const w = crewW + 10, deckTop = detail === 'faces' ? 9 : 6, h = deckTop + 7
+  const g = Array.from({ length: h }, () => Array(w).fill(null))
+  const put = (x, y, col) => { if (g[y]?.[x] !== undefined) g[y][x] = col }
+  // hull from above at an angle: rounded stern on the left, pointed bow on the right
+  for (let y = deckTop; y < h - 1; y++) {
+    const inset = Math.abs(y - (deckTop + 2.5)) > 2 ? 1 : 0
+    for (let x = 1 + inset; x < w - 3 + (y === deckTop + 2 || y === deckTop + 3 ? 2 : 0); x++) put(x, y, y === h - 2 ? HULL : DECK)
+  }
+  for (let x = 2; x < w - 3; x++) put(x, h - 1, HULL)
+  for (let x = 2; x < w - 3; x++) put(x, deckTop, HULL)
+  // mast and flag at the stern
+  for (let y = 0; y < deckTop + 2; y++) put(3, y, WOOD)
+  const sailing = s.life === 'sailing'
+  const fy = sailing ? 0 : 3
+  put(4, fy, flagC); put(5, fy, flagC); if (sailing && frame % 2) put(6, fy, flagC); else put(5, fy + 1, flagC)
+  // sail up while the crew works, rolled up on the boom when the crew has stopped
+  if (sailing) for (let y = 2; y < deckTop; y++) for (let x = Math.max(0, 4 - y); x <= 2; x++) put(x, y, SAIL)
+  else for (let x = 0; x <= 2; x++) put(x, deckTop - 1, SAIL)
+  // crew on deck
+  s.crew.forEach((m, i) => {
+    const hop = sailing && m.state === 'running' && (frame + i) % 2 ? 1 : 0
+    const x = 6 + i * step
+    if (detail === 'faces') return face(put, x, deckTop - 4 - hop, m)
+    const hat = hatFor(m.role)
+    put(x, deckTop - 1 - hop, hat.color); put(x + 1, deckTop - 1 - hop, hat.color); put(x + 2, deckTop - 1 - hop, hat.color)
+    put(x + 1, deckTop - hop, m.state === 'queued' ? SLEEPY : SKINS[(hash(m.role) >>> 3) % SKINS.length])
+    put(x + 1, deckTop + 1, STATE[m.state])
+  })
+  if (s.life === 'abandoned') {
+    for (let y = 0; y < deckTop - 2; y++) g[y].fill(null)
+    g.forEach(row => row.forEach((col, x) => { if (col) { const v = parseInt(col.slice(1, 3), 16) * 0.3 + parseInt(col.slice(3, 5), 16) * 0.59 + parseInt(col.slice(5, 7), 16) * 0.11; const h2 = Math.round(v * 0.6 + 40).toString(16).padStart(2, '0'); row[x] = `#${h2}${h2}${h2}` } }))
+  }
+  return g
+}
+
+// ---------- canvas helpers ----------
+const cv = document.getElementById('sea'), ctx = cv.getContext('2d'), ui = document.getElementById('ui')
+const dpr = Math.max(1, Math.round(devicePixelRatio))
+function resize() { cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px'; ctx.imageSmoothingEnabled = false }
+addEventListener('resize', () => { resize(); render() })
+resize()
+// draw a grid with its top-left at css (x,y), each art pixel = px css pixels
+function blit(g, x, y, px) {
+  const p = px * dpr, ox = Math.round(x * dpr), oy = Math.round(y * dpr)
+  g.forEach((row, r) => {
+    let i = 0
+    while (i < row.length) {
+      const col = row[i]; if (!col) { i++; continue }
+      let e = i; while (row[e + 1] === col) e++
+      ctx.fillStyle = col; ctx.fillRect(ox + i * p, oy + r * p, (e - i + 1) * p, p); i = e + 1
+    }
+  })
+}
+const gw = g => g[0].length, gh = g => g.length
+function water(frame, px, tint) {
+  const p = px * dpr * 4
+  for (let y = 0; y < cv.height; y += p) for (let x = 0; x < cv.width; x += p) {
+    ctx.fillStyle = ((x / p + y / p) % 2) ? SEA_A : SEA_B; ctx.fillRect(x, y, p, p)
+    if (hash(`${x / p},${y / p}`) % 23 === (frame % 23)) { ctx.fillStyle = FOAM; ctx.fillRect(x + p / 4, y + p / 2, p / 2, px * dpr) }
+  }
+  if (tint) { ctx.fillStyle = tint; ctx.fillRect(0, 0, cv.width, cv.height) }
+}
+// the "needs captain" beacon: a blinking pixel "!" in a gold box above the ship
+const BANG = ['.XXX.', 'XX.XX', 'XX.XX', 'XX.XX', 'XXXXX', 'XX.XX', '.XXX.'].map(r => [...r].map(ch => ch === 'X' ? GOLD : ch === '.' ? '#2a1d00' : null))
+function beacon(cx, y, px, frame) { if (frame % 4 < 3) blit(BANG, cx - 2.5 * px, y - (8 + (frame % 2)) * px, px) }
+let hits = []
+const hit = (x, y, w, h, on) => hits.push({ x, y, w, h, on })
+cv.onclick = e => { const h = [...hits].reverse().find(h => e.clientX >= h.x && e.clientX <= h.x + h.w && e.clientY >= h.y && e.clientY <= h.y + h.h); h?.on() }
+const label = (x, y, html, cls = '') => `<div class="label ${cls}" style="left:${x}px;top:${y}px">${html}</div>`
+const needsBadge = s => s.needs ? (s.crew.some(m => m.state === 'failed') ? `<span class="fail">!</span>` : `<span class="needs">!</span>`) : ''
+const crewTable = s => `<table class="crew">${s.crew.map(m => `<tr><td>${m.role}</td><td style="color:${STATE[m.state]}">● ${m.state}</td></tr>`).join('')}</table>`
+const ago = t => `${Math.round((now - t) / 60000)} min ago`
+const jumpButtons = `<button onclick="alert('prototype: jump back to the session')">jump back</button>`
+
+// ---------- view state shared by all variants ----------
+// zoom: {level:'armada'} | {level:'fleet', project} | {level:'ship', id}
+// cursor: the fleet (armada level) or ship (fleet and ship level) the keyboard points at
+let zoom = { level: 'armada' }, frame = 0, cursor = PROJECTS[0].id
+const projectOf = id => SHIPS.find(s => s.id === id)?.project
+const go = z => {
+  if (z.level === 'ship') cursor = z.id
+  if (z.level === 'fleet' && projectOf(cursor) !== z.project) cursor = (VARIANTS[variant].nav ?? fleetOf)(PROJECTS.find(p => p.id === z.project))[0].id
+  zoom = z; render()
+}
+function up() {
+  if (zoom.level === 'ship') { cursor = zoom.id; go({ level: 'fleet', project: projectOf(zoom.id) }) }
+  else if (zoom.level === 'fleet') { cursor = zoom.project; go({ level: 'armada' }) }
+}
+function down() {
+  if (zoom.level === 'armada') go({ level: 'fleet', project: projectOf(cursor) ?? cursor })
+  else if (zoom.level === 'fleet') go({ level: 'ship', id: cursor })
+}
+function move(d) {
+  const nav = VARIANTS[variant].nav ?? fleetOf
+  const ids = zoom.level === 'armada' ? PROJECTS.map(p => p.id) : nav(PROJECTS.find(p => p.id === projectOf(cursor))).map(s => s.id)
+  const next = ids[(ids.indexOf(cursor) + d + ids.length) % ids.length]
+  if (zoom.level === 'ship') go({ level: 'ship', id: next })
+  else { cursor = next; render() }
+}
+addEventListener('keydown', e => {
+  if (e.key === 'Escape') up()
+  if (!VARIANTS[variant].keys) return
+  const act = { ArrowLeft: up, ArrowRight: down, Enter: down, ArrowUp: () => move(-1), ArrowDown: () => move(1) }[e.key]
+  if (act) { e.preventDefault(); act() }
+})
+const crumbs = () => {
+  const parts = [`<a onclick="go({level:'armada'})">armada</a>`]
+  if (zoom.level !== 'armada') { const pid = zoom.project ?? SHIPS.find(s => s.id === zoom.id).project; parts.push(`<a onclick="go({level:'fleet',project:'${pid}'})">${PROJECTS.find(p => p.id === pid).name}</a>`) }
+  if (zoom.level === 'ship') parts.push(SHIPS.find(s => s.id === zoom.id).title)
+  const keys = VARIANTS[variant].keys ? '↑↓ move · → in · ← out' : 'Esc = up'
+  return `<div class="hud crumbs">${parts.join(' › ')} <span class="dim">(${keys})</span></div>`
+}
+
+// ---------- Variant A: Open sea. One world, fleets are formations, camera zooms 1x / 3x / 6x ----------
+// Every ship has a fixed spot in the world. Zoom moves a camera; the side list mirrors "needs captain".
+const A = {
+  name: 'Open sea (camera zoom)',
+  render() {
+    const ZOOM = { armada: 3, fleet: 5, ship: 10 }[zoom.level]
+    const detail = { armada: 'tiny', fleet: 'deck', ship: 'faces' }[zoom.level]
+    // world positions in art pixels: fleets placed around the sea, ships in a V formation
+    const spots = {}
+    PROJECTS.forEach((p, pi) => {
+      const fx = [40, 250, 150][pi], fy = [40, 40, 170][pi]
+      fleetOf(p).forEach((s, i) => { spots[s.id] = { x: fx + (i % 2) * 48 + (Math.floor(i / 2) % 2) * 24, y: fy + Math.floor(i / 2) * 34 } })
+    })
+    const focus = zoom.level === 'armada' ? { x: 150, y: 120 } : zoom.level === 'fleet'
+      ? (() => { const ss = SHIPS.filter(s => s.project === zoom.project).map(s => spots[s.id]); return { x: ss.reduce((a, b) => a + b.x, 0) / ss.length + 10, y: ss.reduce((a, b) => a + b.y, 0) / ss.length } })()
+      : { x: spots[zoom.id].x + 16, y: spots[zoom.id].y + 6 }
+    const toScreen = (wx, wy) => [Math.round(innerWidth / 2 + (wx - focus.x) * ZOOM), Math.round(innerHeight / 2 + (wy - focus.y) * ZOOM)]
+    water(frame, ZOOM / 2)
+    let html = ''
+    PROJECTS.forEach(p => {
+      const ss = fleetOf(p)
+      const [lx, ly] = toScreen(spots[ss[0].id].x + 36, spots[ss[0].id].y - 22)
+      html += label(lx, ly, `${p.name} ${needsCount(ss) ? `<span class="needs">${needsCount(ss)}</span>` : ''}`, 'big')
+      ss.forEach(s => {
+        const g = shipGrid(s, frame, detail)
+        const [sx, sy] = toScreen(spots[s.id].x, spots[s.id].y)
+        blit(g, sx, sy, ZOOM)
+        if (s.needs) beacon(sx + gw(g) * ZOOM / 2, sy, Math.max(3, Math.round(ZOOM / 2)), frame)
+        hit(sx, sy, gw(g) * ZOOM, gh(g) * ZOOM, () => go(zoom.level === 'armada' ? { level: 'fleet', project: p.id } : { level: 'ship', id: s.id }))
+        if (zoom.level === 'fleet') html += label(sx + gw(g) * ZOOM / 2, sy + gh(g) * ZOOM + 4, `${s.title}<br><span class="dim">${phase(s).role} · ${done(s)}/${s.crew.length}</span>`)
+      })
+    })
+    if (zoom.level === 'ship') {
+      const s = SHIPS.find(x => x.id === zoom.id)
+      html += `<div class="hud" style="right:12px;top:12px;width:300px"><h3>${s.title}</h3>${s.needs ? `<p>${needsBadge(s)} ${s.needs}</p>` : ''}<p class="dim">Goal: ${s.goal}<br>${s.mrs} MR · ${s.stage ?? 'sailing'} · ${ago(s.updated)}</p>${crewTable(s)}<p>${jumpButtons}</p></div>`
+    }
+    const hot = SHIPS.filter(s => s.needs)
+    html += `<div class="hud" style="left:12px;bottom:60px;width:280px"><h3>needs captain (${hot.length})</h3>${hot.map(s => `<div class="row hot" onclick="go({level:'ship',id:'${s.id}'})">${needsBadge(s)} ${s.title}<br><span class="dim">${s.needs}</span></div>`).join('')}</div>`
+    html += `<div class="hud" style="right:12px;bottom:60px"><button onclick="alert('prototype: new ship')">+ new ship</button></div>`
+    return html
+  },
+}
+
+// ---------- Variant B: Shipping lanes. Each fleet is a lane; ships sail left→right by chain progress ----------
+// x position = how far the crew chain has got. The harbour (finished) is on the right edge.
+const B = {
+  name: 'Shipping lanes (progress = distance)',
+  render() {
+    let html = ''
+    const lanes = zoom.level === 'armada' ? PROJECTS : PROJECTS.filter(p => p.id === (zoom.project ?? SHIPS.find(s => s.id === zoom.id).project))
+    const top = 60, laneH = zoom.level === 'armada' ? (innerHeight - 140) / lanes.length : innerHeight - 140
+    const left = 160, right = innerWidth - 120
+    ctx.fillStyle = '#0d1b2a'; ctx.fillRect(0, 0, cv.width, cv.height)
+    lanes.forEach((p, li) => {
+      const y0 = top + li * laneH
+      ctx.fillStyle = li % 2 ? SEA_A : SEA_B; ctx.fillRect(0, Math.round(y0 * dpr), cv.width, Math.round((laneH - 6) * dpr))
+      // harbour dock on the right
+      ctx.fillStyle = WOOD; ctx.fillRect(Math.round((right + 30) * dpr), Math.round(y0 * dpr), 16 * dpr, Math.round((laneH - 6) * dpr))
+      const ss = fleetOf(p)
+      html += `<div class="hud" style="left:8px;top:${y0 + 4}px;width:140px;cursor:pointer" onclick="go({level:'fleet',project:'${p.id}'})"><h3 style="color:${p.color}">${p.name}</h3>${ss.length} ships ${needsCount(ss) ? `<br><span class="needs">${needsCount(ss)} need you</span>` : ''}</div>`
+      html += label(right + 38, y0 + 4, 'harbour', 'dim')
+      const px = zoom.level === 'armada' ? 3 : 5
+      ss.forEach((s, i) => {
+        if (zoom.level === 'ship' && s.id !== zoom.id) return
+        const g = shipGrid(s, frame, zoom.level === 'ship' ? 'faces' : 'deck')
+        const P = zoom.level === 'ship' ? 10 : px
+        const progress = done(s) / s.crew.length
+        const sx = zoom.level === 'ship' ? 200 : left + progress * (right - left - gw(g) * P)
+        const rows = Math.max(1, Math.floor((laneH - 20) / (gh(g) * P + 30)))
+        const sy = zoom.level === 'ship' ? y0 + 120 : y0 + 14 + (i % rows) * (gh(g) * P + 30)
+        // wake behind the ship shows how far it came
+        ctx.fillStyle = FOAM; ctx.fillRect(Math.round(left * dpr), Math.round((sy + gh(g) * P - P) * dpr), Math.max(0, Math.round((sx - left) * dpr)), P * dpr / 2)
+        blit(g, sx, sy, P)
+        if (s.needs) beacon(sx + gw(g) * P / 2, sy, P / 2 + 1, frame)
+        hit(sx, sy, gw(g) * P, gh(g) * P, () => go({ level: 'ship', id: s.id }))
+        if (zoom.level !== 'ship') html += label(sx + gw(g) * P + 8, sy + 4, `${s.title} <span class="dim">${phase(s).role}</span>`, 'side')
+      })
+      if (zoom.level === 'ship') {
+        const s = SHIPS.find(x => x.id === zoom.id)
+        // chain as stepping stones along the lane
+        html += `<div class="hud" style="left:200px;top:${y0 + 300}px;right:140px"><h3>${s.title}</h3>${s.needs ? `<p>${needsBadge(s)} ${s.needs}</p>` : ''}<p class="dim">Goal: ${s.goal} · ${s.mrs} MR · ${ago(s.updated)}</p><div>${s.crew.map(m => `<span style="border:2px solid ${STATE[m.state]};padding:2px 6px;margin-right:4px">${m.role}</span>`).join('→ ')} → harbour</div><p>${jumpButtons}</p></div>`
+      }
+    })
+    html += `<div class="hud" style="right:12px;top:12px"><button onclick="alert('prototype: new ship')">+ new ship</button></div>`
+    return html
+  },
+}
+
+// ---------- Variant C: Captain's bridge. The queue of ships that need you is the main view; the sea is a small chart ----------
+const C = {
+  name: "Captain's bridge (queue first)",
+  render() {
+    ctx.fillStyle = '#0d1b2a'; ctx.fillRect(0, 0, cv.width, cv.height)
+    const chartX = 420, chartW = innerWidth - chartX - 20, chartY = 70, chartH = innerHeight - 160
+    // the chart: a framed sea, fleets as islands with ships moored around them
+    ctx.save(); ctx.beginPath(); ctx.rect(chartX * dpr, chartY * dpr, chartW * dpr, chartH * dpr); ctx.clip()
+    water(frame, 3, '#0d1b2a55'); ctx.restore()
+    ctx.strokeStyle = '#c9a66b'; ctx.lineWidth = 4 * dpr; ctx.strokeRect(chartX * dpr, chartY * dpr, chartW * dpr, chartH * dpr)
+    let html = ''
+    const shown = zoom.level === 'armada' ? PROJECTS : PROJECTS.filter(p => p.id === (zoom.project ?? SHIPS.find(s => s.id === zoom.id).project))
+    shown.forEach((p, pi) => {
+      const cols = shown.length
+      const cx = chartX + chartW * (pi + 0.5) / cols, cy = chartY + chartH / 2
+      const R = Math.min(chartW / cols, chartH) * 0.32
+      // island
+      const isl = 6 * dpr
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++) if (dx * dx / 16 + dy * dy / 9 <= 1) {
+        ctx.fillStyle = dx * dx / 16 + dy * dy / 9 > 0.6 ? '#e6d29a' : '#5f9e4a'; ctx.fillRect(Math.round(cx * dpr + dx * isl), Math.round(cy * dpr + dy * isl), isl, isl)
+      }
+      ctx.fillStyle = p.color; ctx.fillRect(Math.round(cx * dpr), Math.round(cy * dpr - 5 * isl), isl / 2, 3 * isl); ctx.fillRect(Math.round(cx * dpr + isl / 2), Math.round(cy * dpr - 5 * isl), isl * 1.5, isl)
+      html += label(cx, cy + 30, p.name, 'big')
+      hit(cx - 30, cy - 30, 60, 60, () => go({ level: 'fleet', project: p.id }))
+      const ss = fleetOf(p)
+      ss.forEach((s, i) => {
+        const a = (i / ss.length) * Math.PI * 2 - Math.PI / 2
+        const detail = zoom.level === 'armada' ? 'tiny' : 'deck'
+        const P = zoom.level === 'armada' ? 3 : 4
+        const g = shipGrid(s, frame, detail)
+        const sx = cx + Math.cos(a) * R - gw(g) * P / 2, sy = cy + Math.sin(a) * R * 0.8 - gh(g) * P / 2
+        const sel = zoom.level === 'ship' && zoom.id === s.id
+        if (sel) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * dpr; ctx.strokeRect((sx - 4) * dpr, (sy - 4) * dpr, (gw(g) * P + 8) * dpr, (gh(g) * P + 8) * dpr) }
+        blit(g, sx, sy, P)
+        if (s.needs) beacon(sx + gw(g) * P / 2, sy, 2, frame)
+        hit(sx, sy, gw(g) * P, gh(g) * P, () => go({ level: 'ship', id: s.id }))
+        if (zoom.level !== 'armada') html += label(sx + gw(g) * P / 2, sy + gh(g) * P + 2, s.title)
+      })
+    })
+    // the bridge: left column, sorted by who needs the captain and for how long
+    const list = (zoom.level === 'armada' ? SHIPS : SHIPS.filter(s => s.project === (zoom.project ?? SHIPS.find(x => x.id === zoom.id).project)))
+      .slice().sort((a, b) => (!!b.needs - !!a.needs) || (a.updated - b.updated))
+    const sel = zoom.level === 'ship' ? SHIPS.find(s => s.id === zoom.id) : null
+    html += `<div class="hud" style="left:12px;top:70px;width:390px;bottom:90px;overflow:auto"><h3>bridge · ${needsCount(list)} need you</h3>${list.map(s => `
+      <div class="row ${s.needs ? 'hot' : ''}" style="${sel === s ? 'background:#1b3550' : ''}" onclick="go({level:'ship',id:'${s.id}'})">
+        ${needsBadge(s)} <b>${s.title}</b> <span class="dim">· ${PROJECTS.find(p => p.id === s.project).name}</span><br>
+        <span class="dim">${s.needs ?? `${phase(s).role} ${phase(s).state}`} · ${ago(s.updated)}</span>
+        <div>${s.crew.map(m => `<span title="${m.role} ${m.state}" style="display:inline-block;width:14px;height:6px;margin-right:2px;background:${STATE[m.state]}"></span>`).join('')}</div>
+        ${sel === s ? `<p class="dim">Goal: ${s.goal} · ${s.mrs} MR</p>${crewTable(s)}<p>${jumpButtons}</p>` : ''}
+      </div>`).join('')}</div>`
+    if (sel) {
+      // ship zoom: big face portrait of the crew in the chart corner
+      const g = shipGrid(sel, frame, 'faces')
+      const P = 8, bx = chartX + chartW - gw(g) * P - 20, by = chartY + chartH - gh(g) * P - 20
+      ctx.fillStyle = '#0d1b2acc'; ctx.fillRect((bx - 10) * dpr, (by - 80) * dpr, (gw(g) * P + 20) * dpr, (gh(g) * P + 90) * dpr)
+      blit(g, bx, by, P)
+      if (sel.needs) beacon(bx + gw(g) * P / 2, by, 4, frame)
+    }
+    html += `<div class="hud" style="left:12px;bottom:40px"><button onclick="alert('prototype: new ship')">+ new ship</button></div>`
+    return html
+  },
+}
+
+// ---------- Variant D: mix. B's lanes + per-crew stepping stones, C's side panel, A's needs panel, calm sea ----------
+// Each ship has its own row. One stone per crew member along the row; the ship sits at the member now working.
+const CALM = ['#1e4a72', '#204e78'], WAVE = '#2a5c88'
+function calmLane(x, y, w, h, shade) {
+  ctx.fillStyle = CALM[shade]; ctx.fillRect(Math.round(x * dpr), Math.round(y * dpr), Math.round(w * dpr), Math.round(h * dpr))
+  // a few slow wave dashes, staggered per row so they never line up into columns
+  ctx.fillStyle = WAVE
+  for (let r = 0; r * 22 < h - 10; r++) for (let k = 0; k < w / 140; k++) {
+    const wx = x + ((k * 140 + r * 53 + frame * 2 + hash(`${y},${r}`) % 90) % w)
+    ctx.fillRect(Math.round(wx * dpr), Math.round((y + 10 + r * 22) * dpr), 12 * dpr, 2 * dpr)
+  }
+}
+// Layout of every lane and ship row for a zoom state. Hidden lanes slide off the top or bottom.
+// Hidden ships in the shown lane fold into the selected row. Transitions tween between two layouts.
+function layoutD(z) {
+  const pid = z.project ?? projectOf(z.id)
+  const P = { armada: 2, fleet: 4, ship: 8 }[z.level]
+  const detail = P >= 6 ? 'faces' : 'deck'
+  const out = { P, lanes: {}, ships: {} }
+  const focus = PROJECTS.findIndex(p => p.id === pid)
+  const head = 28
+  let y = 64
+  PROJECTS.forEach((p, li) => {
+    const ss = fleetOf(p)
+    const rowH = gh(shipGrid(ss[0], 0, detail)) * P + (z.level === 'armada' ? 22 : 40)
+    if (z.level !== 'armada' && p.id !== pid) {
+      const ly = li < focus ? -260 : innerHeight + 60
+      out.lanes[p.id] = { y: ly, h: head + ss.length * rowH, a: 0 }
+      ss.forEach((s, i) => { out.ships[s.id] = { y: ly + head + i * rowH, a: 0 } })
+      return
+    }
+    const shown = ss.filter(s => z.level !== 'ship' || s.id === z.id)
+    out.lanes[p.id] = { y, h: head + shown.length * rowH + 8, a: 1 }
+    ss.forEach(s => {
+      const k = shown.indexOf(s)
+      out.ships[s.id] = k < 0 ? { y: y + head, a: 0 } : { y: y + head + k * rowH, a: 1 }
+    })
+    y += out.lanes[p.id].h + 8
+  })
+  return out
+}
+const lerp = (a, b, t) => a + (b - a) * t
+const mixObj = (f, g, t) => Object.fromEntries(Object.keys(g).map(k => [k, Object.fromEntries(Object.keys(g[k]).map(q => [q, lerp(f[k][q], g[k][q], t)]))]))
+const mixLayout = (f, g, t) => ({ P: lerp(f.P, g.P, t), lanes: mixObj(f.lanes, g.lanes, t), ships: mixObj(f.ships, g.ships, t) })
+const D = {
+  name: 'Mix: lanes + stones, needs + ships panel',
+  keys: true,
+  more() { if (!D.raf) D.raf = requestAnimationFrame(() => { D.raf = 0; render() }) },
+  render() {
+    ctx.fillStyle = '#0d1b2a'; ctx.fillRect(0, 0, cv.width, cv.height)
+    const panelW = 360, left = 170, right = innerWidth - panelW - 70
+    const key = JSON.stringify(zoom) + innerWidth + 'x' + innerHeight
+    if (D.key !== key) { D.to = layoutD(zoom); D.from = D.cur ?? D.to; D.t0 = performance.now(); D.key = key }
+    const t = Math.min(1, (performance.now() - D.t0) / 450), ease = 1 - (1 - t) ** 3
+    const L = D.cur = t < 1 ? mixLayout(D.from, D.to, ease) : D.to
+    if (t < 1) D.more()
+    const P = L.P, detail = P >= 6 ? 'faces' : 'deck'
+    const op = a => `opacity:${a.toFixed(2)};`
+    let html = '', target = null
+    PROJECTS.forEach((p, li) => {
+      const ln = L.lanes[p.id]
+      if (ln.a < 0.01 && (ln.y + ln.h < 0 || ln.y > innerHeight)) return
+      ctx.globalAlpha = Math.max(ln.a, 0.15)
+      calmLane(0, ln.y, right + 60, ln.h, li % 2)
+      ctx.fillStyle = WOOD; ctx.fillRect(Math.round((right + 40) * dpr), Math.round(ln.y * dpr), 12 * dpr, Math.round(ln.h * dpr))
+      if (zoom.level === 'armada' && cursor === p.id) target = { y: ln.y, h: ln.h }
+      html += `<div style="position:fixed;left:12px;top:${ln.y + 5}px;${op(Math.max(ln.a, 0.15))}cursor:pointer;font-weight:bold;letter-spacing:1px" onclick="go({level:'fleet',project:'${p.id}'})"><span style="color:${p.color}">▶ ${p.name.toUpperCase()}</span> <span class="dim">${fleetOf(p).length} ships</span> ${needsCount(fleetOf(p)) ? `<span class="needs">${needsCount(fleetOf(p))} need you</span>` : ''}</div>`
+      fleetOf(p).forEach(s => {
+        const sl = L.ships[s.id], a = sl.a * Math.max(ln.a, 0.15)
+        if (a < 0.02) return
+        ctx.globalAlpha = a
+        const g = shipGrid(s, frame, detail)
+        const n = s.crew.length, rowY = sl.y
+        const stoneX = k => left + (k + 1) / (n + 1) * (right - left)
+        const lineY = rowY + gh(g) * P + 4
+        if (zoom.level !== 'armada' && cursor === s.id) target = { y: rowY - 4, h: gh(g) * P + (P >= 3 ? 34 : 16) }
+        ctx.fillStyle = '#3d6f9e'; ctx.fillRect(Math.round(left * dpr), Math.round(lineY * dpr), Math.round((right + 40 - left) * dpr), dpr)
+        s.crew.forEach((m, k) => {
+          const sz = 4 + P
+          ctx.fillStyle = STATE[m.state]; ctx.fillRect(Math.round((stoneX(k) - sz / 2) * dpr), Math.round((lineY - sz / 2) * dpr), Math.round(sz * dpr), Math.round(sz * dpr))
+          if (P >= 3) html += label(stoneX(k), lineY + 8, `<span style="color:${STATE[m.state]};${op(a)}">${m.role}</span>`)
+        })
+        const at = s.crew.findIndex(m => m.state !== 'done')
+        const cx = at < 0 ? right + 46 : stoneX(at)
+        const sx = cx - gw(g) * P / 2, sy = rowY + (s.crew.some(m => m.state === 'running') && frame % 2 ? P / 2 : 0)
+        blit(g, sx, sy, P)
+        if (s.needs) beacon(cx, sy, Math.max(3, P / 2), frame)
+        if (sl.a > 0.5) hit(sx, sy, gw(g) * P, gh(g) * P + 10, () => go({ level: 'ship', id: s.id }))
+        html += `<div class="label side" style="left:${left - 6}px;top:${rowY + 2}px;text-align:right;transform:translateX(-100%);max-width:160px;overflow:hidden;text-overflow:ellipsis;${op(a)}">${needsBadge(s)} ${s.title}</div>`
+      })
+    })
+    ctx.globalAlpha = 1
+    // keyboard cursor: a white frame that glides to the fleet or ship it points at
+    if (target && zoom.level !== 'ship') {
+      D.hl = D.hl ? { y: lerp(D.hl.y, target.y, 0.3), h: lerp(D.hl.h, target.h, 0.3) } : target
+      if (Math.abs(D.hl.y - target.y) + Math.abs(D.hl.h - target.h) > 0.5) D.more(); else D.hl = target
+      ctx.strokeStyle = '#ffffffcc'; ctx.lineWidth = 2 * dpr
+      ctx.strokeRect(4 * dpr, Math.round(D.hl.y * dpr), Math.round((right + 52) * dpr), Math.round(D.hl.h * dpr))
+    } else D.hl = null
+
+    // right column: needs-captain panel on top, ships panel below. Kept in its own element so clicks survive the tween.
+    const pid = zoom.project ?? projectOf(zoom.id)
+    const hot = SHIPS.filter(s => s.needs)
+    const list = SHIPS.filter(s => zoom.level === 'armada' || s.project === pid).slice().sort((a, b) => (!!b.needs - !!a.needs) || (a.updated - b.updated))
+    const open = zoom.level === 'armada' ? null : SHIPS.find(s => s.id === cursor)
+    const panel = `<div style="position:fixed;right:12px;top:64px;width:${panelW}px;bottom:70px;display:flex;flex-direction:column;gap:10px">
+      <div class="hud" style="position:static;border-color:#e5c04b"><h3 style="color:#e5c04b">needs captain (${hot.length})</h3>${hot.map(s => `<div class="row hot" onclick="go({level:'ship',id:'${s.id}'})">${needsBadge(s)} ${s.title}<br><span class="dim">${s.needs}</span></div>`).join('')}</div>
+      <div class="hud" style="position:static;flex:1;overflow:auto"><h3>ships</h3>${list.map(s => `
+      <div class="row ${open === s ? 'cur' : ''}" style="${open === s ? 'background:#1b3550;' : ''}${zoom.level === 'armada' && s.project === cursor ? 'border-left-color:#fff;' : ''}" onclick="go({level:'ship',id:'${s.id}'})">
+        ${needsBadge(s)} <b>${s.title}</b> <span class="dim">· ${PROJECTS.find(p => p.id === s.project).name}</span><br>
+        ${s.needs ? `<span style="color:${s.crew.some(m => m.state === 'failed') ? STATE.failed : GOLD}">Waiting for you: ${s.needs}</span><br>` : ''}
+        <span class="dim">${phase(s).role} ${phase(s).state} · ${ago(s.updated)}</span>
+        <div>${s.crew.map(m => `<span title="${m.role} ${m.state}" style="display:inline-block;width:14px;height:6px;margin-right:2px;background:${STATE[m.state]}"></span>`).join('')}</div>
+        ${open === s ? `<p class="dim">Goal: ${s.goal} · ${s.mrs} MR</p>${crewTable(s)}<p>${jumpButtons}</p>` : ''}
+      </div>`).join('')}</div></div>
+      <div class="hud" style="right:12px;top:12px"><button onclick="alert('prototype: new ship')">+ new ship</button></div>`
+    const el = document.getElementById('panel')
+    if (el.dataset.html !== panel) { el.dataset.html = panel; el.innerHTML = panel; el.querySelector('.cur')?.scrollIntoView({ block: 'nearest' }) }
+    return html
+  },
+}
+
+// ---------- Harbour variants E, F, G: built on D. Questions: how a ship looks once its crew stops,
+// how paused / failed / abandoned look, where the harbour is, and how long done ships stay. ----------
+const STAGES = ['in_review', 'merged', 'released', 'testing']
+const STAGE_NAME = { in_review: 'in review', merged: 'merged', released: 'released', testing: 'testing' }
+const LIFE_TAG = {
+  in_review: 'in review · waiting on reviewers', merged: 'merged · waiting for release', released: 'released · ready for you to test',
+  testing: 'testing', paused: 'paused by you', failed: 'failed · marked by you', abandoned: 'abandoned · MR closed',
+}
+const LIFE_SHORT = { in_review: 'in review', merged: 'merged', released: 'released · test it', testing: 'testing', paused: 'paused', failed: 'failed', abandoned: 'abandoned' }
+const LIFE_COLOR = { in_review: '#9fc3e6', merged: '#9fc3e6', released: '#c9a6ff', testing: '#c9a6ff', paused: '#8a8a8a', failed: STATE.failed, abandoned: '#6b6b6b' }
+let keepDays = 3, lifeVersion = 0
+const hiddenOld = s => (s.life === 'done' || s.life === 'abandoned') && s.docked > keepDays
+const onSea = s => s.life !== 'done' && !hiddenOld(s)
+const dockedOf = p => fleetOf(p).filter(s => s.life === 'done' && !hiddenOld(s)).sort((a, b) => a.docked - b.docked)
+const seaOf = p => fleetOf(p).filter(onSea)
+function setLife(id, life) {
+  const s = SHIPS.find(x => x.id === id)
+  s.life = life; s.docked = life === 'done' || life === 'abandoned' ? 0 : undefined
+  if (life === 'done' && zoom.level === 'ship') { cursor = id; zoom = { level: 'fleet', project: s.project } }
+  lifeVersion++; render()
+}
+function lifeButtons(s) {
+  const b = (life, text) => `<button onclick="event.stopPropagation();setLife('${s.id}','${life}')">${text}</button> `
+  const auto = t => `<span class="dim">${t}</span><br>`
+  return {
+    sailing: b('paused', 'pause') + b('failed', 'mark failed') + b('in_review', '(demo) crew done'),
+    in_review: auto('fleet checks the MR host') + b('merged', 'mark merged') + b('abandoned', '(demo) MR closed'),
+    merged: auto('no release check: mark by hand') + b('released', 'mark released'),
+    released: b('testing', 'start testing'),
+    testing: b('done', 'done → harbour') + b('sailing', 'bug found → back to sea'),
+    paused: b('sailing', 'resume') + b('failed', 'mark failed'),
+    failed: b('sailing', 'back to sea'),
+    abandoned: b('sailing', 'back to sea'),
+    done: b('testing', 'undock'),
+  }[s.life] ?? ''
+}
+const ANCHOR = ['..X..', '.XXX.', '..X..', 'X.X.X', '.XXX.'].map(r => [...r].map(ch => ch === 'X' ? '#c9d6e3' : null))
+
+// mode: 'dock' (harbour at the end of each lane), 'port' (one shared harbour lane), 'zones' (after-crew water + harbour in the panel)
+function harbourVariant(mode, name) {
+  const V = { name, keys: true, nav: seaOf }
+  const geo = () => {
+    const panelW = 360, left = 170, right = innerWidth - panelW - 70
+    const routeR = right - (mode === 'dock' ? 110 : 0)
+    return { panelW, left, right, routeR, crewW: (routeR - left) * 0.6, stageW: (routeR - left) * 0.4 }
+  }
+  const shipX = (s, G) => {
+    const n = s.crew.length
+    const stoneX = k => G.left + (k + 1) / (n + 1) * G.crewW
+    const stageX = j => G.left + G.crewW + (j + 0.5) / 4 * G.stageW
+    const j = STAGES.indexOf(s.life)
+    if (j >= 0) return stageX(j)
+    if (s.life === 'done') return G.routeR + 46
+    const at = s.crew.findIndex(m => m.state !== 'done')
+    return stoneX(at < 0 ? n - 1 : at)
+  }
+  function layout(z) {
+    const G = geo(), pid = z.project ?? projectOf(z.id)
+    const P = { armada: 2, fleet: 4, ship: 8 }[z.level], detail = P >= 6 ? 'faces' : 'deck'
+    const out = { P, lanes: {}, ships: {} }
+    const focus = PROJECTS.findIndex(p => p.id === pid), head = 28
+    let y = 64
+    PROJECTS.forEach((p, li) => {
+      const ss = fleetOf(p)
+      const rowH = gh(shipGrid(ss[0], 0, detail)) * P + (z.level === 'armada' ? 8 : 40)
+      const sea = ss.filter(s => onSea(s) || (z.level === 'ship' && z.id === s.id))
+      const shown = sea.filter(s => z.level !== 'ship' || s.id === z.id)
+      const dock = dockedOf(p)
+      const hidden = z.level !== 'armada' && p.id !== pid
+      const dockH = mode === 'dock' && z.level !== 'ship' ? Math.ceil(dock.length / 3) * 20 + 24 : 0
+      const h = head + Math.max(shown.length * rowH, dockH) + 8
+      const ly = hidden ? (li < focus ? -h - 80 : innerHeight + 80) : y
+      out.lanes[p.id] = { y: ly, h, a: hidden ? 0 : 1 }
+      ss.forEach(s => {
+        const k = shown.indexOf(s)
+        if (k >= 0) { out.ships[s.id] = { x: shipX(s, G), y: ly + head + k * rowH, p: P, tiny: 0, a: hidden ? 0 : 1 }; return }
+        const d = dock.indexOf(s)
+        if (d >= 0 && mode === 'dock') { out.ships[s.id] = { x: G.routeR + 30 + (d % 3) * 32, y: ly + head + 18 + Math.floor(d / 3) * 20, p: 2, tiny: 1, a: hidden || z.level === 'ship' ? 0 : 1 }; return }
+        out.ships[s.id] = { x: s.life === 'done' ? G.routeR + 46 : shipX(s, G), y: ly + head, p: P, tiny: 0, a: 0 }
+      })
+      if (!hidden) y += h + 8
+    })
+    if (mode === 'port') {
+      const visible = PROJECTS.filter(p => z.level === 'armada' || p.id === pid)
+      const portY = z.level === 'ship' ? innerHeight + 80 : y + 6
+      out.lanes.port = { y: portY, h: 70, a: z.level === 'ship' ? 0 : 1 }
+      let i = 0
+      PROJECTS.forEach(p => dockedOf(p).forEach(s => {
+        const show = visible.includes(p) && z.level !== 'ship'
+        out.ships[s.id] = { x: G.left + 20 + (show ? i++ : i) * 44, y: portY + 30, p: 2, tiny: 1, a: show ? 1 : 0 }
+      }))
+    }
+    return out
+  }
+  const mixAll = (f, g, t) => ({ P: lerp(f.P, g.P, t), lanes: mixObj(f.lanes, g.lanes, t), ships: mixObj(f.ships, g.ships, t) })
+  V.more = () => { if (!V.raf) V.raf = requestAnimationFrame(() => { V.raf = 0; render() }) }
+  V.render = () => {
+    ctx.fillStyle = '#0d1b2a'; ctx.fillRect(0, 0, cv.width, cv.height)
+    const G = geo()
+    const key = JSON.stringify(zoom) + innerWidth + 'x' + innerHeight + ':' + lifeVersion + ':' + keepDays
+    if (V.key !== key) { V.to = layout(zoom); V.from = V.cur && Object.keys(V.cur.lanes).length === Object.keys(V.to.lanes).length ? V.cur : V.to; V.t0 = performance.now(); V.key = key }
+    const t = Math.min(1, (performance.now() - V.t0) / 600), ease = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
+    const L = V.cur = t < 1 ? mixAll(V.from, V.to, ease) : V.to
+    if (t < 1) V.more()
+    const op = a => `opacity:${a.toFixed(2)};`
+    let html = '', target = null
+    const lineFor = (s, sl, g) => sl.y + gh(g) * sl.p + 4
+    PROJECTS.forEach((p, li) => {
+      const ln = L.lanes[p.id]
+      if (ln.a < 0.01 && (ln.y + ln.h < 0 || ln.y > innerHeight)) return
+      const la = Math.max(ln.a, 0.15)
+      ctx.globalAlpha = la
+      calmLane(0, ln.y, G.right + 60, ln.h, li % 2)
+      if (mode === 'zones') {
+        // after-crew water: lighter and still, split into the four stages
+        ctx.fillStyle = '#2d6a9c55'; ctx.fillRect(Math.round((G.left + G.crewW) * dpr), Math.round((ln.y + 24) * dpr), Math.round(G.stageW * dpr), Math.round((ln.h - 24) * dpr))
+        STAGES.forEach((st, j) => {
+          const x0 = G.left + G.crewW + j / 4 * G.stageW
+          ctx.fillStyle = '#ffffff22'; ctx.fillRect(Math.round(x0 * dpr), Math.round((ln.y + 24) * dpr), dpr, Math.round((ln.h - 24) * dpr))
+          html += label(x0 + G.stageW / 8, ln.y + 6, `<span class="dim" style="${op(la)}">${STAGE_NAME[st]}</span>`)
+        })
+        html += label(G.left + G.crewW / 2, ln.y + 6, `<span class="dim" style="${op(la)}">crew at work</span>`)
+      }
+      // harbour wall, and in 'dock' mode a dock with piers
+      ctx.fillStyle = WOOD
+      if (mode === 'dock') {
+        ctx.fillStyle = '#3a2a1a'; ctx.fillRect(Math.round((G.routeR + 14) * dpr), Math.round(ln.y * dpr), Math.round(110 * dpr), Math.round(ln.h * dpr))
+        ctx.fillStyle = WOOD
+        for (let k = 0; k < 4; k++) ctx.fillRect(Math.round((G.routeR + 14 + k * 32) * dpr), Math.round((ln.y + 30) * dpr), 4 * dpr, Math.round((ln.h - 34) * dpr))
+        const dk = dockedOf(p), old = fleetOf(p).filter(s => s.life === 'done' && hiddenOld(s)).length
+        html += `<div class="label side" style="left:${G.routeR + 20}px;top:${ln.y + 5}px;${op(la)}">⚓ ${dk.length}${old ? ` <span class="dim">+${old} old</span>` : ''}</div>`
+      } else ctx.fillRect(Math.round((G.routeR + 40) * dpr), Math.round(ln.y * dpr), 12 * dpr, Math.round(ln.h * dpr))
+      if (zoom.level === 'armada' && cursor === p.id) target = { y: ln.y, h: ln.h }
+      const sea = seaOf(p)
+      html += `<div style="position:fixed;left:12px;top:${ln.y + 5}px;${op(la)}cursor:pointer;font-weight:bold;letter-spacing:1px;z-index:1" onclick="go({level:'fleet',project:'${p.id}'})"><span style="color:${p.color}">▶ ${p.name.toUpperCase()}</span> <span class="dim">${sea.length} at sea</span> ${needsCount(sea) ? `<span class="needs">${needsCount(sea)} need you</span>` : ''}</div>`
+    })
+    if (mode === 'port' && L.lanes.port.a > 0.01) {
+      const pl = L.lanes.port
+      ctx.globalAlpha = pl.a
+      ctx.fillStyle = '#3a2a1a'; ctx.fillRect(0, Math.round(pl.y * dpr), Math.round((G.right + 60) * dpr), Math.round(pl.h * dpr))
+      ctx.fillStyle = WOOD; ctx.fillRect(0, Math.round((pl.y + pl.h - 8) * dpr), Math.round((G.right + 60) * dpr), 8 * dpr)
+      const old = SHIPS.filter(s => s.life === 'done' && hiddenOld(s)).length
+      html += `<div style="position:fixed;left:12px;top:${pl.y + 5}px;${op(pl.a)}font-weight:bold;letter-spacing:1px">⚓ HARBOUR <span class="dim">done in the last ${keepDays} days${old ? ` · ${old} older hidden` : ''}</span></div>`
+    }
+    // ships
+    SHIPS.forEach(s => {
+      const sl = L.ships[s.id], ln = L.lanes[s.project]
+      if (!sl || sl.a < 0.02) return
+      const a = sl.a * (sl.tiny > 0.5 && mode === 'port' ? 1 : Math.max(ln.a, 0.15)) * (s.life === 'abandoned' ? 0.6 : s.life === 'paused' ? 0.75 : 1)
+      ctx.globalAlpha = a
+      const g = shipGrid(s, frame, sl.tiny > 0.5 ? 'tiny' : sl.p >= 6 ? 'faces' : 'deck')
+      const sx = sl.tiny > 0.5 ? sl.x - gw(g) * sl.p / 2 : Math.min(sl.x - gw(g) * sl.p / 2, G.routeR + 36 - gw(g) * sl.p)
+      if (sl.tiny > 0.5) {
+        blit(g, sx, sl.y, sl.p)
+        hit(sx, sl.y, gw(g) * sl.p, gh(g) * sl.p, () => go({ level: 'ship', id: s.id }))
+        if (mode === 'port') html += label(sl.x, sl.y + 14, `<span style="font-size:10px;${op(a)}"><span style="color:${PROJECTS.find(p => p.id === s.project).color}">■</span> ${s.docked}d</span>`)
+        else html += `<div class="label side" style="left:${sl.x + 10}px;top:${sl.y - 2}px;font-size:10px;${op(a)}">${s.docked}d</div>`
+        return
+      }
+      const n = s.crew.length, lineY = lineFor(s, sl, g)
+      const stoneX = k => G.left + (k + 1) / (n + 1) * G.crewW
+      const stageX = j => G.left + G.crewW + (j + 0.5) / 4 * G.stageW
+      if (zoom.level !== 'armada' && cursor === s.id) target = { y: sl.y - 4, h: gh(g) * sl.p + (sl.p >= 3 ? 34 : 16) }
+      ctx.fillStyle = '#3d6f9e'; ctx.fillRect(Math.round(G.left * dpr), Math.round(lineY * dpr), Math.round((G.routeR + 40 - G.left) * dpr), dpr)
+      const sz = 4 + sl.p
+      s.crew.forEach((m, k) => {
+        ctx.fillStyle = STATE[m.state]; ctx.fillRect(Math.round((stoneX(k) - sz / 2) * dpr), Math.round((lineY - sz / 2) * dpr), Math.round(sz * dpr), Math.round(sz * dpr))
+        if (sl.p >= 3) html += label(stoneX(k), lineY + 8, `<span style="color:${STATE[m.state]};${op(a)}">${m.role}</span>`)
+      })
+      if (mode !== 'zones') {
+        // buoys for the stages after the crew: filled once passed, hollow ahead
+        const j = STAGES.indexOf(s.life)
+        STAGES.forEach((st, k) => {
+          const x = stageX(k), r = sz / 2 + 1, passed = j > k || s.life === 'done'
+          ctx.fillStyle = passed ? '#c9d6e3' : '#c9d6e355'
+          ctx.beginPath(); ctx.moveTo(x * dpr, (lineY - r) * dpr); ctx.lineTo((x + r) * dpr, lineY * dpr); ctx.lineTo(x * dpr, (lineY + r) * dpr); ctx.lineTo((x - r) * dpr, lineY * dpr); ctx.fill()
+          if (sl.p >= 3) html += label(x, lineY + 8, `<span class="dim" style="${op(a)}">${STAGE_NAME[st]}</span>`)
+        })
+      }
+      const sy = sl.y + (s.life === 'sailing' && s.crew.some(m => m.state === 'running') && frame % 2 ? sl.p / 2 : 0)
+      blit(g, sx, sy, sl.p)
+      if (s.life === 'paused') blit(ANCHOR, sx + gw(g) * sl.p + 2, sl.y + gh(g) * sl.p - 5 * Math.max(2, sl.p / 2), Math.max(2, sl.p / 2))
+      if (s.needs && s.life === 'sailing') beacon(sl.x, sy, Math.max(3, sl.p / 2), frame)
+      if (sl.a > 0.5) hit(sx, sy, gw(g) * sl.p, gh(g) * sl.p + 10, () => go({ level: 'ship', id: s.id }))
+      const tag = LIFE_SHORT[s.life] ? `${zoom.level === 'armada' ? ' ' : '<br>'}<span style="color:${LIFE_COLOR[s.life]};font-size:11px">${LIFE_SHORT[s.life]}</span>` : ''
+      html += `<div class="label side" style="left:${G.left - 6}px;top:${sl.y + 2}px;text-align:right;transform:translateX(-100%);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:${zoom.level === 'armada' ? 'nowrap' : 'normal'};${op(a)}">${s.life === 'sailing' ? needsBadge(s) : ''} ${s.title}${tag}</div>`
+    })
+    ctx.globalAlpha = 1
+    if (target && zoom.level !== 'ship') {
+      V.hl = V.hl ? { y: lerp(V.hl.y, target.y, 0.3), h: lerp(V.hl.h, target.h, 0.3) } : target
+      if (Math.abs(V.hl.y - target.y) + Math.abs(V.hl.h - target.h) > 0.5) V.more(); else V.hl = target
+      ctx.strokeStyle = '#ffffffcc'; ctx.lineWidth = 2 * dpr
+      ctx.strokeRect(4 * dpr, Math.round(V.hl.y * dpr), Math.round((G.right + 52) * dpr), Math.round(V.hl.h * dpr))
+    } else V.hl = null
+
+    // right column
+    const pid = zoom.project ?? projectOf(zoom.id)
+    const inScope = s => zoom.level === 'armada' || s.project === pid
+    const hot = SHIPS.filter(s => s.needs && s.life === 'sailing')
+    const rank = s => s.needs && s.life === 'sailing' ? 0 : s.life === 'sailing' ? 1 : STAGES.includes(s.life) ? 2 : 3
+    const list = SHIPS.filter(s => inScope(s) && onSea(s)).sort((a, b) => rank(a) - rank(b) || a.updated - b.updated)
+    const open = zoom.level === 'armada' ? null : SHIPS.find(s => s.id === cursor)
+    const row = s => `
+      <div class="row ${open === s ? 'cur' : ''}" style="${open === s ? 'background:#1b3550;' : ''}${zoom.level === 'armada' && s.project === cursor ? 'border-left-color:#fff;' : ''}${s.life === 'abandoned' ? 'opacity:.6;' : ''}" onclick="go({level:'ship',id:'${s.id}'})">
+        ${s.life === 'sailing' ? needsBadge(s) : ''} <b>${s.title}</b> <span class="dim">· ${PROJECTS.find(p => p.id === s.project).name}</span><br>
+        ${s.needs && s.life === 'sailing' ? `<span style="color:${s.crew.some(m => m.state === 'failed') ? STATE.failed : GOLD}">Waiting for you: ${s.needs}</span><br>` : ''}
+        ${LIFE_TAG[s.life] ? `<span style="color:${LIFE_COLOR[s.life]}">${LIFE_TAG[s.life]}</span><br>` : s.life === 'done' ? `<span class="dim">docked ${s.docked}d ago</span><br>` : `<span class="dim">${phase(s).role} ${phase(s).state} · ${ago(s.updated)}</span><br>`}
+        <div>${s.crew.map(m => `<span title="${m.role} ${m.state}" style="display:inline-block;width:14px;height:6px;margin-right:2px;background:${STATE[m.state]}"></span>`).join('')}${STAGES.map((st, k) => `<span title="${STAGE_NAME[st]}" style="display:inline-block;width:8px;height:6px;margin-right:2px;background:${STAGES.indexOf(s.life) >= k || s.life === 'done' ? '#c9d6e3' : '#c9d6e333'}"></span>`).join('')}</div>
+        ${open === s ? `<p class="dim">Goal: ${s.goal} · ${s.mrs} MR</p>${crewTable(s)}<p>${jumpButtons} ${lifeButtons(s)}</p>` : ''}
+      </div>`
+    const harbourList = SHIPS.filter(s => inScope(s) && s.life === 'done' && !hiddenOld(s)).sort((a, b) => a.docked - b.docked)
+    const oldCount = SHIPS.filter(s => inScope(s) && s.life === 'done' && hiddenOld(s)).length
+    const days = `<span class="dim">keep done ships</span> ${[1, 3, 7].map(d => `<button style="${d === keepDays ? 'background:#4f7aa3' : ''}" onclick="keepDays=${d};render()">${d}d</button>`).join(' ')}`
+    const panel = `<div style="position:fixed;right:12px;top:64px;width:${G.panelW}px;bottom:70px;display:flex;flex-direction:column;gap:10px">
+      <div class="hud" style="position:static;border-color:#e5c04b"><h3 style="color:#e5c04b">needs captain (${hot.length})</h3>${hot.map(s => `<div class="row hot" onclick="go({level:'ship',id:'${s.id}'})">${needsBadge(s)} ${s.title}<br><span class="dim">${s.needs}</span></div>`).join('')}</div>
+      <div class="hud" style="position:static;flex:1;overflow:auto"><h3>at sea</h3>${list.map(row).join('')}
+        ${mode === 'zones' || open?.life === 'done' ? `<h3 style="margin-top:12px">⚓ harbour (${harbourList.length})${oldCount ? ` <span class="dim">+${oldCount} hidden</span>` : ''}</h3>${harbourList.map(row).join('')}` : ''}
+      </div>
+      <div class="hud" style="position:static">${days}</div></div>
+      <div class="hud" style="right:12px;top:12px"><button onclick="alert('prototype: new ship')">+ new ship</button></div>`
+    const el = document.getElementById('panel')
+    if (el.dataset.html !== panel) { el.dataset.html = panel; el.innerHTML = panel; el.querySelector('.cur')?.scrollIntoView({ block: 'nearest' }) }
+    return html
+  }
+  return V
+}
+const E = harbourVariant('dock', 'Harbour: dock at the end of each lane')
+const F = harbourVariant('port', 'Harbour: one shared port lane')
+const G = harbourVariant('zones', 'Harbour: after-crew water, harbour in the panel')
+
+// ---------- switcher ----------
+const VARIANTS = { A, B, C, D, E, F, G }, KEYS = Object.keys(VARIANTS)
+let variant = new URLSearchParams(location.search).get('variant') ?? 'D'
+function setVariant(k) { variant = k; const u = new URL(location); u.searchParams.set('variant', k); history.replaceState(null, '', u); render() }
+const cycle = d => setVariant(KEYS[(KEYS.indexOf(variant) + d + KEYS.length) % KEYS.length])
+document.getElementById('prev').onclick = () => cycle(-1)
+document.getElementById('next').onclick = () => cycle(1)
+addEventListener('keydown', e => { if (e.key === '[') cycle(-1); if (e.key === ']') cycle(1) })
+
+function render() {
+  hits = []
+  ctx.globalAlpha = 1
+  ctx.clearRect(0, 0, cv.width, cv.height)
+  if (!VARIANTS[variant].keys) { const el = document.getElementById('panel'); el.innerHTML = ''; el.dataset.html = '' }
+  const html = VARIANTS[variant].render() + crumbs()
+  if (html !== ui.innerHTML) ui.innerHTML = html
+  document.getElementById('vlabel').textContent = `${variant} (${VARIANTS[variant].name}) · [ ] to switch`
+}
+setInterval(() => { frame++; render() }, 500)
+render()
+</script>
+</body>
+</html>

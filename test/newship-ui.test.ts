@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { newShipFormHtml, repoChoices, requestNewShip, startingHtml, stillStarting, WAIT_MS } from '../web/newship.js'
+import { newShipFormHtml, preselectedRepo, repoChoices, requestNewShip, startingHtml, stillStarting, WAIT_MS } from '../web/newship.js'
 import { panelHtml } from '../web/panel.js'
 
 const ID = '11111111-2222-3333-4444-555555555555'
@@ -23,6 +23,22 @@ test('a new fleet name offers every known repo', () => {
 test('a missing repo falls back to the worktree', () => {
   const only = [{ id: 'x', name: 'x', ships: [{ ship: 'S', mrs: [mr('', '/wt/only')] }] }]
   assert.deepEqual(repoChoices(only, 'x'), ['/wt/only'])
+})
+
+test('configured repos come first, then past repos, without duplicates or relative paths', () => {
+  const configured = [{ ...fleets[0], repos: ['/main/extra', 'relative/path', '/main/portal', '/main/extra', 7] }]
+  assert.deepEqual(repoChoices(configured, 'portal'), ['/main/extra', '/main/portal'])
+})
+
+test('a fleet with exactly one choice is preselected', () => {
+  assert.equal(preselectedRepo(fleets, 'portal'), '/main/portal')
+  assert.equal(preselectedRepo([{ id: 'n', name: 'n', repos: ['/a'], ships: [] }], 'n'), '/a')
+})
+
+test('no preselect with several choices, no choices or a typed new fleet', () => {
+  assert.equal(preselectedRepo([{ ...fleets[0], repos: ['/main/extra'] }], 'portal'), '')
+  assert.equal(preselectedRepo([{ id: 'n', name: 'n', ships: [] }], 'n'), '')
+  assert.equal(preselectedRepo(fleets.slice(0, 1), 'brand new'), '')
 })
 
 test('the form escapes values and shows the copy command for a fallback', () => {

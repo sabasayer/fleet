@@ -27,7 +27,7 @@ export type Ship = {
   needsCaptain: NeedsCaptain | null
   life: Life
 }
-export type FleetInfo = { name: string; color: string; release_check?: string }
+export type FleetInfo = { name: string; color: string; release_check?: string; repos?: string[] }
 export type Fleet = FleetInfo & { id: string; ships: Ship[] }
 export type State = { now: number; fleets: Fleet[] }
 
@@ -143,6 +143,7 @@ export function readState(env = process.env, now = Date.now()): State {
       name: config.name || id,
       color: config.color || colorFor(id),
       ...(config.release_check ? { release_check: config.release_check } : {}),
+      ...(Array.isArray(config.repos) ? { repos: config.repos.filter((r): r is string => typeof r === 'string' && r.startsWith('/')) } : {}),
       ships: ships.sort((a, b) => a.created.localeCompare(b.created)),
     }
   })

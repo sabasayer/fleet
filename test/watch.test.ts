@@ -249,3 +249,13 @@ test('backfill skips an MR that already has a SHA', async () => {
   assert.equal(calls.length, 0)
   assert.equal(stage(env).sha, 'have')
 })
+
+test('readState passes only absolute repos through', () => {
+  const { env } = setup({ f: { repos: ['/a', 'rel', 3, '/b'] } })
+  assert.deepEqual(readState(env).fleets[0].repos, ['/a', '/b'])
+})
+
+test('readState leaves repos out when the fleet has none', () => {
+  const { env } = setup({ f: {} })
+  assert.equal('repos' in readState(env).fleets[0], false)
+})

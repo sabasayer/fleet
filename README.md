@@ -33,12 +33,14 @@ It is one JSON object. Each key is a fleet id (the `fleet` field of `ship.json`)
 - `name`: the name shown on the page. Default: the fleet id.
 - `color`: any CSS colour. Default: a colour made from the id.
 - `release_check`: a shell command. Fleet runs it with `/bin/sh -c`. Leave it out to mark `released` by hand.
+- `repos`: a list of absolute folder paths. The "new ship" form shows them first, then the repos of past ships. Entries that are not absolute paths are ignored. If the fleet has only one repo choice, the form fills it in. Fleet still checks the chosen folder when a ship starts.
 
 ```json
 {
   "portal": {
     "name": "Patient portal",
     "color": "#d96fa8",
+    "repos": ["/Users/me/code/portal", "/Users/me/code/portal-infra"],
     "release_check": "git fetch origin main && git merge-base --is-ancestor \"$FLEET_SHA\" origin/main && curl -fsS https://portal.example.com/version | grep -q \"$FLEET_SHA\""
   },
   "viewer": {

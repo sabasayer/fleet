@@ -7,13 +7,26 @@ export function fleetChoices(fleets) {
   return fleets.map(f => ({ id: f.id, name: f.name }))
 }
 
-export function repoChoices(fleets, typed) {
+const matchingFleets = (fleets, typed) => {
   const wanted = String(typed ?? '').trim()
-  const match = fleets.filter(f => f.id === wanted || f.name === wanted)
-  const scope = match.length > 0 ? match : fleets
-  const repos = scope.flatMap(f => f.ships.flatMap(s => s.mrs.map(mr => (mr.repo?.startsWith('/') ? mr.repo : mr.worktree))))
 
-  return [...new Set(repos.filter(path => typeof path === 'string' && path.startsWith('/')))]
+  return fleets.filter(f => f.id === wanted || f.name === wanted)
+}
+
+export function repoChoices(fleets, typed) {
+  const match = matchingFleets(fleets, typed)
+  const scope = match.length > 0 ? match : fleets
+  const configured = scope.flatMap(f => (Array.isArray(f.repos) ? f.repos : []))
+  const past = scope.flatMap(f => f.ships.flatMap(s => s.mrs.map(mr => (mr.repo?.startsWith('/') ? mr.repo : mr.worktree))))
+
+  return [...new Set([...configured, ...past].filter(path => typeof path === 'string' && path.startsWith('/')))]
+}
+
+export function preselectedRepo(fleets, typed) {
+  if (matchingFleets(fleets, typed).length === 0) return ''
+  const choices = repoChoices(fleets, typed)
+
+  return choices.length === 1 ? choices[0] : ''
 }
 
 export const optionsHtml = values => values.map(v => `<option value="${escapeHtml(v)}"></option>`).join('')

@@ -2,7 +2,7 @@ import { focusFleet, initialView, move, reconcile, toArmada, toFleet, toShip, zo
 import { requestJump } from './jump.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets } from './life.js'
-import { newShipFormHtml, requestNewShip, repoChoices, optionsHtml, stillStarting } from './newship.js'
+import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml, stillStarting } from './newship.js'
 import { panelHtml } from './panel.js'
 import { createSea } from './sea.js'
 
@@ -92,7 +92,9 @@ function renderModal() {
 
 function openNewShip() {
   const fleet = focusFleet(view, fleets)
-  newShip = { form: { fleet: fleet?.name ?? '', folder: '', task: '', copied: false }, busy: false, result: null }
+  const fleetName = fleet?.name ?? ''
+  const autoFolder = preselectedRepo(allFleets, fleetName)
+  newShip = { autoFolder, form: { fleet: fleetName, folder: autoFolder, task: '', copied: false }, busy: false, result: null }
   renderModal()
   modal.querySelector('input[name="fleet"]')?.focus()
 }
@@ -125,7 +127,12 @@ document.getElementById('newship-open').addEventListener('click', openNewShip)
 modal.addEventListener('input', event => {
   if (!newShip || !event.target.name) return
   newShip.form[event.target.name] = event.target.value
-  if (event.target.name === 'fleet') modal.querySelector('#newship-repos').innerHTML = optionsHtml(repoChoices(allFleets, newShip.form.fleet))
+  if (event.target.name !== 'fleet') return
+  modal.querySelector('#newship-repos').innerHTML = optionsHtml(repoChoices(allFleets, newShip.form.fleet))
+  if (newShip.form.folder !== '' && newShip.form.folder !== newShip.autoFolder) return
+  newShip.autoFolder = preselectedRepo(allFleets, newShip.form.fleet)
+  newShip.form.folder = newShip.autoFolder
+  modal.querySelector('[name=folder]').value = newShip.autoFolder
 })
 
 modal.addEventListener('submit', event => {

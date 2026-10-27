@@ -1,0 +1,14 @@
+{
+  "name": "crew-fleet",
+  "version": "0.1.0",
+  "description": "Local browser app that shows every crew ship, grouped by fleet.",
+  "type": "module",
+  "bin": { "crew-fleet": "bin/crew-fleet.ts" },
+  "files": ["bin", "src"],
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "start": "node bin/crew-fleet.ts",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

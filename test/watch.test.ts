@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 
-import { readStored } from '../src/life.ts'
+import { applyAction, readStored, writeStored } from '../src/life.ts'
 import { readState } from '../src/state.ts'
 import { hostArgs, realDeps, startWatcher, type CheckOptions, type CheckResult, type CliResult, type Deps } from '../src/watch.ts'
 
@@ -188,4 +188,64 @@ test('real runner passes data only through env and returns the exit code', async
 
 test('glab gets the MR number and the project URL, since it cannot take an MR URL', () => {
   assert.deepEqual(hostArgs('glab', 'https://gitlab.com/group/sub/repo/-/merge_requests/22'), ['mr', 'view', '22', '-R', 'https://gitlab.com/group/sub/repo', '--output', 'json'])
+})
+
+const handMark = (env: NodeJS.ProcessEnv, ship = 'A-1') => {
+  const home = env.CREW_FLEET_HOME!
+  const entry = readState(env).fleets[0].ships.find(s => s.ship === ship)!
+  writeStored(home, ship, applyAction(entry.mrs, readStored(home, ship), 'mark_merged', '2026-10-21T10:00:00Z'))
+}
+
+test('backfill after a hand mark stores the SHA from the host', async () => {
+  const { env } = setup()
+  handMark(env)
+  assert.equal(stage(env).sha, null)
+  const { deps, calls } = fakes({ cli: async (file, args) => (calls.push({ file, args }), { ok: true, stdout: '{"state":"merged","merge_commit_sha":"abc123"}' }) })
+  const w = startWatcher({ env, deps, auto: false })
+  await w.backfill('A-1')
+  assert.deepEqual([stage(env).state, stage(env).sha], ['merged', 'abc123'])
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].file, 'glab')
+})
+
+test('the SHA is asked for once per MR, even when the CLI fails', async () => {
+  const { env } = setup()
+  handMark(env)
+  const { deps, calls } = fakes({ cli: async (file, args) => (calls.push({ file, args }), { ok: false, missing: false, message: 'glab failed' }) })
+  const w = startWatcher({ env, deps, auto: false })
+  await w.backfill('A-1')
+  await w.backfill('A-1')
+  await w.tick()
+  assert.equal(calls.length, 1)
+  assert.equal(stage(env).sha, null)
+  assert.equal(stage(env).state, 'merged')
+})
+
+test('a tick fills a missing SHA before the release check runs', async () => {
+  const { env, tmp } = setup()
+  mkdirSync(join(tmp, 'wt'))
+  handMark(env)
+  const { deps, checks } = fakes({ cli: async () => ({ ok: true, stdout: '{"state":"merged","merge_commit_sha":"late1"}' }) })
+  await startWatcher({ env, deps, auto: false }).tick()
+  assert.equal(stage(env).sha, 'late1')
+  assert.equal(checks[0].options.env.FLEET_SHA, 'late1')
+})
+
+test('a tick fills a missing SHA when the fleet has no release check', async () => {
+  const { env } = setup({ f: {} })
+  handMark(env)
+  const { deps } = fakes({ cli: async () => ({ ok: true, stdout: '{"state":"merged","merge_commit_sha":"nochk"}' }) })
+  await startWatcher({ env, deps, auto: false }).tick()
+  assert.equal(stage(env).sha, 'nochk')
+})
+
+test('backfill skips an MR that already has a SHA', async () => {
+  const { env } = setup()
+  handMark(env)
+  const home = env.CREW_FLEET_HOME!
+  writeStored(home, 'A-1', { ...readStored(home, 'A-1'), mrs: { '1': { ...readStored(home, 'A-1').mrs['1'], sha: 'have' } } })
+  const { deps, calls } = fakes()
+  await startWatcher({ env, deps, auto: false }).backfill('A-1')
+  assert.equal(calls.length, 0)
+  assert.equal(stage(env).sha, 'have')
 })

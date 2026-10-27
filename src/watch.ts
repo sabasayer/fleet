@@ -2,7 +2,7 @@ import { execFile, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 
-import { observeMr, readStored, writeStored } from './life.ts'
+import { observeMr, readStored, withSha, writeStored } from './life.ts'
 import { fleetHome, readState, type Mr } from './state.ts'
 
 export const POLL_MS = 2 * 60 * 1000
@@ -88,7 +88,7 @@ const glabArgs = (url: string) => {
 export const hostArgs = (file: 'glab' | 'gh', url: string) =>
   file === 'gh' ? ['pr', 'view', url, '--json', 'state,mergeCommit'] : glabArgs(url)
 
-export type Watcher = { tick: () => Promise<void>; seen: (ship: string) => Seen[]; stop: () => void }
+export type Watcher = { tick: () => Promise<void>; backfill: (ship: string) => Promise<void>; seen: (ship: string) => Seen[]; stop: () => void }
 
 export function startWatcher({
   env = process.env,
@@ -120,6 +120,25 @@ export function startWatcher({
     move(ship, mr.n, seen.state, seen.sha)
   }
 
+  const asked = new Set<string>()
+
+  const fetchSha = async (ship: string, mr: Mr): Promise<string | null> => {
+    const key = `${ship}#${mr.n}`
+    if (asked.has(key)) return null
+    asked.add(key)
+    const file = hostCli(mr.url!)
+    const got = await deps.cli(file, hostArgs(file, mr.url!))
+    const seen = got.ok ? parseHost(file, got.stdout) : null
+    if (seen?.state !== 'merged' || !seen.sha) return null
+    const next = withSha(readStored(home, ship), mr.n, seen.sha)
+    if (next) writeStored(home, ship, next)
+
+    return seen.sha
+  }
+
+  const wantsSha = (ship: string, mr: Mr, life: { state: string; sha: string | null }) =>
+    life.state === 'merged' && !life.sha && Boolean(mr.url) && !asked.has(`${ship}#${mr.n}`)
+
   const runRelease = async (ship: string, mr: Mr, command: string, sha: string | null) => {
     const result = await deps.check(command, {
       cwd: existsSync(mr.worktree) ? mr.worktree : homedir(),
@@ -147,8 +166,11 @@ export function startWatcher({
         ship.mrs.forEach((mr, i) => {
           const life = ship.life.mrs[i]
           if (life.state === 'in_review' && mr.url) jobs.push(...once(`${ship.ship}#${mr.n}#merge`, () => pollMerge(ship.ship, mr)))
-          else if (life.state === 'merged' && fleet.release_check) {
-            jobs.push(...once(`${ship.ship}#${mr.n}#release`, () => runRelease(ship.ship, mr, fleet.release_check!, life.sha)))
+          else if (life.state === 'merged') {
+            const fetching = wantsSha(ship.ship, mr, life)
+            if (fleet.release_check) {
+              jobs.push(...once(`${ship.ship}#${mr.n}#release`, async () => runRelease(ship.ship, mr, fleet.release_check!, life.sha ?? (fetching ? await fetchSha(ship.ship, mr) : null))))
+            } else if (fetching) jobs.push(...once(`${ship.ship}#${mr.n}#sha`, () => fetchSha(ship.ship, mr)))
           }
         })
       }
@@ -160,8 +182,15 @@ export function startWatcher({
   timer?.unref()
   if (auto) setTimeout(() => void tick().catch(() => undefined), 0).unref()
 
+  const backfill = async (name: string) => {
+    const ship = readState(env, deps.now()).fleets.flatMap(f => f.ships).find(s => s.ship === name)
+    if (!ship) return
+    await Promise.all(ship.mrs.map((mr, i) => (wantsSha(name, mr, ship.life.mrs[i]) ? fetchSha(name, mr).catch(() => null) : null)))
+  }
+
   return {
     tick,
+    backfill,
     seen: ship => [...results].filter(([k]) => k.startsWith(`${ship}#`)).map(([, v]) => v),
     stop: () => clearInterval(timer),
   }

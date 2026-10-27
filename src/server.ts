@@ -79,6 +79,7 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
     } catch (error) {
       return send(409, 'text/plain', (error as Error).message)
     }
+    if (input.action === 'mark_merged') void watcher?.backfill(ship.ship).catch(() => undefined)
     const life = readState(env).fleets.flatMap(f => f.ships).find(s => s.ship === ship.ship)?.life
 
     send(200, 'application/json', JSON.stringify({ ok: true, life }))

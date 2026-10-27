@@ -167,3 +167,10 @@ export function observeMr(stored: Stored, n: number, to: 'merged' | 'abandoned' 
 
   return { ...stored, mrs: { ...stored.mrs, [String(n)]: { state: to, sha: sha ?? kept?.sha ?? null, changed: now } } }
 }
+
+export function withSha(stored: Stored, n: number, sha: string): Stored | null {
+  const kept = stored.mrs[String(n)]
+  if (!kept || kept.state === 'abandoned' || kept.sha) return null
+
+  return { ...stored, mrs: { ...stored.mrs, [String(n)]: { ...kept, sha } } }
+}

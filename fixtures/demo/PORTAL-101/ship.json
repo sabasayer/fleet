@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "ship": "PORTAL-101",
+  "title": "Fix SMART launch timeout",
+  "task": "https://linear.app/demo/issue/PORTAL-101",
+  "fleet": "portal",
+  "created": "2026-10-20T09:00:00Z",
+  "session": {
+    "id": "00000000-0000-4000-8000-000000000010",
+    "updated": "2099-01-01T00:00:00Z"
+  },
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/portal",
+      "remote": "gitlab.com/demo/portal",
+      "worktree": "/work/portal-PORTAL-101",
+      "branch": "feat/PORTAL-101",
+      "url": null
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+import { lifeOf, readStored, type Life } from './life.ts'
 import { isStatusFile, parseCrewMember, sortChain, type CrewMember } from './board.ts'
 
 export type NeedsCaptain = { role: string; reason: string; kind: 'blocked' | 'failed' }
@@ -24,8 +25,9 @@ export type Ship = {
   session: { id: string; updated: string } | null
   mrs: Mr[]
   needsCaptain: NeedsCaptain | null
+  life: Life
 }
-export type FleetInfo = { name: string; color: string; release_check?: string }
+export type FleetInfo = { name: string; color: string; release_check?: string; repos?: string[] }
 export type Fleet = FleetInfo & { id: string; ships: Ship[] }
 export type State = { now: number; fleets: Fleet[] }
 
@@ -87,7 +89,7 @@ function readFleets(home: string): Record<string, Partial<FleetInfo>> {
   return j && typeof j === 'object' && !Array.isArray(j) ? j : {}
 }
 
-function readShip(root: string, folder: string, folders: string[], now: number): Ship | undefined {
+export function readShip(root: string, home: string, folder: string, folders: string[], now: number): Ship | undefined {
   const j = readJson(join(root, folder, 'ship.json'))
   if (!j || typeof j.ship !== 'string' || typeof j.fleet !== 'string' || !Array.isArray(j.mrs)) return undefined
   const prefix = `${j.ship.toLowerCase()}-mr`
@@ -106,7 +108,9 @@ function readShip(root: string, folder: string, folders: string[], now: number):
       needsCaptain: needsCaptain(crew),
     }
   })
-  const waiting = mrs.map(m => m.needsCaptain)
+  const life = lifeOf(mrs, readStored(home, j.ship))
+  const sailing = life.state === 'sailing'
+  const waiting = mrs.map((m, i) => (life.mrs[i].state === 'sailing' ? m.needsCaptain : null))
 
   return {
     ship: j.ship,
@@ -116,19 +120,22 @@ function readShip(root: string, folder: string, folders: string[], now: number):
     created: j.created,
     session: j.session ?? null,
     mrs,
-    needsCaptain: waiting.find(w => w?.kind === 'blocked') ?? waiting.find(Boolean) ?? null,
+    needsCaptain: sailing ? (waiting.find(w => w?.kind === 'blocked') ?? waiting.find(Boolean) ?? null) : null,
+    life,
   }
 }
 
 export function readState(env = process.env, now = Date.now()): State {
   const root = crewRoot(env)
   const folders = readDir(root)
-  const configs = readFleets(fleetHome(env))
+  const home = fleetHome(env)
+  const configs = readFleets(home)
   const byFleet = new Map<string, Ship[]>()
   for (const folder of folders) {
-    const ship = readShip(root, folder, folders, now)
+    const ship = readShip(root, home, folder, folders, now)
     if (ship) byFleet.set(ship.fleet, [...(byFleet.get(ship.fleet) ?? []), ship])
   }
+  for (const id of Object.keys(configs)) if (!byFleet.has(id)) byFleet.set(id, [])
   const fleets = [...byFleet].map(([id, ships]): Fleet => {
     const config = configs[id] ?? {}
 
@@ -137,6 +144,7 @@ export function readState(env = process.env, now = Date.now()): State {
       name: config.name || id,
       color: config.color || colorFor(id),
       ...(config.release_check ? { release_check: config.release_check } : {}),
+      ...(Array.isArray(config.repos) ? { repos: config.repos.filter((r): r is string => typeof r === 'string' && r.startsWith('/')) } : {}),
       ships: ships.sort((a, b) => a.created.localeCompare(b.created)),
     }
   })

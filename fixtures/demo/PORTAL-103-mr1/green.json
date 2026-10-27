@@ -1,0 +1,7 @@
+{
+  "role": "green",
+  "state": "failed",
+  "order": 2,
+  "updated": "2099-01-01T00:00:00Z",
+  "summary": "Tests fail twice"
+}

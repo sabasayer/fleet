@@ -1,0 +1,10 @@
+{
+  "portal": {
+    "name": "Patient portal",
+    "color": "#d96fa8"
+  },
+  "viewer": {
+    "name": "Image viewer",
+    "color": "#3fb3a0"
+  }
+}

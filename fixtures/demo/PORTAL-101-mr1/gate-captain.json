@@ -1,0 +1,7 @@
+{
+  "role": "gate-captain",
+  "state": "blocked",
+  "order": 4,
+  "updated": "2099-01-01T00:00:00Z",
+  "summary": "Approve the merge request"
+}

@@ -1,0 +1,15 @@
+{
+  "ship": "PORTAL-107",
+  "version": 1,
+  "mrs": {
+    "1": {
+      "state": "merged",
+      "sha": null,
+      "changed": "2099-01-01T00:00:00Z"
+    }
+  },
+  "paused": true,
+  "failed": false,
+  "docked": null,
+  "backToSea": null
+}

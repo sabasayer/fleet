@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "ship": "VIEWER-14",
+  "title": "Old: closed MR",
+  "task": null,
+  "fleet": "viewer",
+  "created": "2026-09-28T10:00:00Z",
+  "session": null,
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/viewer",
+      "remote": "gitlab.com/demo/viewer",
+      "worktree": "/work/viewer-VIEWER-14",
+      "branch": "feat/VIEWER-14",
+      "url": "https://gitlab.com/demo/viewer/-/merge_requests/141"
+    }
+  ]
+}

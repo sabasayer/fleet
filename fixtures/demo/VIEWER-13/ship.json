@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "ship": "VIEWER-13",
+  "title": "Faster thumbnails",
+  "task": null,
+  "fleet": "viewer",
+  "created": "2026-10-15T10:00:00Z",
+  "session": null,
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/viewer",
+      "remote": "gitlab.com/demo/viewer",
+      "worktree": "/work/viewer-VIEWER-13",
+      "branch": "feat/VIEWER-13",
+      "url": "https://gitlab.com/demo/viewer/-/merge_requests/131"
+    }
+  ]
+}

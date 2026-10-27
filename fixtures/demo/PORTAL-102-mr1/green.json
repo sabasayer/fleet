@@ -1,0 +1,9 @@
+{
+  "role": "green",
+  "state": "running",
+  "order": 2,
+  "updated": "2099-01-01T00:00:00Z",
+  "phase": "implement",
+  "done": 2,
+  "total": 5
+}

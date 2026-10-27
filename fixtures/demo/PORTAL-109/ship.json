@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "ship": "PORTAL-109",
+  "title": "Old: footer links",
+  "task": null,
+  "fleet": "portal",
+  "created": "2026-09-28T09:00:00Z",
+  "session": null,
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/portal",
+      "remote": "gitlab.com/demo/portal",
+      "worktree": "/work/portal-PORTAL-109",
+      "branch": "feat/PORTAL-109",
+      "url": "https://gitlab.com/demo/portal/-/merge_requests/1091"
+    }
+  ]
+}

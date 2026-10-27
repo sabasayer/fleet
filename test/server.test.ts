@@ -85,3 +85,11 @@ test('POST without the token gets 403, with it gets 200', async () => {
 test('POST with the token but a wrong Origin gets 403', async () => {
   assert.equal((await call('POST', '/api/ping', { 'x-fleet-token': server.token, origin: 'http://evil.example' })).status, 403)
 })
+
+test('page scripts are served, other paths are not', async () => {
+  const ok = await fetch(`http://127.0.0.1:${server.port}/web/main.js`)
+  assert.equal(ok.status, 200)
+  assert.match(ok.headers.get('content-type') ?? '', /javascript/)
+  assert.equal((await fetch(`http://127.0.0.1:${server.port}/web/..%2Fpackage.json`)).status, 404)
+  assert.equal((await fetch(`http://127.0.0.1:${server.port}/web/nope.js`)).status, 404)
+})

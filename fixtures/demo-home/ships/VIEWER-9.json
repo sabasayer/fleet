@@ -1,0 +1,20 @@
+{
+  "ship": "VIEWER-9",
+  "version": 1,
+  "mrs": {
+    "1": {
+      "state": "released",
+      "sha": null,
+      "changed": "2099-01-01T00:00:00Z"
+    },
+    "2": {
+      "state": "merged",
+      "sha": null,
+      "changed": "2099-01-01T00:00:00Z"
+    }
+  },
+  "paused": false,
+  "failed": false,
+  "docked": null,
+  "backToSea": null
+}

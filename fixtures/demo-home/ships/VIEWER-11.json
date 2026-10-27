@@ -1,0 +1,15 @@
+{
+  "ship": "VIEWER-11",
+  "version": 1,
+  "mrs": {
+    "1": {
+      "state": "testing",
+      "sha": null,
+      "changed": "2099-01-01T00:00:00Z"
+    }
+  },
+  "paused": false,
+  "failed": true,
+  "docked": null,
+  "backToSea": null
+}

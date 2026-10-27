@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "ship": "VIEWER-10",
+  "title": "Measure tool",
+  "task": null,
+  "fleet": "viewer",
+  "created": "2026-10-21T12:00:00Z",
+  "session": null,
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/viewer",
+      "remote": "gitlab.com/demo/viewer",
+      "worktree": "/work/viewer-VIEWER-10",
+      "branch": "feat/VIEWER-10",
+      "url": "https://gitlab.com/demo/viewer/-/merge_requests/101"
+    }
+  ]
+}

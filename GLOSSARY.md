@@ -31,7 +31,7 @@ _Avoid_: User, admiral
 The Claude session that runs one ship's chain and talks to the captain.
 
 **Scout**:
-A Claude session that looks into a bug report or a bug's cause before any crew run. It either becomes a ship (same name, same session) or goes to the harbour with a one-line outcome.
+A ship with no merge request yet, whose crew is one session looking into a bug report or a bug's cause. It gets its first merge request when it finds work to do, or it goes to the harbour with a one-line outcome. The crew that finds the work keeps the same terminal tab, with a fresh context.
 _Avoid_: Investigation, triage (they name the activity, not the thing on the sea)
 
 ## A ship's life
@@ -56,4 +56,7 @@ A ship whose released change someone tests in a test environment.
 **Harbour**:
 Where done ships go, off the open sea.
 _Avoid_: Archive, dock
+
+**Outcome**:
+The one line a scout leaves when it finds nothing to fix, such as "not a bug: config issue on acc".
 

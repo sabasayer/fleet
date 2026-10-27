@@ -2,22 +2,40 @@
 
 Seed for the next map, after fleet v1. The captain asked for it on 2026-10-27.
 
-A scout is a Claude session that looks into a bug report or a bug's cause before any crew run. See `GLOSSARY.md`.
+A scout is a ship with no merge request yet. See `GLOSSARY.md` and
+`docs/adr/0001-a-scout-is-a-ship-with-no-mrs.md`.
 
 ## Decided
 
 - Not part of fleet v1. Chart a small new map once v1 is in use.
 - The word is "scout".
-- A scout that finds work becomes the ship: same name, same Claude session. Its findings feed into `/crew`. One scout leads to at most one ship (a ship can already have several MRs across repos).
-- A scout that finds nothing to fix goes to the harbour with a one-line outcome (for example "not a bug: config issue on acc").
+- A scout that finds work gets its first merge request: same ship name, same
+  terminal tab, fresh context. One scout leads to at most one ship.
+- A scout that finds nothing leaves a one-line outcome, for example
+  "not a bug: config issue on acc".
 
-## Decided on 2026-10-27 (for the spec gates)
+Settled in the grilling of 2026-10-27, built in the crew repo (ship `scouts-crew`):
 
-- **Start:** a mode of `/crew`: `/crew scout: <bug report or link> fleet: <fleet>`. No new skill. Fleet's new-ship form gets a "scout" checkbox that sends this.
-- **End:** the scout proposes "build it" or "turn back" with its findings. A new gate, `gate-scout`, waits for the captain. On "build it" the same session goes on into Fetch.
-- **Findings:** the scout writes `~/.crew/<ship>/spec/scout.md`. Fetch reads it, and the spec grilling starts from it.
-- **Ship file:** `crew-ship` writes a `scout` field in `ship.json`: `state` (`scouting`, `became_ship`, `turned_back`) and `outcome` (one line). A turned-back scout goes to the harbour with its outcome. Fleet still never writes crew files.
-- **Sea:** a "scouting" zone left of "crew at work": a small boat, no crew stones. When the scout becomes a ship, it sails into "crew at work" as a normal ship.
-- **Name:** the bug's ticket ID if the report has one (e.g. `ENG-812`), else `scout-<short slug>`. The name stays when the scout becomes a ship.
+- A scout writes a normal `ship.json` with `mrs: []`, `kind: "scout"` and
+  `outcome: null`. Fleet reads it today with no change.
+- Crew gets a `/scout` skill, not a mode of `/crew`. It ends by running `/clear`
+  and then `/crew` in the same tab.
+- `crew-ship scout <ship> --title T --fleet F [--task LINK]` creates the file.
+  `crew-ship outcome <ship> "<line>"` sets the outcome. `add-mr` clears it.
+- A scout takes no repo. The repo is decided when the work is found.
+- The findings go in `~/.crew/<ship>/scout.md`, next to `ship.json`. It outlives
+  the spec folder.
+- A scout writes no status files. There is no run folder before the first MR.
 
-Split: the crew ship builds the `/crew scout:` mode, `gate-scout`, `scout.md` and the `scout` field in `crew-ship`. The fleet ship builds the scouting zone, the boat, the harbour outcome and the form checkbox.
+## Open, for fleet
+
+- How a scout shows on the sea: its own zone left of "crew at work", or a small
+  boat on the ship's row. A scout has no crew members, so the "crew at work"
+  part is empty.
+- **Docking a scout.** A ship with no merge requests can never reach `done`:
+  the after-crew states are keyed by merge request number. Fleet must dock a
+  ship that has an `outcome` and an empty `mrs` list. `mark_failed` is wrong in
+  meaning; "not a bug" is not a failure.
+- How the captain starts one: a "scout" choice in the new-ship form. The command
+  shape is `claude --session-id <uuid> -n <ship> "/scout <report> fleet: <fleet>"`,
+  the same shape fleet already uses for `/crew`.

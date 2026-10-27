@@ -40,6 +40,15 @@ body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospa
 .hud { position: absolute; background: #0d1b2aee; border: 2px solid #2c4a66; padding: 10px 12px; }
 #crumbs { top: 12px; left: 12px; }
 #crumbs a { color: #9fc3e6; cursor: pointer; text-decoration: underline; }
+#newship-open { position: absolute; left: 12px; bottom: 12px; font: inherit; background: #2c4a66; color: #e8e4d8; border: 2px solid #4f7aa3; padding: 6px 12px; cursor: pointer; }
+#newship-open:hover { background: #3b5f84; }
+#modal:empty { display: none; }
+#modal { position: fixed; inset: 0; background: #000a; display: flex; align-items: center; justify-content: center; z-index: 10; }
+.modal-box { width: min(520px, 92vw); display: flex; flex-direction: column; gap: 10px; }
+.modal-box label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.modal-box input { font: inherit; background: #08121d; color: #e8e4d8; border: 2px solid #4f7aa3; padding: 5px 6px; }
+.modal-box button { font: inherit; font-size: 12px; background: #2c4a66; color: #e8e4d8; border: 2px solid #4f7aa3; padding: 3px 10px; cursor: pointer; }
+.modal-box button:disabled { opacity: 0.5; cursor: default; }
 .dim { color: #7d8fa3; }
 .needs { color: #0d1b2a; background: #e5c04b; padding: 0 5px; font-weight: bold; }
 .fail { color: #fff; background: #e5484d; padding: 0 5px; font-weight: bold; }
@@ -61,8 +70,10 @@ export const page = (token: string) => `<!doctype html>
 <canvas id="sea"></canvas>
 <div id="ui"></div>
 <div id="crumbs" class="hud"></div>
+<button type="button" id="newship-open">+ new ship</button>
 </div>
 <aside id="side"></aside>
+<div id="modal"></div>
 <script type="module" src="/web/main.js"></script>
 </body>
 </html>

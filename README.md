@@ -18,6 +18,12 @@ Every 2 minutes, fleet checks each MR that is `in_review`. It runs `gh pr view <
 
 Every 2 minutes, fleet also runs the fleet's `release_check` for each `merged` MR. Exit code 0 moves the MR to `released`. Any other result keeps it `merged`. The page shows the last result.
 
+## New ship
+
+The "+ new ship" button opens a form with three fields: fleet, repo folder and task. Fleet checks them on the server. The folder must exist and be a git repo. If it is a worktree, fleet uses the main checkout.
+
+Fleet starts `claude --session-id <uuid> -n <ship> "/crew <task> fleet: <fleet>"` in a new herdr tab in the fleet's workspace. It then focuses the tab and raises Ghostty. If herdr does not answer, the page shows the command to copy. Fleet writes no ship file. The ship shows on the sea when crew writes its `ship.json`.
+
 ## fleets.json
 
 File: `~/.fleet/fleets.json`. The captain or an agent edits it. Fleet reads it again on every request, so no restart is needed.

@@ -1,5 +1,6 @@
 import { GOLD, memberColor, STATE } from './art.js'
 import { jumpHtml } from './jump.js'
+import { startingHtml } from './newship.js'
 import { crewOf, currentIndex, focusFleet } from './layout.js'
 import { buttonsHtml, harbourOf, lifeState, LIFE_COLOR, LIFE_TAG, seaFleets, ZONE_NAME, ZONES } from './life.js'
 
@@ -118,8 +119,9 @@ function harbourSection(fleets, view, now, opened, jump) {
   return `<section class="hud-block harbour-panel"><h3>⚓ harbour (${docked.length})${hidden ? ` <span class="dim">+${hidden} hidden</span>` : ''}</h3>${rows || '<p class="dim">No ships docked.</p>'}</section>`
 }
 
-export function panelHtml({ fleets: all, view, now, opened = null, jump }) {
-  if (all.length === 0) return ''
+export function panelHtml({ fleets: all, view, now, opened = null, jump, starting = [] }) {
+  const startingBlock = startingHtml(starting, all, now)
+  if (all.length === 0) return startingBlock
   const fleets = seaFleets(all, now)
   const waiting = waitingShips(fleets)
   const openName = opened ?? openShipName(view)
@@ -132,7 +134,7 @@ export function panelHtml({ fleets: all, view, now, opened = null, jump }) {
     .join('')
   const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada', jump)).join('')
 
-  return `<section class="hud-block needs-panel"><h3>needs captain (${waiting.length})</h3>${waitingRows || '<p class="dim">Nothing waits for you.</p>'}</section>
+  return `${startingBlock}<section class="hud-block needs-panel"><h3>needs captain (${waiting.length})</h3>${waitingRows || '<p class="dim">Nothing waits for you.</p>'}</section>
   <section class="hud-block ships-panel"><h3>ships</h3>${shipRows || '<p class="dim">No ships at sea.</p>'}</section>
   ${harbourSection(all, view, now, opened, jump)}`
 }

@@ -27,11 +27,34 @@ export type JumpDeps = {
   isDir: (path: string) => boolean
 }
 
-const shellQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`
+export const shellQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`
 
 export const resumeCommand = (cwd: string, sessionId: string) => `cd ${shellQuote(cwd)} && claude --resume ${sessionId}`
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
+
+export async function herdrVerdict(deps: Pick<JumpDeps, 'schema'>): Promise<{ herdr: 'ok' | 'missing' | 'unsupported'; message: string }> {
+  try {
+    const verdict = checkSchema(await deps.schema())
+
+    return verdict.ok ? { herdr: 'ok', message: '' } : { herdr: 'unsupported', message: verdict.message }
+  } catch {
+    return { herdr: 'missing', message: '' }
+  }
+}
+
+export async function defaultClient(deps: Pick<JumpDeps, 'sockets' | 'connect'>): Promise<HerdrClient | null> {
+  const ref = deps.sockets().find(entry => entry.isDefault)
+  if (!ref) return null
+  const client = deps.connect(ref.path)
+  try {
+    await client('agent.list')
+  } catch {
+    return null
+  }
+
+  return client
+}
 
 async function findPane(deps: JumpDeps, sessionId: string) {
   let defaultClient: HerdrClient | null = null
@@ -51,7 +74,7 @@ async function findPane(deps: JumpDeps, sessionId: string) {
   return { pane: null, client: null, defaultClient }
 }
 
-async function startInWorkspace(client: HerdrClient, ship: JumpShip, cwd: string, argv: string[]) {
+export async function startInWorkspace(client: HerdrClient, ship: Pick<JumpShip, 'name' | 'fleetName'>, cwd: string, argv: string[]) {
   const { workspaces = [] } = await client('workspace.list')
   let workspace = workspaces.find((entry: any) => entry.label === ship.fleetName)
   let tabId: string | undefined
@@ -85,17 +108,7 @@ export async function jump(ship: JumpShip, deps: JumpDeps): Promise<JumpResult> 
   const sessionId = ship.sessionId?.toLowerCase() ?? ''
   if (!UUID.test(sessionId)) return { status: 'error', message: 'This ship has no valid session ID yet.' }
 
-  let herdr: 'ok' | 'missing' | 'unsupported' = 'ok'
-  let unsupportedMessage = ''
-  try {
-    const verdict = checkSchema(await deps.schema())
-    if (!verdict.ok) {
-      herdr = 'unsupported'
-      unsupportedMessage = verdict.message
-    }
-  } catch {
-    herdr = 'missing'
-  }
+  const { herdr, message: unsupportedMessage } = await herdrVerdict(deps)
 
   const cwd = [...ship.worktrees].reverse().find(path => path.startsWith('/') && deps.isDir(path)) ?? null
   const commandOrNull = cwd ? resumeCommand(cwd, sessionId) : null

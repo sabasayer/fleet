@@ -2,6 +2,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 
+import { realNewShipDeps, startNewShip, type NewShipDeps } from './newship.ts'
 import { jump, realJumpDeps, type JumpDeps, type JumpResult } from './jump.ts'
 import { applyAction, isAction, isShipName, readStored, writeStored } from './life.ts'
 import { page } from './page.ts'
@@ -33,7 +34,7 @@ const readBody = (req: IncomingMessage) =>
 
 export type Running = { port: number; token: string; close: () => Promise<void> }
 
-export async function startServer({ port, env = process.env, watcher, jumpDeps = realJumpDeps(env) }: { port: number; env?: NodeJS.ProcessEnv; watcher?: Watcher; jumpDeps?: JumpDeps }): Promise<Running> {
+export async function startServer({ port, env = process.env, watcher, jumpDeps = realJumpDeps(env), newShipDeps = realNewShipDeps }: { port: number; env?: NodeJS.ProcessEnv; watcher?: Watcher; jumpDeps?: JumpDeps; newShipDeps?: NewShipDeps }): Promise<Running> {
   const token = randomBytes(24).toString('hex')
   let own = new Set<string>()
   const jumping = new Map<string, Promise<JumpResult>>()
@@ -110,6 +111,25 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
       if (url.pathname === '/api/ship') {
         readBody(req).then(
           body => shipAction(body, send),
+          () => send(400, 'text/plain', 'bad request'),
+        )
+
+        return
+      }
+      if (url.pathname === '/api/ships/new') {
+        readBody(req).then(
+          body => {
+            let input: unknown
+            try {
+              input = JSON.parse(body)
+            } catch {
+              return send(400, 'text/plain', 'bad json')
+            }
+            startNewShip(input, readState(env).fleets, jumpDeps, newShipDeps).then(
+              result => send(200, 'application/json', JSON.stringify(result)),
+              () => send(500, 'application/json', JSON.stringify({ status: 'error', message: 'start failed' })),
+            )
+          },
           () => send(400, 'text/plain', 'bad request'),
         )
 

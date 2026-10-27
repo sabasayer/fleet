@@ -2,6 +2,7 @@ import { focusFleet, initialView, move, reconcile, toArmada, toFleet, toShip, zo
 import { requestJump } from './jump.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets } from './life.js'
+import { newShipFormHtml, requestNewShip, repoChoices, optionsHtml, stillStarting } from './newship.js'
 import { panelHtml } from './panel.js'
 import { createSea } from './sea.js'
 
@@ -9,6 +10,7 @@ const canvas = document.getElementById('sea')
 const ui = document.getElementById('ui')
 const crumbs = document.getElementById('crumbs')
 const side = document.getElementById('side')
+const modal = document.getElementById('modal')
 const sea = createSea(canvas, ui)
 const token = document.querySelector('meta[name="fleet-token"]')?.content ?? ''
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
@@ -25,6 +27,8 @@ let lastCrumbs = ''
 let lastSide = ''
 let lastOpen = null
 let jump = null
+let starting = []
+let newShip = null
 
 function crumbHtml() {
   if (fleets.length === 0) return 'no ships'
@@ -47,7 +51,7 @@ function render() {
 }
 
 function renderSide() {
-  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump })
+  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump, starting })
   if (html === lastSide) return
   const scroll = side.scrollTop
   side.innerHTML = lastSide = html
@@ -81,6 +85,64 @@ async function startJump(ship) {
   jump = { ship, busy: false, result: await requestJump(ship, token) }
   renderSide()
 }
+
+function renderModal() {
+  modal.innerHTML = newShip ? newShipFormHtml({ fleets: allFleets, form: newShip.form, busy: newShip.busy, result: newShip.result }) : ''
+}
+
+function openNewShip() {
+  const fleet = focusFleet(view, fleets)
+  newShip = { form: { fleet: fleet?.name ?? '', folder: '', task: '', copied: false }, busy: false, result: null }
+  renderModal()
+  modal.querySelector('input[name="fleet"]')?.focus()
+}
+
+function closeNewShip() {
+  newShip = null
+  renderModal()
+}
+
+async function submitNewShip() {
+  if (!newShip || newShip.busy) return
+  newShip.busy = true
+  renderModal()
+  const form = newShip.form
+  const result = await requestNewShip(form, token)
+  if (!newShip) return
+  newShip = { form, busy: false, result }
+  if (result.status === 'started') {
+    starting = [...starting, { ship: result.ship, sessionId: result.sessionId, at: Date.now() }]
+    closeNewShip()
+    renderSide()
+
+    return
+  }
+  renderModal()
+}
+
+document.getElementById('newship-open').addEventListener('click', openNewShip)
+
+modal.addEventListener('input', event => {
+  if (!newShip || !event.target.name) return
+  newShip.form[event.target.name] = event.target.value
+  if (event.target.name === 'fleet') modal.querySelector('#newship-repos').innerHTML = optionsHtml(repoChoices(allFleets, newShip.form.fleet))
+})
+
+modal.addEventListener('submit', event => {
+  event.preventDefault()
+  void submitNewShip()
+})
+
+modal.addEventListener('click', async event => {
+  if (event.target === modal || event.target.closest('[data-newship-close]')) return closeNewShip()
+  const copy = event.target.closest('[data-copy-new]')
+  if (!copy) return
+  try {
+    await navigator.clipboard.writeText(copy.dataset.copyNew)
+    newShip.form.copied = true
+    renderModal()
+  } catch {}
+})
 
 async function copyCommand(text) {
   try {
@@ -122,6 +184,11 @@ document.addEventListener('click', event => {
 })
 
 document.addEventListener('keydown', event => {
+  if (newShip) {
+    if (event.key === 'Escape') closeNewShip()
+
+    return
+  }
   const act = {
     Escape: () => zoomOut(view, fleets),
     ArrowLeft: () => zoomOut(view, fleets),
@@ -155,6 +222,7 @@ async function poll() {
       view = toShip(opened.ship)
       harbourOpen = null
     } else if (!opened) harbourOpen = null
+    starting = stillStarting(starting, allFleets)
     schedule()
   } catch {
     crumbs.textContent = 'server not reachable'

@@ -135,6 +135,7 @@ export function readState(env = process.env, now = Date.now()): State {
     const ship = readShip(root, home, folder, folders, now)
     if (ship) byFleet.set(ship.fleet, [...(byFleet.get(ship.fleet) ?? []), ship])
   }
+  for (const id of Object.keys(configs)) if (!byFleet.has(id)) byFleet.set(id, [])
   const fleets = [...byFleet].map(([id, ships]): Fleet => {
     const config = configs[id] ?? {}
 

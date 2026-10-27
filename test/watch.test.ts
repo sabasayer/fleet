@@ -259,3 +259,9 @@ test('readState leaves repos out when the fleet has none', () => {
   const { env } = setup({ f: {} })
   assert.equal('repos' in readState(env).fleets[0], false)
 })
+
+test('readState lists a configured fleet that has no ships yet, so the new ship form can offer it', () => {
+  const { env } = setup({ f: {}, empty: { name: 'Empty', repos: ['/r'] } })
+  const empty = readState(env).fleets.find(f => f.id === 'empty')
+  assert.deepEqual([empty?.name, empty?.repos, empty?.ships], ['Empty', ['/r'], []])
+})

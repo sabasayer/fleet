@@ -8,7 +8,7 @@ Fleet v1 is built as the [spec](spec.md) says. The captain uses it on his own cr
 
 ## Result
 
-Fleet v1 is built and in use. All eight build tickets are closed; the code is in fleet PRs 1 to 7 (stacked) and crew PR 14. The captain started ENG-711 from fleet on 2026-10-27. Two prototype tickets (09, 10) stay open as polish. Two fixes found in use wait for the `scouts-fleet` crew ship: [Fleet: the sea fits long crews and any window width](issues/11-fleet-sea-fits-long-crews.md) and [Fleet: longer instructions in the new-ship form](issues/12-fleet-new-ship-instructions.md).
+Fleet v1 is built and in use. All eight build tickets are closed; the code is in fleet PRs 1 to 7 (stacked) and crew PR 14. The captain started ENG-711 from fleet on 2026-10-27. Two prototype tickets (09, 10) stay open as polish. Three fixes found in use wait for the `scouts-fleet` crew ship: [Fleet: the sea fits long crews and any window width](issues/11-fleet-sea-fits-long-crews.md) and [Fleet: longer instructions in the new-ship form](issues/12-fleet-new-ship-instructions.md) and [Fleet: keyboard shortcuts for ship actions](issues/13-fleet-keyboard-shortcuts.md).
 
 ## Notes
 

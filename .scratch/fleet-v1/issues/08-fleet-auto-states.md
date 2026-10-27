@@ -1,7 +1,7 @@
 # Fleet: merged from the repo host and the release check
 
 Repo: sabasayer/fleet
-Status: ready-for-agent
+Status: closed
 Blocked by: 07
 Assignee: salih (Sonnet agent)
 
@@ -23,3 +23,4 @@ Commands: `gh pr view <url> --json state,mergeCommit` (checked on a real merged 
 Choices: an MR marked merged by hand has no SHA, so `FLEET_SHA` is empty; check results live in memory only; a login or parse error only shows as the last result.
 
 `glab mr view` does not take an MR URL. Fleet now calls `glab mr view <n> -R <project URL> --output json` (checked on a real merged GitLab MR: `state: merged` plus `merge_commit_sha`).
+PR: https://github.com/sabasayer/fleet/pull/6. Next: when the captain marks an MR merged by hand, fleet fetches its SHA once from the repo host.

@@ -1,7 +1,7 @@
 # Fleet: jump back through herdr
 
 Repo: sabasayer/fleet
-Status: ready-for-agent
+Status: closed
 Blocked by: 04
 Assignee: salih (Sonnet agent)
 
@@ -26,4 +26,4 @@ Facts: herdr 0.7.3, protocol 16, one socket `~/.config/herdr/herdr.sock`. `agent
 
 Choices: `claude agents --json` is the final check that a session is gone; if it fails, fleet shows the command and does not resume. The herdr workspace label is the fleet's display name. Resume uses the newest MR worktree that still exists. A tab with the ship's name is reused.
 
-Waiting on the captain: live checks (live ship, gone ship, outside herdr, herdr stopped) and whether `agent.focus` switches the attached herdr view.
+The captain jumped to a live ship in herdr: `agent.focus` switches the attached view, and Ghostty comes to the front. PR: https://github.com/sabasayer/fleet/pull/5. The gone-ship, outside-herdr and herdr-stopped cases are covered by tests; the captain checks them on real ships after crew PR 14 is merged.

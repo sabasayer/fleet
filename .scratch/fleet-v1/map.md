@@ -22,6 +22,8 @@ Fleet v1 is built as the [spec](spec.md) says. The captain uses it on his own cr
 - [Fleet: the sea view](issues/03-fleet-sea-view.md): built (fleet PR 2); a ship shows its newest MR with crew; armada click zooms straight to the ship
 - [Fleet: the needs-captain and ships panels](issues/04-fleet-panels.md): built (fleet PR 3); panels in their own column; longest wait first; a panel click zooms to the ship
 - [Fleet: a ship's life and the harbour](issues/07-fleet-lifecycle.md): built (fleet PR 4); resume clears paused and failed; a state button moves every MR at the current stage; harbour keeps 3 days fixed
+- [Fleet: jump back through herdr](issues/05-fleet-jump-back.md): built (fleet PR 5); `agent.focus` switches the herdr view; never resume when the alive check fails
+- [Fleet: merged from the repo host and the release check](issues/08-fleet-auto-states.md): built (fleet PR 6); `glab` needs the MR number and `-R`, not the MR URL; check results live in memory
 
 ## Not yet specified
 

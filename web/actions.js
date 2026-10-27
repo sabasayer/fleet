@@ -8,3 +8,5 @@ export async function sendAction(ship, action) {
 
   return res.ok
 }
+
+export const serverError = status => (status === 403 ? 'Fleet restarted since this page loaded. Reload the page.' : `Server answered ${status}.`)

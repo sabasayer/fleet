@@ -1,3 +1,4 @@
+import { serverError } from './actions.js'
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
 export const LIMITS = { fleet: 60, task: 500, folder: 1000 }
@@ -79,7 +80,7 @@ export async function requestNewShip(form, token, doFetch = fetch) {
     })
     if (res.status === 200) return await res.json()
 
-    return { status: 'error', message: `Server answered ${res.status}.` }
+    return { status: 'error', message: serverError(res.status) }
   } catch {
     return { status: 'error', message: 'Server not reachable.' }
   }

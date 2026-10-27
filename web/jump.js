@@ -1,3 +1,4 @@
+import { serverError } from './actions.js'
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
 export function describe(result) {
@@ -32,7 +33,7 @@ export async function requestJump(ship, token, doFetch = fetch) {
     const res = await doFetch(`/api/ships/${encodeURIComponent(ship)}/jump`, { method: 'POST', headers: { 'x-fleet-token': token } })
     if (res.status === 200) return await res.json()
 
-    return { status: 'error', message: `Server answered ${res.status}.` }
+    return { status: 'error', message: serverError(res.status) }
   } catch {
     return { status: 'error', message: 'Server not reachable.' }
   }

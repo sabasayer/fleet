@@ -6,6 +6,10 @@ Label: wayfinder:map
 
 Fleet v1 is built as the [spec](spec.md) says. The captain uses it on his own crew ships: he sees them on the sea, jumps back, starts a new ship and moves ships through their life.
 
+## Result
+
+Fleet v1 is built and in use. All eight build tickets are closed; the code is in fleet PRs 1 to 7 (stacked) and crew PR 14. The captain started ENG-711 from fleet on 2026-10-27. Two prototype tickets (09, 10) stay open as polish.
+
 ## Notes
 
 - **This map does the work.** It overrides wayfinder's "plan, don't do" rule. The planning map ([Map: fleet](../fleet/map.md)) ended in the spec. Here the build tickets are the route.
@@ -24,6 +28,7 @@ Fleet v1 is built as the [spec](spec.md) says. The captain uses it on his own cr
 - [Fleet: a ship's life and the harbour](issues/07-fleet-lifecycle.md): built (fleet PR 4); resume clears paused and failed; a state button moves every MR at the current stage; harbour keeps 3 days fixed
 - [Fleet: jump back through herdr](issues/05-fleet-jump-back.md): built (fleet PR 5); `agent.focus` switches the herdr view; never resume when the alive check fails
 - [Fleet: merged from the repo host and the release check](issues/08-fleet-auto-states.md): built (fleet PR 6); `glab` needs the MR number and `-R`, not the MR URL; check results live in memory
+- [Fleet: start a new ship](issues/06-fleet-new-ship.md): built (fleet PR 7); argv to herdr, no shell; fleets.json `repos` fill the form; starting ships match by session ID, since crew may rename the ship
 
 ## Not yet specified
 

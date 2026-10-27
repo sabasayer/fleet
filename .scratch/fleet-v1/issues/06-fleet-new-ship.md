@@ -1,7 +1,7 @@
 # Fleet: start a new ship
 
 Repo: sabasayer/fleet
-Status: ready-for-agent
+Status: closed
 Blocked by: 01, 05
 Assignee: salih (Sonnet agent)
 
@@ -21,4 +21,4 @@ Facts: herdr `agent.start` takes `argv: string[]`, so no shell is involved. The 
 
 Choices: the ship name is a slug of the task (or of a link's last part) plus 4 UUID characters; crew gets the fleet ID, the herdr workspace uses the display name; a worktree path becomes its main checkout; the "starting…" note shows until a ship with that session ID appears, with a hint after 3 minutes. Open: a task that contains `fleet:` could confuse crew.
 
-Waiting on the captain: one real start. It needs crew PR 14 in `~/Private/crew` first, because `~/.claude/skills/crew` links there and that checkout is on `fix/crew-cost-caps`.
+The captain started a real ship from the form (ENG-711 in FHP): herdr opened the tab, crew wrote `ship.json`, the ship showed on the sea. Fix after the check: the server keeps the "starting" list, so a refresh keeps it. PR: https://github.com/sabasayer/fleet/pull/7.

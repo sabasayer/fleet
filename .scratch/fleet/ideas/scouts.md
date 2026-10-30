@@ -27,15 +27,24 @@ Settled in the grilling of 2026-10-27, built in the crew repo (ship `scouts-crew
   the spec folder.
 - A scout writes no status files. There is no run folder before the first MR.
 
-## Open, for fleet
+Settled in the grilling of 2026-10-29, built in the fleet repo (ship `scouts-fleet`):
 
-- How a scout shows on the sea: its own zone left of "crew at work", or a small
-  boat on the ship's row. A scout has no crew members, so the "crew at work"
-  part is empty.
-- **Docking a scout.** A ship with no merge requests can never reach `done`:
-  the after-crew states are keyed by merge request number. Fleet must dock a
-  ship that has an `outcome` and an empty `mrs` list. `mark_failed` is wrong in
-  meaning; "not a bug" is not a failure.
-- How the captain starts one: a "scout" choice in the new-ship form. The command
-  shape is `claude --session-id <uuid> -n <ship> "/scout <report> fleet: <fleet>"`,
-  the same shape fleet already uses for `/crew`.
+- Fleet derives the phase from `kind`, the MR list and `outcome`, in that order.
+  `kind` on its own is the wrong test: a scout that finds work keeps `kind`.
+- A scouting scout sails in a band cut from the left of the crew band, 15% of
+  the lane. The four zone edges do not move. Press `s` to turn the band on or
+  off. It is on by itself when a scout is at sea. The key is not kept over a
+  reload.
+- The boat has no sail and no crew stones. It flies a small flag in the fleet
+  colour, so it reads at a glance (the captain asked for the flag on 2026-10-30).
+- A turned-back scout docks on its own. Fleet writes the dock time in
+  `~/.fleet/ships/<ship>.json`, because the outcome line carries none.
+- The harbour row shows the outcome in place of the MR count, and has no state
+  buttons. To put a scout back on the sea, crew runs `crew-ship add-mr`.
+- The lane head reads `N ships · 1 scout`. A scout is not in the ship count.
+- The new ship form has a `Scout first` checkbox. It runs
+  `/scout <task> fleet: <fleet>` and prefixes the tab name with `scout-`.
+- A scout cannot raise a beacon. It writes no status files, and the beacon reads
+  them. Recorded in `docs/adr/0001-a-scout-has-no-run-folder.md`.
+
+## Nothing open

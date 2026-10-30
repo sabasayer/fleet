@@ -1,6 +1,6 @@
-import { ANCHOR, BACKDROP, beaconGrid, blit, CALM, flagColor, GOLD, hash, memberColor, shipGrid, snap, STATE, STONE_LINE, WAVE, WOOD } from './art.js'
-import { crewOf, crewRight, detailFor, easeOut, layoutFor, LABEL_COLUMN, lerp, mixLayout, RIGHT_MARGIN, shapeKey, shipPlaceX, stoneX, TWEEN_MS, zoneEdge } from './layout.js'
-import { lifeState, LIFE_COLOR, LIFE_SHORT, ZONE_NAME, ZONES } from './life.js'
+import { ANCHOR, BACKDROP, beaconGrid, blit, boatGrid, CALM, flagColor, GOLD, hash, memberColor, shipGrid, snap, STATE, STONE_LINE, WAVE, WOOD } from './art.js'
+import { crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, laneHeadText, layoutFor, LABEL_COLUMN, lerp, mixLayout, placeX, RIGHT_MARGIN, scoutRight, shapeKey, stoneX, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
+import { lifeState, LIFE_COLOR, LIFE_SHORT, shipPhase, ZONE_NAME, ZONES } from './life.js'
 
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
@@ -40,7 +40,7 @@ export function createSea(canvas, ui) {
     return { layout: tween.cur, animating: t < 1 }
   }
 
-  function draw({ fleets, view, frame }) {
+  function draw({ fleets, view, frame, band = false }) {
     const dpr = window.devicePixelRatio || 1
     const size = { w: canvas.clientWidth, h: canvas.clientHeight }
     const buffer = { w: Math.round(size.w * dpr), h: Math.round(size.h * dpr) }
@@ -69,9 +69,18 @@ export function createSea(canvas, ui) {
       ctx.globalAlpha = laneAlpha
       calmLane(ctx, dpr, frame, 0, lane.y, right + 60, lane.h, li % 2)
       const stop = crewRight(left, right)
+      const start = crewLeft(left, right, band)
+      if (band) {
+        const edge = scoutRight(left, right)
+        ctx.fillStyle = '#1d3f6655'
+        ctx.fillRect(Math.round(left * dpr), Math.round((lane.y + 24) * dpr), Math.round((edge - left) * dpr), Math.round((lane.h - 24) * dpr))
+        ctx.fillStyle = '#ffffff22'
+        ctx.fillRect(Math.round(edge * dpr), Math.round((lane.y + 24) * dpr), dpr, Math.round((lane.h - 24) * dpr))
+        html += label((left + edge) / 2, lane.y + 6, `<span class="dim">scouting</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
+      }
       ctx.fillStyle = '#2d6a9c55'
       ctx.fillRect(Math.round(stop * dpr), Math.round((lane.y + 24) * dpr), Math.round((right - stop) * dpr), Math.round((lane.h - 24) * dpr))
-      html += label(left + (stop - left) / 2, lane.y + 6, `<span class="dim">crew at work</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
+      html += label(start + (stop - start) / 2, lane.y + 6, `<span class="dim">crew at work</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
       ZONES.forEach((zone, j) => {
         const edge = zoneEdge(j, left, right)
         ctx.fillStyle = '#ffffff22'
@@ -82,7 +91,7 @@ export function createSea(canvas, ui) {
       ctx.fillRect(Math.round((right + 40) * dpr), Math.round(lane.y * dpr), 12 * dpr, Math.round(lane.h * dpr))
 
       const waiting = fleet.ships.filter(s => s.needsCaptain).length
-      html += `<div class="lane-head" data-fleet="${escapeHtml(fleet.id)}" style="top:${lane.y + 5}px;${opacity(laneAlpha)}"><span style="color:${escapeHtml(fleet.color)}">▶ ${escapeHtml(fleet.name.toUpperCase())}</span> <span class="dim">${fleet.ships.length} ships</span> ${waiting ? `<span class="needs">${waiting} need you</span>` : ''}</div>`
+      html += `<div class="lane-head" data-fleet="${escapeHtml(fleet.id)}" style="top:${lane.y + 5}px;${opacity(laneAlpha)}"><span style="color:${escapeHtml(fleet.color)}">▶ ${escapeHtml(fleet.name.toUpperCase())}</span> <span class="dim">${laneHeadText(fleet.ships)}</span> ${waiting ? `<span class="needs">${waiting} need you</span>` : ''}</div>`
 
       fleet.ships.forEach(ship => {
         const place = layout.ships[ship.ship]
@@ -91,27 +100,29 @@ export function createSea(canvas, ui) {
         if (alpha < 0.02) return
         ctx.globalAlpha = alpha
         const crew = crewOf(ship)
-        const grid = shipGrid(crew, flagColor(ship, fleet.color), frame, detail, life)
+        const scouting = shipPhase(ship) === 'scouting'
+        const grid = scouting ? boatGrid(frame, flagColor(ship, fleet.color)) : shipGrid(crew, flagColor(ship, fleet.color), frame, detail, life)
         const rowY = place.y
-        const lineY = rowY + grid.length * scale + 4
+        const lineY = waterLineY(rowY, detail, scale)
         const rowPx = snap(scale, dpr)
+        const top = scouting ? floatTop(lineY, grid.length, rowPx) : rowY
 
         ctx.fillStyle = STONE_LINE
         ctx.fillRect(Math.round(left * dpr), Math.round(lineY * dpr), Math.round((right + 40 - left) * dpr), dpr)
         crew.forEach((member, k) => {
           const stone = 4 + scale
-          const cx = stoneX(k, crew.length, left, stop)
+          const cx = stoneX(k, crew.length, start, stop)
           ctx.fillStyle = memberColor(member)
           ctx.fillRect(Math.round((cx - stone / 2) * dpr), Math.round((lineY - stone / 2) * dpr), Math.round(stone * dpr), Math.round(stone * dpr))
           if (scale >= 3) html += label(cx, lineY + 8, `<span style="color:${memberColor(member)}">${escapeHtml(member.role)}</span>`, `transform:translateX(-50%);${opacity(alpha)}`)
         })
 
-        const cx = shipPlaceX(ship, crew, left, right)
+        const cx = placeX(ship, crew, left, right, band)
         const sx = Math.min(cx - (grid[0].length * rowPx) / 2, right + 36 - grid[0].length * rowPx)
         const working = life === 'sailing' && crew.some(m => m.state === 'running' && !m.stale)
-        const sy = rowY + (working && frame % 2 ? rowPx / 2 : 0)
+        const sy = top + (working && frame % 2 ? rowPx / 2 : 0)
         blit(ctx, grid, sx, sy, scale, dpr)
-        if (life === 'paused') blit(ctx, ANCHOR, sx + grid[0].length * rowPx + 2, rowY + grid.length * rowPx - 5 * snap(Math.max(2, scale / 2), dpr), Math.max(2, scale / 2), dpr)
+        if (life === 'paused') blit(ctx, ANCHOR, sx + grid[0].length * rowPx + 2, top + grid.length * rowPx - 5 * snap(Math.max(2, scale / 2), dpr), Math.max(2, scale / 2), dpr)
         if (ship.needsCaptain) {
           const bangScale = Math.max(3, scale / 2)
           const color = ship.needsCaptain.kind === 'failed' ? STATE.failed : GOLD

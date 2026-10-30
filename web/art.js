@@ -128,6 +128,24 @@ function wreck(grid, deckTop) {
   return grid.map(row => row.map(color => (color?.startsWith('#') ? grey(color) : color)))
 }
 
+const BOAT_ROWS = 2
+const MAST_ROWS = 2
+const MAX_BOB = 1
+
+export function boatGrid(frame, flag) {
+  const width = 9
+  const grid = Array.from({ length: MAST_ROWS + BOAT_ROWS + MAX_BOB }, () => Array(width).fill(null))
+  const top = frame % 2
+  for (let r = 0; r < MAST_ROWS; r++) grid[top + r][4] = WOOD
+  grid[top][5] = flag
+  grid[top][6] = flag
+  const deck = top + MAST_ROWS
+  for (let x = 1; x < width - 1; x++) grid[deck][x] = DECK
+  for (let x = 2; x < width - 2; x++) grid[deck + 1][x] = HULL
+
+  return grid
+}
+
 export const ANCHOR = ['..X..', '.XXX.', '..X..', 'X.X.X', '.XXX.'].map(row => [...row].map(ch => (ch === 'X' ? '#c9d6e3' : null)))
 
 export const BANG = ['.XXX.', 'XX.XX', 'XX.XX', 'XX.XX', 'XXXXX', 'XX.XX', '.XXX.'].map(row =>

@@ -1,7 +1,7 @@
-import { focusFleet, initialView, move, reconcile, toArmada, toFleet, toShip, zoomIn, zoomOut } from './layout.js'
+import { focusFleet, initialView, move, reconcile, showScoutBand, toArmada, toFleet, toShip, zoomIn, zoomOut } from './layout.js'
 import { requestJump } from './jump.js'
 import { sendAction } from './actions.js'
-import { onSea, seaFleets } from './life.js'
+import { onSea, seaFleets, shipPhase } from './life.js'
 import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml } from './newship.js'
 import { panelHtml } from './panel.js'
 import { createSea } from './sea.js'
@@ -29,6 +29,9 @@ let lastOpen = null
 let jump = null
 let starting = []
 let newShip = null
+let manual
+
+const anyScout = () => fleets.some(fleet => fleet.ships.some(ship => shipPhase(ship) === 'scouting'))
 
 function crumbHtml() {
   if (fleets.length === 0) return 'no ships'
@@ -37,12 +40,13 @@ function crumbHtml() {
   if (view.level !== 'armada' && fleet) parts.push(`<a data-fleet="${escapeHtml(fleet.id)}">${escapeHtml(fleet.name)}</a>`)
   if (view.level === 'ship') parts.push(escapeHtml(fleet.ships.find(s => s.ship === view.cursor)?.title ?? view.cursor))
 
-  return `${parts.join(' › ')} <span class="dim">(↑↓ move · → in · ← out)</span>`
+  return `${parts.join(' › ')} <span class="dim">(↑↓ move · → in · ← out · s scouting)</span>`
 }
 
 function render() {
   pending = 0
-  const { html, animating } = sea.draw({ fleets, view, frame })
+  const band = showScoutBand(manual, anyScout())
+  const { html, animating } = sea.draw({ fleets, view, frame, band })
   if (html !== lastUi) ui.innerHTML = lastUi = html
   const crumb = crumbHtml()
   if (crumb !== lastCrumbs) crumbs.innerHTML = lastCrumbs = crumb
@@ -94,7 +98,7 @@ function openNewShip() {
   const fleet = focusFleet(view, fleets)
   const fleetName = fleet?.name ?? ''
   const autoFolder = preselectedRepo(allFleets, fleetName)
-  newShip = { autoFolder, form: { fleet: fleetName, folder: autoFolder, task: '', copied: false }, busy: false, result: null }
+  newShip = { autoFolder, form: { fleet: fleetName, folder: autoFolder, task: '', scout: false, copied: false }, busy: false, result: null }
   renderModal()
   modal.querySelector('input[name="fleet"]')?.focus()
 }
@@ -125,7 +129,7 @@ document.getElementById('newship-open').addEventListener('click', openNewShip)
 
 modal.addEventListener('input', event => {
   if (!newShip || !event.target.name) return
-  newShip.form[event.target.name] = event.target.value
+  newShip.form[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value
   if (event.target.name !== 'fleet') return
   modal.querySelector('#newship-repos').innerHTML = optionsHtml(repoChoices(allFleets, newShip.form.fleet))
   if (newShip.form.folder !== '' && newShip.form.folder !== newShip.autoFolder) return
@@ -192,6 +196,13 @@ document.addEventListener('click', event => {
 document.addEventListener('keydown', event => {
   if (newShip) {
     if (event.key === 'Escape') closeNewShip()
+
+    return
+  }
+  if (event.key === 's' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    event.preventDefault()
+    manual = !showScoutBand(manual, anyScout())
+    schedule()
 
     return
   }

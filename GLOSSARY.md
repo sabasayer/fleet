@@ -23,6 +23,10 @@ _Avoid_: Run, ticket (a ship is not tied to any task manager)
 One agent role on a ship, such as red, green or review-spec.
 _Avoid_: Agent, worker
 
+**Scout**:
+A session that looks into a bug report before any crew run. A scout has a ship file with no merge request. It has three phases. **Scouting**: it is still looking, and it sails in the scouting band. **Turned back**: it found nothing to fix, left a one-line outcome, and went to the harbour. **A ship**: it found work and gained merge request 1. A scout keeps its name when it becomes a ship.
+_Avoid_: Spike, triage, investigation ship
+
 **Captain**:
 The human who owns every fleet and approves every gate.
 _Avoid_: User, admiral

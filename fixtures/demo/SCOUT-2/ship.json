@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "ship": "SCOUT-2",
+  "title": "Look into the missing study thumbnails",
+  "task": null,
+  "fleet": "viewer",
+  "created": "2026-10-25T09:00:00Z",
+  "session": null,
+  "kind": "scout",
+  "outcome": "No bug found. The viewer cache was stale on that one machine.",
+  "mrs": []
+}

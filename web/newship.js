@@ -55,6 +55,7 @@ export function newShipFormHtml({ fleets, form, busy, result }) {
     ${datalistHtml('newship-repos', repoChoices(fleets, form.fleet))}
     <label>Task <span class="dim">(text or link)</span>
       <input name="task" required maxlength="${LIMITS.task}" value="${escapeHtml(form.task)}"></label>
+    <label class="check"><input type="checkbox" name="scout"${form.scout ? ' checked' : ''}> Scout first <span class="dim">(look into it before any crew run)</span></label>
     <div class="buttons"><button type="submit"${busy ? ' disabled' : ''}>${busy ? 'Starting…' : 'Start ship'}</button><button type="button" data-newship-close>Close</button></div>
     ${message}${command}
   </form>`
@@ -76,7 +77,7 @@ export async function requestNewShip(form, token, doFetch = fetch) {
     const res = await doFetch('/api/ships/new', {
       method: 'POST',
       headers: { 'x-fleet-token': token, 'content-type': 'application/json' },
-      body: JSON.stringify({ fleet: form.fleet, folder: form.folder, task: form.task }),
+      body: JSON.stringify({ fleet: form.fleet, folder: form.folder, task: form.task, scout: form.scout === true }),
     })
     if (res.status === 200) return await res.json()
 

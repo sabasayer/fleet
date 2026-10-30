@@ -6,7 +6,7 @@ import { realNewShipDeps, startNewShip, type NewShipDeps } from './newship.ts'
 import { jump, realJumpDeps, type JumpDeps, type JumpResult } from './jump.ts'
 import { applyAction, isAction, isShipName, readStored, writeStored } from './life.ts'
 import { page } from './page.ts'
-import { fleetHome, readState } from './state.ts'
+import { fleetHome, readState, turnedBackScout } from './state.ts'
 import type { Watcher } from './watch.ts'
 
 const HOST = '127.0.0.1'
@@ -83,7 +83,7 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
     if (!ship) return send(404, 'text/plain', 'unknown ship')
     const home = fleetHome(env)
     try {
-      writeStored(home, ship.ship, applyAction(ship.mrs, readStored(home, ship.ship), input.action, new Date().toISOString()))
+      writeStored(home, ship.ship, applyAction(ship.mrs, readStored(home, ship.ship), input.action, new Date().toISOString(), turnedBackScout(ship)))
     } catch (error) {
       return send(409, 'text/plain', (error as Error).message)
     }

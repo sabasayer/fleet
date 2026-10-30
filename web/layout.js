@@ -1,4 +1,4 @@
-import { CREW_SHARE, lifeStage, ZONES } from './life.js'
+import { CREW_SHARE, lifeStage, shipPhase, ZONES } from './life.js'
 
 export const LEVEL_SCALE = { armada: 2, fleet: 4, ship: 8 }
 export const TWEEN_MS = 450
@@ -14,6 +14,10 @@ const FACE_ROWS = 16
 export const detailFor = scale => (scale >= 6 ? 'faces' : 'deck')
 export const spriteRows = detail => (detail === 'faces' ? FACE_ROWS : DECK_ROWS)
 
+export const WATER_GAP = 4
+export const waterLineY = (rowY, detail, scale) => rowY + spriteRows(detail) * scale + WATER_GAP
+export const floatTop = (lineY, rows, rowPx) => lineY - WATER_GAP - rows * rowPx
+
 export const crewOf = ship => [...ship.mrs].reverse().find(mr => mr.crew.length > 0)?.crew ?? []
 export const currentIndex = crew => crew.findIndex(member => member.state !== 'done')
 
@@ -28,16 +32,36 @@ export function shipX(crew, left, right) {
 
 export const crewRight = (left, right) => left + (right - left) * CREW_SHARE
 
+export const SCOUT_SHARE = 0.15
+
+export const scoutRight = (left, right) => left + (right - left) * SCOUT_SHARE
+
+export const crewLeft = (left, right, band) => (band ? scoutRight(left, right) : left)
+
+export const showScoutBand = (manual, anyScout) => manual ?? anyScout
+
+export function laneHeadText(ships) {
+  const scouts = ships.filter(ship => shipPhase(ship) === 'scouting').length
+
+  return `${ships.length - scouts} ships${scouts ? ` · ${scouts} scout${scouts === 1 ? '' : 's'}` : ''}`
+}
+
 export const zoneEdge = (index, left, right) => crewRight(left, right) + (index / ZONES.length) * (right - crewRight(left, right))
 
-export function shipPlaceX(ship, crew, left, right) {
+export function shipPlaceX(ship, crew, left, right, band = false) {
   const zone = ZONES.indexOf(lifeStage(ship))
   if (zone >= 0) return (zoneEdge(zone, left, right) + zoneEdge(zone + 1, left, right)) / 2
+  const start = crewLeft(left, right, band)
   const stop = crewRight(left, right)
-  if (crew.length > 0 && currentIndex(crew) < 0) return stoneX(crew.length - 1, crew.length, left, stop)
+  if (crew.length > 0 && currentIndex(crew) < 0) return stoneX(crew.length - 1, crew.length, start, stop)
 
-  return shipX(crew, left, stop)
+  return shipX(crew, start, stop)
 }
+
+export const scoutX = (left, right) => (left + scoutRight(left, right)) / 2
+
+export const placeX = (ship, crew, left, right, band = false) =>
+  band && shipPhase(ship) === 'scouting' ? scoutX(left, right) : shipPlaceX(ship, crew, left, right, band)
 
 export const initialView = fleets => ({ level: 'armada', cursor: fleets[0]?.id ?? null })
 

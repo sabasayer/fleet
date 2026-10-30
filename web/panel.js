@@ -2,7 +2,7 @@ import { GOLD, memberColor, STATE } from './art.js'
 import { jumpHtml } from './jump.js'
 import { startingHtml } from './newship.js'
 import { crewOf, currentIndex, focusFleet } from './layout.js'
-import { buttonsHtml, harbourOf, lifeState, LIFE_COLOR, LIFE_TAG, seaFleets, ZONE_NAME, ZONES } from './life.js'
+import { buttonsHtml, harbourOf, lifeState, LIFE_COLOR, LIFE_TAG, seaFleets, shipPhase, ZONE_NAME, ZONES } from './life.js'
 
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
@@ -40,6 +40,14 @@ export function ago(ms, now) {
 }
 
 const badge = ship => (ship.needsCaptain ? `<span class="${ship.needsCaptain.kind === 'failed' ? 'fail' : 'needs'}">!</span>` : '')
+
+const lifeTag = (life, crew) => {
+  if (LIFE_TAG[life]) return `<span style="color:${LIFE_COLOR[life]}">${LIFE_TAG[life]}</span>`
+  const at = crew[currentIndex(crew)]
+  if (at) return `${escapeHtml(at.role)} ${escapeHtml(at.state)}`
+
+  return crew.length > 0 ? 'crew done' : 'no crew'
+}
 
 const reached = ship => (ship.life?.stage === 'done' ? ZONES.length : ZONES.indexOf(ship.life?.stage) + 1)
 
@@ -82,31 +90,30 @@ function openView(ship, jump) {
 
 function shipRow({ ship, fleet }, open, now, showFleet, jump) {
   const crew = crewOf(ship)
-  const at = crew[currentIndex(crew)]
   const need = ship.needsCaptain
   const life = lifeState(ship)
-  const phase = LIFE_TAG[life]
-    ? `<span style="color:${LIFE_COLOR[life]}">${LIFE_TAG[life]}</span>`
-    : at
-      ? `${escapeHtml(at.role)} ${escapeHtml(at.state)}`
-      : crew.length > 0
-        ? 'crew done'
-        : 'no crew'
+  const scouting = shipPhase(ship) === 'scouting'
+  const phase = scouting ? 'scouting' : lifeTag(life, crew)
   const fleetName = showFleet ? ` <span class="dim">· ${escapeHtml(fleet.name)}</span>` : ''
 
   return `<div class="row${need ? ' hot' : ''}${open ? ' cur' : ''}" data-ship="${escapeHtml(ship.ship)}">
     ${badge(ship)} <b>${escapeHtml(ship.title)}</b> <span class="dim">${escapeHtml(ship.ship)}</span>${fleetName}<br>
     ${need ? `<span style="color:${needsColor(need)}">Waiting for you: ${escapeHtml(need.reason)}</span><br>` : ''}
     <span class="dim">${phase} · ${ago(updatedAt(ship), now)}</span>
-    ${bar(crew, ship)}
+    ${scouting ? '' : bar(crew, ship)}
     ${open ? openView(ship, jump) : ''}
   </div>`
 }
 
+const dockedLabel = (ship, now) => (ship.life.endedAt === null ? 'docked' : `docked ${ago(ship.life.endedAt, now)}`)
+
 function harbourRow({ ship, fleet }, open, now, jump) {
+  const mrCount = `${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}`
+  const summary = shipPhase(ship) === 'turned_back' ? escapeHtml(ship.outcome) : mrCount
+
   return `<div class="row${open ? ' cur' : ''}" data-ship="${escapeHtml(ship.ship)}" data-harbour>
     <b>${escapeHtml(ship.title)}</b> <span class="dim">${escapeHtml(ship.ship)} · ${escapeHtml(fleet.name)}</span><br>
-    <span class="dim">docked ${ago(ship.life.endedAt, now)} · ${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</span>
+    <span class="dim">${dockedLabel(ship, now)} · ${summary}</span>
     ${open ? openView(ship, jump) : ''}
   </div>`
 }

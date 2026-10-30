@@ -46,6 +46,8 @@ body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospa
 #modal { position: fixed; inset: 0; background: #000a; display: flex; align-items: center; justify-content: center; z-index: 10; }
 .modal-box { width: min(520px, 92vw); display: flex; flex-direction: column; gap: 10px; }
 .modal-box label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.modal-box label.check { flex-direction: row; align-items: center; gap: 6px; }
+.modal-box label.check input { width: auto; }
 .modal-box input { font: inherit; background: #08121d; color: #e8e4d8; border: 2px solid #4f7aa3; padding: 5px 6px; }
 .modal-box button { font: inherit; font-size: 12px; background: #2c4a66; color: #e8e4d8; border: 2px solid #4f7aa3; padding: 3px 10px; cursor: pointer; }
 .modal-box button:disabled { opacity: 0.5; cursor: default; }

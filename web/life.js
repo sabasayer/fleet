@@ -29,6 +29,12 @@ export const ACTION_LABEL = {
   undock: 'undock',
 }
 
+export function shipPhase(ship) {
+  if (ship.kind !== 'scout' || ship.mrs.length > 0) return 'ship'
+
+  return ship.outcome ? 'turned_back' : 'scouting'
+}
+
 export const lifeState = ship => ship.life?.state ?? 'sailing'
 export const lifeStage = ship => ship.life?.stage ?? 'sailing'
 
@@ -40,11 +46,18 @@ export const onSea = (ship, now) => ship.life?.stage !== 'done' && !isOld(ship, 
 export const seaFleets = (fleets, now) =>
   fleets.map(fleet => ({ ...fleet, ships: fleet.ships.filter(ship => onSea(ship, now)) })).filter(fleet => fleet.ships.length > 0)
 
+function newestFirst(a, b) {
+  if (a === null) return b === null ? 0 : 1
+  if (b === null) return -1
+
+  return b - a
+}
+
 export function harbourOf(fleets, now) {
   const ships = fleets.flatMap(fleet => fleet.ships.map(ship => ({ ship, fleet })))
 
   return {
-    docked: ships.filter(e => inHarbour(e.ship, now)).sort((a, b) => b.ship.life.endedAt - a.ship.life.endedAt),
+    docked: ships.filter(e => inHarbour(e.ship, now)).sort((a, b) => newestFirst(a.ship.life.endedAt, b.ship.life.endedAt)),
     hidden: ships.filter(e => isOld(e.ship, now)).length,
   }
 }

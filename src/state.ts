@@ -25,11 +25,16 @@ export type Ship = {
   session: { id: string; updated: string } | null
   mrs: Mr[]
   needsCaptain: NeedsCaptain | null
+  kind: 'ship' | 'scout'
+  outcome: string | null
   life: Life
 }
 export type FleetInfo = { name: string; color: string; release_check?: string; repos?: string[] }
 export type Fleet = FleetInfo & { id: string; ships: Ship[] }
 export type State = { now: number; fleets: Fleet[] }
+
+export const turnedBackScout = (ship: Pick<Ship, 'kind' | 'mrs' | 'outcome'>) =>
+  ship.kind === 'scout' && ship.mrs.length === 0 && Boolean(ship.outcome)
 
 export const crewRoot = (env = process.env) => env.CREW_BOARD_ROOT || join(homedir(), '.crew')
 export const fleetHome = (env = process.env) => env.CREW_FLEET_HOME || join(homedir(), '.fleet')
@@ -108,7 +113,9 @@ export function readShip(root: string, home: string, folder: string, folders: st
       needsCaptain: needsCaptain(crew),
     }
   })
-  const life = lifeOf(mrs, readStored(home, j.ship))
+  const kind = j.kind === 'scout' ? 'scout' : 'ship'
+  const outcome = j.outcome ?? null
+  const life = lifeOf(mrs, readStored(home, j.ship), turnedBackScout({ kind, mrs, outcome }))
   const sailing = life.state === 'sailing'
   const waiting = mrs.map((m, i) => (life.mrs[i].state === 'sailing' ? m.needsCaptain : null))
 
@@ -120,6 +127,8 @@ export function readShip(root: string, home: string, folder: string, folders: st
     created: j.created,
     session: j.session ?? null,
     mrs,
+    kind,
+    outcome,
     needsCaptain: sailing ? (waiting.find(w => w?.kind === 'blocked') ?? waiting.find(Boolean) ?? null) : null,
     life,
   }

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "ship": "SCOUT-1",
+  "title": "Look into the slow patient search",
+  "task": "https://linear.app/demo/issue/PORTAL-130",
+  "fleet": "portal",
+  "created": "2026-10-26T09:00:00Z",
+  "session": null,
+  "kind": "scout",
+  "outcome": null,
+  "mrs": []
+}

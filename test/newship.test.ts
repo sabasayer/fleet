@@ -204,3 +204,39 @@ test('ship names: task slug with a short ID, a link uses its last part, nothing 
   assert.equal(shipName('a'.repeat(200), UUID), `${'a'.repeat(40)}-abcd`)
   assert.equal(shipName('  ', UUID), 'new-abcd1234')
 })
+
+test('a scout gets the /scout prompt and a scout- tab name', async () => {
+  const t = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
+  const result: any = await startNewShip(form({ scout: true }), fleets, t.jumpDeps, t.deps)
+  assert.equal(result.status, 'started')
+  const start = only(t.calls, 'agent.start')[0].params
+  assert.equal(start.name, 'scout-fix-the-login-bug-abcd')
+  assert.deepEqual(start.argv, ['claude', '--session-id', UUID, '-n', 'scout-fix-the-login-bug-abcd', '/scout Fix the login bug fleet: portal'])
+})
+
+test('only scout true counts, anything else keeps todays prompt and name', async () => {
+  for (const value of [undefined, false, null, 0, 1, 'true', 'on']) {
+    const t = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
+    await startNewShip(form({ scout: value }), fleets, t.jumpDeps, t.deps)
+    const start = only(t.calls, 'agent.start')[0].params
+    assert.equal(start.name, 'fix-the-login-bug-abcd', String(value))
+    assert.deepEqual(start.argv, ['claude', '--session-id', UUID, '-n', 'fix-the-login-bug-abcd', '/crew Fix the login bug fleet: portal'], String(value))
+  }
+})
+
+test('a scout still needs a fleet, a task and a real repo folder', async () => {
+  const t = build()
+  for (const over of [{ fleet: '' }, { task: '' }, { folder: '/missing' }, { folder: 'relative/path' }]) {
+    const result: any = await startNewShip(form({ scout: true, ...over }), fleets, t.jumpDeps, t.deps)
+    assert.equal(result.status, 'error', JSON.stringify(over))
+  }
+  assert.equal(t.calls.length, 0)
+})
+
+test('the scout prefix is inside the name cap, not on top of it', () => {
+  const plain = shipName('a'.repeat(200), UUID)
+  const scout = shipName('a'.repeat(200), UUID, 'scout-')
+  assert.equal(scout.length, plain.length)
+  assert.equal(scout, `scout-${'a'.repeat(34)}-abcd`)
+  assert.equal(shipName('日本語', UUID, 'scout-'), 'scout-new-abcd1234')
+})

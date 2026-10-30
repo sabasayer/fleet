@@ -49,6 +49,8 @@ function text(value: unknown, label: string, max: number): Text {
   return { ok: true, value: trimmed }
 }
 
+const SLUG_MAX = 40
+
 const slug = (task: string) => {
   const last = /^https?:\/\//i.test(task) ? (task.split(/[?#]/)[0].split('/').filter(Boolean).pop() ?? '') : task
 
@@ -56,19 +58,23 @@ const slug = (task: string) => {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
+    .slice(0, SLUG_MAX)
     .replace(/-+$/, '')
 }
 
-export function shipName(task: string, uuid: string) {
+export function shipName(task: string, uuid: string, prefix = '') {
   const short = uuid.replaceAll('-', '').slice(0, 4)
-  const base = slug(task)
-  const name = base ? `${base}-${short}` : `new-${uuid.replaceAll('-', '').slice(0, 8)}`
+  const fallback = `${prefix}new-${uuid.replaceAll('-', '').slice(0, 8)}`
+  const slugged = slug(task)
+  const base = `${prefix}${slugged}`.slice(0, SLUG_MAX).replace(/-+$/, '')
+  const name = slugged ? `${base}-${short}` : fallback
 
-  return isShipName(name) ? name : `new-${uuid.replaceAll('-', '').slice(0, 8)}`
+  return isShipName(name) ? name : fallback
 }
 
 export const crewPrompt = (task: string, fleet: string) => `/crew ${task} fleet: ${fleet}`
+
+export const scoutPrompt = (task: string, fleet: string) => `/scout ${task} fleet: ${fleet}`
 
 export const startArgv = (uuid: string, ship: string, prompt: string) => ['claude', '--session-id', uuid, '-n', ship, prompt]
 
@@ -92,8 +98,10 @@ export async function startNewShip(input: any, fleets: Pick<Fleet, 'id' | 'name'
   const fleet = known?.id ?? fleetText.value
   const fleetName = known?.name ?? fleetText.value
   const sessionId = deps.uuid()
-  const ship = shipName(taskText.value, sessionId)
-  const argv = startArgv(sessionId, ship, crewPrompt(taskText.value, fleet))
+  const scout = input?.scout === true
+  const ship = shipName(taskText.value, sessionId, scout ? 'scout-' : '')
+  const prompt = scout ? scoutPrompt(taskText.value, fleet) : crewPrompt(taskText.value, fleet)
+  const argv = startArgv(sessionId, ship, prompt)
   const command = startCommand(folder, argv)
   const moved = folder === folderText.value ? '' : ` Used the main checkout ${folder}.`
   const common = { ship, sessionId, fleet, folder }

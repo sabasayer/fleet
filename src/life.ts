@@ -61,7 +61,8 @@ export function mrState(mr: MrInput, stored: Stored): MrState {
   return crewDone && Boolean(mr.url) ? 'in_review' : 'sailing'
 }
 
-export function shipStage(mrs: MrInput[], stored: Stored): MrState {
+export function shipStage(mrs: MrInput[], stored: Stored, turnedBack = false): MrState {
+  if (turnedBack) return 'done'
   if (mrs.length === 0) return 'sailing'
   const states = mrs.map(mr => mrState(mr, stored))
   const live = states.filter((s): s is Stage => s !== 'abandoned')
@@ -73,7 +74,8 @@ export function shipStage(mrs: MrInput[], stored: Stored): MrState {
 
 const flagActions = (state: LifeState): Action[] => (state === 'failed' ? ['resume'] : state === 'paused' ? ['resume', 'mark_failed'] : ['pause', 'mark_failed'])
 
-export function actionsFor(state: LifeState): Action[] {
+export function actionsFor(state: LifeState, turnedBack = false): Action[] {
+  if (turnedBack) return []
   if (state === 'abandoned') return []
   if (state === 'done') return ['undock']
   if (state === 'paused' || state === 'failed') return flagActions(state)
@@ -93,8 +95,8 @@ const ms = (iso: string | null) => {
   return Number.isNaN(t) ? null : t
 }
 
-export function lifeOf(mrs: MrInput[], stored: Stored): Life {
-  const stage = shipStage(mrs, stored)
+export function lifeOf(mrs: MrInput[], stored: Stored, turnedBack = false): Life {
+  const stage = shipStage(mrs, stored, turnedBack)
   const state: LifeState = stored.failed ? 'failed' : stored.paused ? 'paused' : stage
   const rows = mrs.map(mr => ({
     n: mr.n,
@@ -106,11 +108,11 @@ export function lifeOf(mrs: MrInput[], stored: Stored): Life {
   const latest = changes.length > 0 ? Math.max(...changes) : null
   const endedAt = stage === 'done' ? (ms(stored.docked) ?? latest) : stage === 'abandoned' ? latest : null
 
-  return { stage, state, paused: stored.paused, failed: stored.failed, endedAt, mrs: rows, actions: actionsFor(state) }
+  return { stage, state, paused: stored.paused, failed: stored.failed, endedAt, mrs: rows, actions: actionsFor(state, turnedBack) }
 }
 
-export function applyAction(mrs: MrInput[], stored: Stored, action: Action, now: string): Stored {
-  const life = lifeOf(mrs, stored)
+export function applyAction(mrs: MrInput[], stored: Stored, action: Action, now: string, turnedBack = false): Stored {
+  const life = lifeOf(mrs, stored, turnedBack)
   if (!life.actions.includes(action)) throw new Error(`${action} does not apply to a ship that is ${life.state}`)
   const next: Stored = { ...stored, mrs: { ...stored.mrs } }
   const move = (from: MrState, to: AfterState) => {

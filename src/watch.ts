@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 
 import { observeMr, readStored, withSha, writeStored } from './life.ts'
-import { fleetHome, readState, type Mr } from './state.ts'
+import { fleetHome, readState, turnedBackScout, type Mr } from './state.ts'
 
 export const POLL_MS = 2 * 60 * 1000
 export const CHECK_LIMIT_MS = 60 * 1000
@@ -109,6 +109,11 @@ export function startWatcher({
     if (next) writeStored(home, ship, next)
   }
 
+  const dockScout = (name: string) => {
+    const stored = readStored(home, name)
+    if (stored.docked === null) writeStored(home, name, { ...stored, docked: new Date(deps.now()).toISOString() })
+  }
+
   const pollMerge = async (ship: string, mr: Mr) => {
     const file = hostCli(mr.url!)
     const got = await deps.cli(file, hostArgs(file, mr.url!))
@@ -163,6 +168,7 @@ export function startWatcher({
     const jobs: Promise<unknown>[] = []
     for (const fleet of readState(env, deps.now()).fleets) {
       for (const ship of fleet.ships) {
+        if (turnedBackScout(ship)) dockScout(ship.ship)
         ship.mrs.forEach((mr, i) => {
           const life = ship.life.mrs[i]
           if (life.state === 'in_review' && mr.url) jobs.push(...once(`${ship.ship}#${mr.n}#merge`, () => pollMerge(ship.ship, mr)))

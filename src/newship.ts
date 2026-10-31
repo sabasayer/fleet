@@ -10,7 +10,8 @@ import type { Fleet } from './state.ts'
 const run = promisify(execFile)
 
 const CONTROL = /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/
-export const LIMITS = { fleet: 60, task: 500, folder: 1000 }
+const CONTROL_BUT_NEWLINE = /[\u0000-\u0009\u000b-\u001f\u007f-\u009f\u2028\u2029]/
+export const LIMITS = { fleet: 60, task: 4000, folder: 1000 }
 
 export type NewShipDeps = {
   repoRoot: (path: string) => Promise<string | null>
@@ -39,11 +40,11 @@ export const realNewShipDeps: NewShipDeps = {
 
 type Text = { ok: true; value: string } | { ok: false; message: string }
 
-function text(value: unknown, label: string, max: number): Text {
+function text(value: unknown, label: string, max: number, multiline = false): Text {
   if (typeof value !== 'string') return { ok: false, message: `${label} is missing.` }
   const trimmed = value.trim()
   if (!trimmed) return { ok: false, message: `${label} is empty.` }
-  if (CONTROL.test(value)) return { ok: false, message: `${label} has a line break or a control character.` }
+  if ((multiline ? CONTROL_BUT_NEWLINE : CONTROL).test(value)) return { ok: false, message: `${label} has ${multiline ? '' : 'a line break or '}a control character.` }
   if (trimmed.length > max) return { ok: false, message: `${label} is longer than ${max} characters.` }
 
   return { ok: true, value: trimmed }
@@ -85,7 +86,7 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 export async function startNewShip(input: any, fleets: Pick<Fleet, 'id' | 'name'>[], jumpDeps: JumpDeps, deps: NewShipDeps = realNewShipDeps): Promise<NewShipResult> {
   const fleetText = text(input?.fleet, 'Fleet', LIMITS.fleet)
   if (!fleetText.ok) return { status: 'error', message: fleetText.message }
-  const taskText = text(input?.task, 'Task', LIMITS.task)
+  const taskText = text(input?.task, 'Task', LIMITS.task, true)
   if (!taskText.ok) return { status: 'error', message: taskText.message }
   const folderText = text(input?.folder, 'Repo folder', LIMITS.folder)
   if (!folderText.ok) return { status: 'error', message: folderText.message }

@@ -50,7 +50,18 @@ test('the form escapes values and shows the copy command for a fallback', () => 
   })
   assert.doesNotMatch(html, /<script>|<b>|<i>/)
   assert.match(html, /data-copy-new=/)
-  assert.match(html, /maxlength="500"/)
+  assert.match(html, /<textarea name="task" required maxlength="4000" rows="\d+">&#60;b&#62;&#39;<\/textarea>/)
+})
+
+test('the task keeps its line breaks in the form and in the copy button', () => {
+  const html = newShipFormHtml({
+    fleets,
+    form: { fleet: 'f', folder: '', task: 'one\ntwo', copied: false },
+    busy: false,
+    result: { status: 'fallback', message: 'down', command: "claude 'one\ntwo'" },
+  })
+  assert.ok(html.includes('>one\ntwo</textarea>'))
+  assert.ok(html.includes(`data-copy-new="claude &#39;one\ntwo&#39;"`))
 })
 
 test('the start button is disabled while busy', () => {

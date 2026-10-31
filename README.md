@@ -20,7 +20,7 @@ Every 2 minutes, fleet also runs the fleet's `release_check` for each `merged` M
 
 ## New ship
 
-The "+ new ship" button opens a form with three fields: fleet, repo folder and task. A "Scout first" checkbox under Task starts a scout in place of a crew run. Fleet checks them on the server. The folder must exist and be a git repo. If it is a worktree, fleet uses the main checkout.
+The "+ new ship" button opens a form with three fields: fleet, repo folder and task. A "Scout first" checkbox under Task starts a scout in place of a crew run. The task can have several lines, up to 4000 characters. Other control characters are refused. Fleet checks them on the server. The folder must exist and be a git repo. If it is a worktree, fleet uses the main checkout.
 
 Fleet starts `claude --session-id <uuid> -n <ship> "/crew <task> fleet: <fleet>"` in a new herdr tab in the fleet's workspace. With "Scout first" ticked, the prompt is `/scout ...` and the tab name gains a `scout-` prefix. It then focuses the tab and raises Ghostty. If herdr does not answer, the page shows the command to copy. Fleet writes no ship file. The ship shows on the sea when crew writes its `ship.json`.
 

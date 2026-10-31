@@ -42,7 +42,7 @@ test('new ship needs the token', async () => {
 
 test('new ship refuses bad json and bad input', async () => {
   assert.equal((await post('{', server.token)).status, 400)
-  const res = await post(JSON.stringify({ fleet: 'f', folder: '/repo', task: 'a\nb' }), server.token)
+  const res = await post(JSON.stringify({ fleet: 'f', folder: '/repo', task: 'a\u0000b' }), server.token)
   assert.equal(res.status, 200)
   assert.equal((await res.json()).status, 'error')
   assert.deepEqual(calls, [])
@@ -54,4 +54,11 @@ test('without herdr the route returns the command and writes no file', async () 
   assert.equal(result.status, 'fallback')
   assert.match(result.command, /^cd '\/repo' && claude /)
   assert.deepEqual(calls, [])
+})
+
+test('a 4000 character task of line breaks and quotes gets through the body limit', async () => {
+  const task = '"\n'.repeat(1999) + '""'
+  const result = await (await post(JSON.stringify({ fleet: 'f', folder: '/repo', task }), server.token)).json()
+  assert.equal(result.status, 'fallback')
+  assert.ok(result.command.includes(task))
 })

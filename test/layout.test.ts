@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import {
-  crewOf, currentIndex, initialView, layoutFor, mixLayout, move, reconcile, scrollShift, shipX, stoneX, toFleet, zoomIn, zoomOut,
+  crewOf, crewRight, currentIndex, headRoom, initialView, LABEL_COLUMN, layoutFor, RIGHT_MARGIN, ROLE_CHAR_PX, roleLabels, shipLeft, mixLayout, move, reconcile, scrollShift, shipX, stoneX, toFleet, zoomIn, zoomOut,
 } from '../web/layout.js'
+import { shipGrid } from '../web/art.js'
 
 const member = (role: string, state: string) => ({ role, state, stale: false })
 const ship = (name: string, mrs: { crew: ReturnType<typeof member>[] }[] = [{ crew: [] }]) => ({ ship: name, title: name, mrs, needsCaptain: null })
@@ -94,4 +95,40 @@ test('mixing layouts halfway gives halfway values', () => {
 test('scroll shift keeps the cursor row in view', () => {
   assert.equal(scrollShift({ top: 100, bottom: 300 }, 700), 0)
   assert.equal(scrollShift({ top: 800, bottom: 900 }, 700), 900 - (700 - 16))
+})
+
+const ROLES = ['red', 'green', 'review-spec', 'review-quality', 'gate-captain', 'browser-check', 'fixer', 'move', 'pin', 'review', 'gate', 'browser']
+const crewOfSize = (count: number, done: number) =>
+  Array.from({ length: count }, (_, i) => member(ROLES[i % ROLES.length], i < done ? 'done' : 'running'))
+
+for (const width of [1280, 1440, 1920]) {
+  for (const count of [3, 8, 12]) {
+    const left = LABEL_COLUMN
+    const right = width - RIGHT_MARGIN
+    const stop = crewRight(left, right)
+
+    test(`role labels do not overlap and the ship keeps right of the label column: ${count} members at ${width}px`, () => {
+      for (let done = 0; done <= count; done++) {
+        const crew = crewOfSize(count, done)
+        const spans = roleLabels(crew, left, stop).map(({ x, text }) => [x - (text.length * ROLE_CHAR_PX) / 2, x + (text.length * ROLE_CHAR_PX) / 2])
+        assert.ok(spans.length > 0)
+        spans.slice(1).forEach(([from], i) => assert.ok(from >= spans[i][1], `labels ${i} and ${i + 1} overlap`))
+        const faces = shipGrid(crew, '#fff', 0, 'faces')[0].length * 8
+        assert.ok(shipLeft(shipX(crew, left, stop), faces, left, right) >= left)
+      }
+    })
+  }
+}
+
+test('role names shrink, then only the current one shows', () => {
+  const crew = crewOfSize(12, 3)
+  assert.deepEqual(roleLabels(crewOfSize(3, 1), 170, 794).map(l => l.text), ['red', 'green', 'review-spec'])
+  assert.ok(roleLabels(crew, 170, 794).every(l => l.text.length <= 5))
+  const tight = roleLabels(crew, 170, 300)
+  assert.deepEqual(tight.map(l => [l.k, l.text]), [[3, 'review-quality']])
+})
+
+test('lane head leaves room before the first header label', () => {
+  assert.ok(headRoom(170, 1210, true) < headRoom(170, 1210, false))
+  assert.ok(headRoom(170, 1210, false) > 0)
 })

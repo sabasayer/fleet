@@ -55,7 +55,13 @@ body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospa
 .needs { color: #0d1b2a; background: #e5c04b; padding: 0 5px; font-weight: bold; }
 .fail { color: #fff; background: #e5484d; padding: 0 5px; font-weight: bold; }
 .label { position: absolute; font-size: 12px; white-space: nowrap; text-shadow: 1px 1px 0 #000; }
-.lane-head { position: absolute; left: 12px; pointer-events: auto; cursor: pointer; font-weight: bold; letter-spacing: 1px; }
+.lane-head { position: absolute; left: 12px; display: flex; gap: 6px; white-space: nowrap; pointer-events: auto; cursor: pointer; font-weight: bold; letter-spacing: 1px; }
+.lane-head > * { flex: 0 0 auto; }
+.lane-head > .head-name, .lane-head > .head-count { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.lane-head > .head-name { flex: 0 1 auto; }
+.lane-head > .head-count { flex: 0 100 auto; }
+.label .ship-id, .label .clamp { overflow: hidden; text-overflow: ellipsis; }
+.label .clamp { display: -webkit-box; -webkit-box-orient: vertical; white-space: normal; }
 `
 
 export const page = (token: string) => `<!doctype html>

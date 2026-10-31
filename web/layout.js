@@ -30,6 +30,27 @@ export function shipX(crew, left, right) {
   return at < 0 ? right + 46 : stoneX(at, crew.length, left, right)
 }
 
+export const ROLE_CHAR_PX = 7.5
+export const ROLE_GAP = 6
+export const MIN_ROLE_CHARS = 4
+
+const clip = (text, chars) => (text.length <= chars ? text : `${text.slice(0, chars - 1)}…`)
+
+export function roleLabels(crew, start, stop) {
+  const chars = Math.floor(((stop - start) / (crew.length + 1) - ROLE_GAP) / ROLE_CHAR_PX)
+  const at = currentIndex(crew)
+  const only = at < 0 ? crew.length - 1 : at
+
+  return crew.flatMap((member, k) => {
+    const x = stoneX(k, crew.length, start, stop)
+    if (chars >= MIN_ROLE_CHARS) return [{ k, x, text: clip(member.role, chars) }]
+
+    return k === only ? [{ k, x, text: member.role }] : []
+  })
+}
+
+export const shipLeft = (centre, width, left, right) => Math.max(left, Math.min(centre - width / 2, right + 36 - width))
+
 export const crewRight = (left, right) => left + (right - left) * CREW_SHARE
 
 export const SCOUT_SHARE = 0.15
@@ -44,6 +65,18 @@ export function laneHeadText(ships) {
   const scouts = ships.filter(ship => shipPhase(ship) === 'scouting').length
 
   return `${ships.length - scouts} ships${scouts ? ` · ${scouts} scout${scouts === 1 ? '' : 's'}` : ''}`
+}
+
+const HEAD_LEFT = 12
+const HEAD_GAP = 20
+const CREW_LABEL_HALF = 42
+const SCOUT_LABEL_HALF = 30
+
+export function headRoom(left, right, band) {
+  const crewCentre = (crewLeft(left, right, band) + crewRight(left, right)) / 2
+  const firstLabel = band ? Math.min(crewCentre - CREW_LABEL_HALF, scoutX(left, right) - SCOUT_LABEL_HALF) : crewCentre - CREW_LABEL_HALF
+
+  return Math.max(0, firstLabel - HEAD_GAP - HEAD_LEFT)
 }
 
 export const zoneEdge = (index, left, right) => crewRight(left, right) + (index / ZONES.length) * (right - crewRight(left, right))

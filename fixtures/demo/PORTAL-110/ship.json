@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "ship": "PORTAL-110",
+  "title": "Rework the long patient portal onboarding flow so new users can finish every consent step",
+  "task": "https://linear.app/demo/issue/PORTAL-110",
+  "fleet": "portal",
+  "created": "2026-10-20T09:00:00Z",
+  "session": {
+    "id": "00000000-0000-4000-8000-000000000110",
+    "updated": "2099-01-01T00:00:00Z"
+  },
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/portal",
+      "remote": "gitlab.com/demo/portal",
+      "worktree": "/work/portal-PORTAL-110",
+      "branch": "feat/PORTAL-110",
+      "url": null
+    }
+  ]
+}

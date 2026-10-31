@@ -76,19 +76,19 @@ function crewTable(crew) {
 const mrStates = ship =>
   ship.mrs.length > 1 && ship.life ? `<p class="dim">${ship.life.mrs.map(m => `MR ${m.n}: ${ZONE_NAME[m.state] ?? m.state}`).join(' · ')}</p>` : ''
 
-function openView(ship, jump) {
+function openView(ship, jump, confirm) {
   return `<div class="open">
     ${goal(ship)}
     <p class="dim">${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</p>
     ${mrStates(ship)}
     ${(ship.checks ?? []).map(c => `<p class="dim">MR ${c.n} ${escapeHtml(c.text)} · ${ago(c.at, Date.now())}</p>`).join('')}
     ${crewTable(crewOf(ship))}
-    <div class="buttons" data-slot="state-buttons">${buttonsHtml(ship, escapeHtml)}</div>
+    <div class="buttons" data-slot="state-buttons">${buttonsHtml(ship, escapeHtml, confirm)}</div>
     ${jumpHtml(ship, jump)}
   </div>`
 }
 
-function shipRow({ ship, fleet }, open, now, showFleet, jump) {
+function shipRow({ ship, fleet }, open, now, showFleet, jump, confirm) {
   const crew = crewOf(ship)
   const need = ship.needsCaptain
   const life = lifeState(ship)
@@ -101,32 +101,32 @@ function shipRow({ ship, fleet }, open, now, showFleet, jump) {
     ${need ? `<span style="color:${needsColor(need)}">Waiting for you: ${escapeHtml(need.reason)}</span><br>` : ''}
     <span class="dim">${phase} · ${ago(updatedAt(ship), now)}</span>
     ${scouting ? '' : bar(crew, ship)}
-    ${open ? openView(ship, jump) : ''}
+    ${open ? openView(ship, jump, confirm) : ''}
   </div>`
 }
 
 const dockedLabel = (ship, now) => (ship.life.endedAt === null ? 'docked' : `docked ${ago(ship.life.endedAt, now)}`)
 
-function harbourRow({ ship, fleet }, open, now, jump) {
+function harbourRow({ ship, fleet }, open, now, jump, confirm) {
   const mrCount = `${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}`
   const summary = shipPhase(ship) === 'turned_back' ? escapeHtml(ship.outcome) : mrCount
 
   return `<div class="row${open ? ' cur' : ''}" data-ship="${escapeHtml(ship.ship)}" data-harbour>
     <b>${escapeHtml(ship.title)}</b> <span class="dim">${escapeHtml(ship.ship)} · ${escapeHtml(fleet.name)}</span><br>
     <span class="dim">${dockedLabel(ship, now)} · ${summary}</span>
-    ${open ? openView(ship, jump) : ''}
+    ${open ? openView(ship, jump, confirm) : ''}
   </div>`
 }
 
-function harbourSection(fleets, view, now, opened, jump) {
+function harbourSection(fleets, view, now, opened, jump, confirm) {
   const scope = view.level === 'armada' ? fleets : fleets.filter(f => f.id === focusFleet(view, fleets)?.id)
   const { docked, hidden } = harbourOf(scope, now)
-  const rows = docked.map(entry => harbourRow(entry, entry.ship.ship === opened, now, jump)).join('')
+  const rows = docked.map(entry => harbourRow(entry, entry.ship.ship === opened, now, jump, confirm)).join('')
 
   return `<section class="hud-block harbour-panel"><h3>⚓ harbour (${docked.length})${hidden ? ` <span class="dim">+${hidden} hidden</span>` : ''}</h3>${rows || '<p class="dim">No ships docked.</p>'}</section>`
 }
 
-export function panelHtml({ fleets: all, view, now, opened = null, jump, starting = [] }) {
+export function panelHtml({ fleets: all, view, now, opened = null, jump, starting = [], confirm = null }) {
   const startingBlock = startingHtml(starting, now)
   if (all.length === 0) return startingBlock
   const fleets = seaFleets(all, now)
@@ -139,9 +139,9 @@ export function panelHtml({ fleets: all, view, now, opened = null, jump, startin
         `<div class="row hot${ship.needsCaptain.kind === 'failed' ? ' failed' : ''}" data-ship="${escapeHtml(ship.ship)}">${badge(ship)} ${escapeHtml(ship.title)} <span class="dim">${escapeHtml(ship.ship)}</span><br><span class="dim">${escapeHtml(ship.needsCaptain.reason)}</span></div>`,
     )
     .join('')
-  const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada', jump)).join('')
+  const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada', jump, confirm)).join('')
 
   return `${startingBlock}<section class="hud-block needs-panel"><h3>needs captain (${waiting.length})</h3>${waitingRows || '<p class="dim">Nothing waits for you.</p>'}</section>
   <section class="hud-block ships-panel"><h3>ships</h3>${shipRows || '<p class="dim">No ships at sea.</p>'}</section>
-  ${harbourSection(all, view, now, opened, jump)}`
+  ${harbourSection(all, view, now, opened, jump, confirm)}`
 }

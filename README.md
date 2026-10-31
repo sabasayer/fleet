@@ -79,3 +79,21 @@ It is one JSON object. Each key is a fleet id (the `fleet` field of `ship.json`)
 | `FLEET_MR_URL` | The MR link. |
 
 Always put the variables in double quotes, as in the example.
+
+## Keys
+
+Keys act on the open ship: the one under the cursor, or the one opened in the harbour. A key works only when its button shows for that ship. Keys do nothing while you type in a form field. Each button shows its key.
+
+| Key | Action |
+| --- | --- |
+| `j` | Jump back |
+| `s` | Next state: mark merged, mark released, start testing or done |
+| `p` | Pause, or resume |
+| `f` | Mark failed. Press twice to confirm. |
+| `b` | Bug found, back to sea. Press twice to confirm. |
+| `u` | Undock |
+| `n` | New ship |
+| `o` | Show or hide the scouting band |
+| `?` | Show or hide the key list |
+
+The arrow keys, `Enter` and `Esc` move the cursor and zoom. The "press again to confirm" prompt ends after 4 seconds, or when you press another key.

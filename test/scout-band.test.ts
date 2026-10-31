@@ -56,7 +56,7 @@ test('with the band on a ship with no crew moves right, a ship in a zone stays p
   assert.equal(shipPlaceX(merged, [], LEFT, RIGHT, true), shipPlaceX(merged, [], LEFT, RIGHT, false))
 })
 
-test('the band shows on manual, and on a scout at sea when nobody pressed s', () => {
+test('the band shows on manual, and on a scout at sea when nobody pressed o', () => {
   assert.equal(showScoutBand(undefined, false), false)
   assert.equal(showScoutBand(true, false), true)
   assert.equal(showScoutBand(undefined, true), true)

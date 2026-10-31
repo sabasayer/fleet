@@ -32,7 +32,7 @@ Settled in the grilling of 2026-10-29, built in the fleet repo (ship `scouts-fle
 - Fleet derives the phase from `kind`, the MR list and `outcome`, in that order.
   `kind` on its own is the wrong test: a scout that finds work keeps `kind`.
 - A scouting scout sails in a band cut from the left of the crew band, 15% of
-  the lane. The four zone edges do not move. Press `s` to turn the band on or
+  the lane. The four zone edges do not move. Press `o` to turn the band on or
   off. It is on by itself when a scout is at sea. The key is not kept over a
   reload.
 - The boat has no sail and no crew stones. It flies a small flag in the fleet

@@ -33,7 +33,7 @@ Fleet reads two top-level fields from `~/.crew/<ship>/ship.json`:
 - `kind`: `"ship"` or `"scout"`. A missing field means `"ship"`.
 - `outcome`: one line, or `null`. A missing field means `null`.
 
-A scout with no MRs sails in the scouting band, a strip on the left of each lane. Its boat has no sail, because it has no crew. It flies a small flag in the fleet colour, so it reads at a glance. Press `s` to turn the band on or off. The band is on by itself when a scout is at sea. The key is not kept over a reload.
+A scout with no MRs sails in the scouting band, a strip on the left of each lane. Its boat has no sail, because it has no crew. It flies a small flag in the fleet colour, so it reads at a glance. Press `o` to turn the band on or off. The band is on by itself when a scout is at sea. The key is not kept over a reload.
 
 A scout with no MRs and an outcome is turned back. Fleet docks it in the harbour on its own, and the harbour row shows the outcome line. A scout that gains MR 1 is a normal ship from then on.
 

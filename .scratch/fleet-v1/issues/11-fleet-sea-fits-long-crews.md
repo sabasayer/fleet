@@ -2,7 +2,7 @@
 
 Repo: sabasayer/fleet
 Status: ready-for-agent
-Blocked by: the `scouts-fleet` crew ship (it changes `web/sea.js` and `web/layout.js`)
+Blocked by: none (scouts is on main)
 
 ## What
 

@@ -2,7 +2,7 @@
 
 Repo: sabasayer/fleet
 Status: ready-for-agent
-Blocked by: the `scouts-fleet` crew ship (it changes the new-ship form)
+Blocked by: none (scouts is on main)
 
 ## What
 

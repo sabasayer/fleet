@@ -2,7 +2,7 @@
 
 Repo: sabasayer/fleet
 Status: ready-for-agent
-Blocked by: the `scouts-fleet` crew ship (it changes `web/main.js` and the panel)
+Blocked by: none (scouts is on main)
 
 ## What
 
@@ -17,6 +17,7 @@ The captain wants a key for each button. The arrow keys, `Enter` and `Esc` alrea
 | `b` | bug found → back to sea |
 | `u` | undock (in the harbour) |
 | `n` | new ship (no ship needed) |
+| `o` | show and hide the scouting band (already built) |
 | `?` | show and hide this list |
 
 - A key only works when its button shows for that ship. Otherwise nothing happens.

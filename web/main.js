@@ -199,7 +199,7 @@ document.addEventListener('keydown', event => {
 
     return
   }
-  if (event.key === 's' && !event.metaKey && !event.ctrlKey && !event.altKey) {
+  if (event.key === 'o' && !event.metaKey && !event.ctrlKey && !event.altKey) {
     event.preventDefault()
     manual = !showScoutBand(manual, anyScout())
     schedule()

@@ -1,7 +1,7 @@
 import { serverError } from './actions.js'
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
-export const LIMITS = { fleet: 60, task: 500, folder: 1000 }
+export const LIMITS = { fleet: 60, task: 4000, folder: 1000 }
 export const WAIT_MS = 3 * 60 * 1000
 
 export function fleetChoices(fleets) {
@@ -53,8 +53,8 @@ export function newShipFormHtml({ fleets, form, busy, result }) {
     <label>Repo folder <span class="dim">(pick one or paste an absolute path)</span>
       <input name="folder" list="newship-repos" required maxlength="${LIMITS.folder}" value="${escapeHtml(form.folder)}"></label>
     ${datalistHtml('newship-repos', repoChoices(fleets, form.fleet))}
-    <label>Task <span class="dim">(text or link)</span>
-      <input name="task" required maxlength="${LIMITS.task}" value="${escapeHtml(form.task)}"></label>
+    <label>Task <span class="dim">(text or link, line breaks allowed)</span>
+      <textarea name="task" required maxlength="${LIMITS.task}" rows="6">${escapeHtml(form.task)}</textarea></label>
     <label class="check"><input type="checkbox" name="scout"${form.scout ? ' checked' : ''}> Scout first <span class="dim">(look into it before any crew run)</span></label>
     <div class="buttons"><button type="submit"${busy ? ' disabled' : ''}>${busy ? 'Starting…' : 'Start ship'}</button><button type="button" data-newship-close>Close</button></div>
     ${message}${command}

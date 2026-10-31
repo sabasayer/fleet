@@ -29,6 +29,18 @@ export const ACTION_LABEL = {
   undock: 'undock',
 }
 
+export const ACTION_KEY = {
+  mark_merged: 's',
+  mark_released: 's',
+  start_testing: 's',
+  done: 's',
+  bug_found: 'b',
+  pause: 'p',
+  resume: 'p',
+  mark_failed: 'f',
+  undock: 'u',
+}
+
 export function shipPhase(ship) {
   if (ship.kind !== 'scout' || ship.mrs.length > 0) return 'ship'
 
@@ -62,7 +74,12 @@ export function harbourOf(fleets, now) {
   }
 }
 
-export const buttonsHtml = (ship, escapeHtml) =>
+export const buttonsHtml = (ship, escapeHtml, confirm = null) =>
   (ship.life?.actions ?? [])
-    .map(action => `<button data-action="${action}" data-ship="${escapeHtml(ship.ship)}">${ACTION_LABEL[action]}</button>`)
+    .map(action => {
+      const asking = confirm?.ship === ship.ship && confirm.action === action
+      const text = asking ? 'press again to confirm' : ACTION_LABEL[action]
+
+      return `<button data-action="${action}" data-ship="${escapeHtml(ship.ship)}"${asking ? ' class="asking"' : ''}>${text} (${ACTION_KEY[action]})</button>`
+    })
     .join(' ')

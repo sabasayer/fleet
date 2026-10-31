@@ -1,9 +1,10 @@
 import { focusFleet, initialView, move, reconcile, showScoutBand, toArmada, toFleet, toShip, zoomIn, zoomOut } from './layout.js'
 import { requestJump } from './jump.js'
+import { isTyping, keyAction, keysHtml, pressAction } from './keys.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets, shipPhase } from './life.js'
 import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml } from './newship.js'
-import { panelHtml } from './panel.js'
+import { openShipName, panelHtml } from './panel.js'
 import { createSea } from './sea.js'
 
 const canvas = document.getElementById('sea')
@@ -29,6 +30,9 @@ let lastOpen = null
 let jump = null
 let starting = []
 let newShip = null
+let helpOpen = false
+let confirm = null
+let confirmTimer = 0
 let manual
 
 const anyScout = () => fleets.some(fleet => fleet.ships.some(ship => shipPhase(ship) === 'scouting'))
@@ -40,7 +44,7 @@ function crumbHtml() {
   if (view.level !== 'armada' && fleet) parts.push(`<a data-fleet="${escapeHtml(fleet.id)}">${escapeHtml(fleet.name)}</a>`)
   if (view.level === 'ship') parts.push(escapeHtml(fleet.ships.find(s => s.ship === view.cursor)?.title ?? view.cursor))
 
-  return `${parts.join(' › ')} <span class="dim">(↑↓ move · → in · ← out · s scouting)</span>`
+  return `${parts.join(' › ')} <span class="dim">(↑↓ move · → in · ← out · o scouting · ? keys)</span>`
 }
 
 function render() {
@@ -55,7 +59,7 @@ function render() {
 }
 
 function renderSide() {
-  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump, starting })
+  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump, starting, confirm })
   if (html === lastSide) return
   const scroll = side.scrollTop
   side.innerHTML = lastSide = html
@@ -70,7 +74,15 @@ function schedule() {
   if (!pending) pending = requestAnimationFrame(render)
 }
 
+function setConfirm(next) {
+  clearTimeout(confirmTimer)
+  confirm = next
+  if (next) confirmTimer = setTimeout(() => setConfirm(null), 4000)
+  renderSide()
+}
+
 function setView(next) {
+  if (confirm) setConfirm(null)
   harbourOpen = null
   view = next
   schedule()
@@ -91,7 +103,7 @@ async function startJump(ship) {
 }
 
 function renderModal() {
-  modal.innerHTML = newShip ? newShipFormHtml({ fleets: allFleets, form: newShip.form, busy: newShip.busy, result: newShip.result }) : ''
+  modal.innerHTML = newShip ? newShipFormHtml({ fleets: allFleets, form: newShip.form, busy: newShip.busy, result: newShip.result }) : helpOpen ? keysHtml() : ''
 }
 
 function openNewShip() {
@@ -144,6 +156,7 @@ modal.addEventListener('submit', event => {
 })
 
 modal.addEventListener('click', async event => {
+  if (helpOpen) return toggleHelp()
   if (event.target === modal || event.target.closest('[data-newship-close]')) return closeNewShip()
   const copy = event.target.closest('[data-copy-new]')
   if (!copy) return
@@ -193,12 +206,48 @@ document.addEventListener('click', event => {
   else setView(toFleet(view, fleets, target.dataset.fleet))
 })
 
+function toggleHelp() {
+  helpOpen = !helpOpen
+  renderModal()
+}
+
+const shipUnderCursor = () => {
+  const name = harbourOpen ?? openShipName(view)
+
+  return allFleets.flatMap(f => f.ships).find(s => s.ship === name) ?? null
+}
+
+function pressKey(event) {
+  const ship = shipUnderCursor()
+  const action = keyAction({ key: event.key, ship, typing: isTyping(event.target) })
+  if (!action) return false
+  event.preventDefault()
+  if (action === 'help') toggleHelp()
+  else if (action === 'new') openNewShip()
+  else if (action === 'jump') void startJump(ship.ship)
+  else {
+    const press = pressAction(confirm, ship.ship, action)
+    setConfirm(press.confirm)
+    if (press.fire) sendAction(ship.ship, action).then(poll)
+  }
+
+  return true
+}
+
 document.addEventListener('keydown', event => {
   if (newShip) {
     if (event.key === 'Escape') closeNewShip()
 
     return
   }
+  if (helpOpen) {
+    if (event.key === 'Escape' || event.key === '?') toggleHelp()
+
+    return
+  }
+  const plain = !event.metaKey && !event.ctrlKey && !event.altKey
+  if (plain && pressKey(event)) return
+  if (confirm) setConfirm(null)
   if (event.key === 'o' && !event.metaKey && !event.ctrlKey && !event.altKey) {
     event.preventDefault()
     manual = !showScoutBand(manual, anyScout())

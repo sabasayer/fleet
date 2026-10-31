@@ -34,6 +34,7 @@ body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospa
 .buttons { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
 .buttons button { font: inherit; font-size: 12px; background: #2c4a66; color: #e8e4d8; border: 2px solid #4f7aa3; padding: 3px 8px; cursor: pointer; }
 .buttons button:hover { background: #3b5f84; }
+.buttons button.asking { background: #6b4e12; border-color: #d9a441; }
 .buttons button:disabled { opacity: 0.5; cursor: default; }
 .zone-step { background: #c9d6e3; width: 8px !important; }
 .slot { margin-top: 6px; padding: 4px 6px; border: 1px dashed #4f7aa3; color: #7d8fa3; font-size: 12px; }
@@ -78,7 +79,7 @@ export const page = (token: string) => `<!doctype html>
 <canvas id="sea"></canvas>
 <div id="ui"></div>
 <div id="crumbs" class="hud"></div>
-<button type="button" id="newship-open">+ new ship</button>
+<button type="button" id="newship-open">+ new ship (n)</button>
 </div>
 <aside id="side"></aside>
 <div id="modal"></div>

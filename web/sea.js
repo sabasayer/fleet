@@ -1,5 +1,5 @@
 import { ANCHOR, BACKDROP, beaconGrid, blit, boatGrid, CALM, flagColor, GOLD, hash, memberColor, shipGrid, snap, STATE, STONE_LINE, WAVE, WOOD } from './art.js'
-import { crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, laneHeadText, layoutFor, LABEL_COLUMN, lerp, mixLayout, placeX, RIGHT_MARGIN, scoutRight, shapeKey, stoneX, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
+import { crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, headRoom, laneHeadText, layoutFor, LABEL_COLUMN, lerp, mixLayout, placeX, RIGHT_MARGIN, roleLabels, scoutRight, shapeKey, shipLeft, stoneX, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
 import { lifeState, LIFE_COLOR, LIFE_SHORT, shipPhase, ZONE_NAME, ZONES } from './life.js'
 
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
@@ -91,7 +91,7 @@ export function createSea(canvas, ui) {
       ctx.fillRect(Math.round((right + 40) * dpr), Math.round(lane.y * dpr), 12 * dpr, Math.round(lane.h * dpr))
 
       const waiting = fleet.ships.filter(s => s.needsCaptain).length
-      html += `<div class="lane-head" data-fleet="${escapeHtml(fleet.id)}" style="top:${lane.y + 5}px;${opacity(laneAlpha)}"><span style="color:${escapeHtml(fleet.color)}">▶ ${escapeHtml(fleet.name.toUpperCase())}</span> <span class="dim">${laneHeadText(fleet.ships)}</span> ${waiting ? `<span class="needs">${waiting} need you</span>` : ''}</div>`
+      html += `<div class="lane-head" data-fleet="${escapeHtml(fleet.id)}" style="top:${lane.y + 5}px;max-width:${headRoom(left, right, band)}px;${opacity(laneAlpha)}"><span class="head-name" style="color:${escapeHtml(fleet.color)}">▶ ${escapeHtml(fleet.name.toUpperCase())}</span><span class="dim head-count">${laneHeadText(fleet.ships)}</span>${waiting ? `<span class="needs">${waiting} need you</span>` : ''}</div>`
 
       fleet.ships.forEach(ship => {
         const place = layout.ships[ship.ship]
@@ -114,11 +114,15 @@ export function createSea(canvas, ui) {
           const cx = stoneX(k, crew.length, start, stop)
           ctx.fillStyle = memberColor(member)
           ctx.fillRect(Math.round((cx - stone / 2) * dpr), Math.round((lineY - stone / 2) * dpr), Math.round(stone * dpr), Math.round(stone * dpr))
-          if (scale >= 3) html += label(cx, lineY + 8, `<span style="color:${memberColor(member)}">${escapeHtml(member.role)}</span>`, `transform:translateX(-50%);${opacity(alpha)}`)
         })
+        if (scale >= 3) {
+          roleLabels(crew, start, stop).forEach(({ k, x, text }) => {
+            html += label(x, lineY + 8, `<span style="color:${memberColor(crew[k])}">${escapeHtml(text)}</span>`, `transform:translateX(-50%);${opacity(alpha)}`)
+          })
+        }
 
         const cx = placeX(ship, crew, left, right, band)
-        const sx = Math.min(cx - (grid[0].length * rowPx) / 2, right + 36 - grid[0].length * rowPx)
+        const sx = shipLeft(cx, grid[0].length * rowPx, left, right)
         const working = life === 'sailing' && crew.some(m => m.state === 'running' && !m.stale)
         const sy = top + (working && frame % 2 ? rowPx / 2 : 0)
         blit(ctx, grid, sx, sy, scale, dpr)
@@ -129,8 +133,10 @@ export function createSea(canvas, ui) {
           if (frame % 4 < 3) blit(ctx, beaconGrid(color), cx - 2.5 * snap(bangScale, dpr), sy - (8 + (frame % 2)) * snap(bangScale, dpr), bangScale, dpr)
         }
         if (place.a > 0.5) hits.push({ x: sx, y: sy, w: grid[0].length * rowPx, h: grid.length * rowPx + 10, ship: ship.ship })
-        const tag = LIFE_SHORT[life] ? `${view.level === 'armada' ? ' ' : '<br>'}<span style="color:${LIFE_COLOR[life]};font-size:11px">${LIFE_SHORT[life]}</span>` : ''
-        html += label(left - 6, rowY + 2, `${view.level === 'armada' ? '' : `<span class="dim ship-id">${escapeHtml(ship.ship)}</span><br>`}${needsBadge(ship)} ${escapeHtml(ship.title)}${tag}`, `text-align:right;transform:translateX(-100%);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:${view.level === 'armada' ? 'nowrap' : 'normal'};${opacity(alpha)}`)
+        const armada = view.level === 'armada'
+        const tag = LIFE_SHORT[life] ? `<span style="color:${LIFE_COLOR[life]};font-size:11px">${LIFE_SHORT[life]}</span>` : ''
+        const id = armada ? '' : `<div class="dim ship-id">${escapeHtml(ship.ship)}</div>`
+        html += label(left - 6, rowY + 2, `${id}<div class="clamp" style="-webkit-line-clamp:${armada ? 1 : 2}">${needsBadge(ship)} ${escapeHtml(ship.title)}${armada && tag ? ` ${tag}` : ''}</div>${armada ? '' : tag}`, `text-align:right;transform:translateX(-100%);max-width:${LABEL_COLUMN - 10}px;${opacity(alpha)}`)
       })
     })
     ctx.globalAlpha = 1

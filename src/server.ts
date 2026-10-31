@@ -23,13 +23,14 @@ const safeDecode = (text: string) => {
 }
 const WEB = new URL('../web/', import.meta.url)
 const MAX_BODY = 4096
+const MAX_NEW_SHIP_BODY = 16384
 
-const readBody = (req: IncomingMessage) =>
+const readBody = (req: IncomingMessage, max = MAX_BODY) =>
   new Promise<string>((resolve, reject) => {
     let body = ''
     req.on('data', chunk => {
       body += chunk
-      if (body.length > MAX_BODY) reject(new Error('too large'))
+      if (body.length > max) reject(new Error('too large'))
     })
     req.on('end', () => resolve(body))
     req.on('error', reject)
@@ -124,7 +125,7 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
         return
       }
       if (url.pathname === '/api/ships/new') {
-        readBody(req).then(
+        readBody(req, MAX_NEW_SHIP_BODY).then(
           body => {
             let input: unknown
             try {

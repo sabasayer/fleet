@@ -100,6 +100,32 @@ test('nasty input stays one argv item and one quoted word in the copy command', 
   assert.deepEqual(out.slice(1, 6), ['--session-id', UUID, '-n', result.ship, `/crew ${nasty} fleet: portal`])
 })
 
+const multiline = `Fix the login bug.\n\nSteps:\n- it's "slow"\n- see $(touch /tmp/pwn) and \`id\`\n\nDone when it works.`
+
+test('a multi-line task stays one argv item', async () => {
+  const t = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
+  const result: any = await startNewShip(form({ task: multiline }), fleets, t.jumpDeps, t.deps)
+  assert.equal(result.status, 'started')
+  const argv = only(t.calls, 'agent.start')[0].params.argv
+  assert.equal(argv.length, 6)
+  assert.equal(argv[5], `/crew ${multiline} fleet: portal`)
+})
+
+test('a multi-line task is one quoted word in the copy command', async () => {
+  const t = build({ down: true })
+  const result: any = await startNewShip(form({ task: multiline }), fleets, t.jumpDeps, t.deps)
+  assert.equal(result.status, 'fallback')
+  const run = result.command.replace(/^cd '\/repo' && claude/, 'printf "<%s>" ARG')
+  const out = execFileSync('/bin/sh', ['-c', `cd /tmp && ${run}`], { encoding: 'utf8' })
+  assert.equal(out, `<ARG><--session-id><${UUID}><-n><${result.ship}><${`/crew ${multiline} fleet: portal`}>`)
+})
+
+test('a task of exactly 4000 characters is accepted', async () => {
+  const t = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
+  const task = `${'x'.repeat(3999)}\n`.slice(0, 4000)
+  assert.equal(((await startNewShip(form({ task }), fleets, t.jumpDeps, t.deps)) as any).status, 'started')
+})
+
 test('a folder with a quote is quoted in the copy command', () => {
   const command = startCommand("/a b/it's", ['claude', 'x'])
   assert.equal(command, `cd '/a b/it'\\''s' && claude 'x'`)
@@ -148,10 +174,12 @@ test('validation refuses bad input before herdr is touched', async () => {
     [{ fleet: 'a'.repeat(61) }, /Fleet is longer/],
     [{ fleet: 'a\nb' }, /control character/],
     [{ task: '' }, /Task is empty/],
-    [{ task: 'x'.repeat(501) }, /Task is longer/],
-    [{ task: 'line one\nline two' }, /control character/],
-    [{ task: 'trailing\n' }, /control character/],
+    [{ task: 'x'.repeat(4001) }, /Task is longer/],
     [{ task: 'a\rb' }, /control character/],
+    [{ task: 'a\tb' }, /control character/],
+    [{ task: 'a\u0085b' }, /control character/],
+    [{ task: 'a\u2028b' }, /control character/],
+    [{ fleet: 'a\nb' }, /control character/],
     [{ task: 'a\u0000b' }, /control character/],
     [{ task: 'a\u001b[31mb' }, /control character/],
     [{ folder: 'relative/path' }, /absolute/],

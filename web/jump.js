@@ -23,7 +23,7 @@ export function jumpHtml(ship, jump) {
     : ''
 
   return `<div class="jump">
-    <button type="button" data-jump="${escapeHtml(ship.ship)}"${disabled ? ' disabled' : ''}>${busy ? 'Jumping…' : 'Jump back'}</button>
+    <button type="button" data-jump="${escapeHtml(ship.ship)}"${disabled ? ' disabled' : ''}>${busy ? 'Jumping…' : 'Jump back (j)'}</button>
     ${note}${message}${command}
   </div>`
 }

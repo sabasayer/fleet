@@ -1,0 +1,5 @@
+{
+  "name": "crew",
+  "owner": { "name": "Salih Sayer" },
+  "plugins": [{ "name": "crew-board", "source": "./mods/board" }]
+}

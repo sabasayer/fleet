@@ -1,0 +1,4 @@
+.DS_Store
+node_modules
+mods/*/.claude-plugin/types
+__pycache__

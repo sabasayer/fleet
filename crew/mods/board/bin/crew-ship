@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+import re
+import sys
+import tempfile
+from datetime import datetime, timezone
+
+p = argparse.ArgumentParser(
+    prog="crew-ship",
+    description="Write the ship file, ~/.crew/<ship>/ship.json.",
+)
+p.add_argument("--root", default=os.environ.get("CREW_BOARD_ROOT") or "~/.crew", help="crew folder (or set CREW_BOARD_ROOT)")
+sub = p.add_subparsers(dest="cmd", required=True)
+
+
+def mr_args(q):
+    q.add_argument("--repo", required=True, help="path of the main checkout")
+    q.add_argument("--remote", required=True, help="host and project path, like gitlab.com/group/project")
+    q.add_argument("--worktree", required=True)
+    q.add_argument("--branch", required=True)
+
+
+c = sub.add_parser("create", help="make the ship file with its first MR")
+c.add_argument("ship")
+c.add_argument("--title", required=True)
+c.add_argument("--fleet", required=True)
+c.add_argument("--task", help="link to the task, if there is one")
+mr_args(c)
+s = sub.add_parser("scout", help="make the ship file of a scout, with no MR")
+s.add_argument("ship")
+s.add_argument("--title", required=True)
+s.add_argument("--fleet", required=True)
+s.add_argument("--task", help="link to the task, if there is one")
+m = sub.add_parser("add-mr", help="add the next MR")
+m.add_argument("ship")
+mr_args(m)
+u = sub.add_parser("url", help="set the link of an MR")
+u.add_argument("ship")
+u.add_argument("n", type=int)
+u.add_argument("url")
+o = sub.add_parser("outcome", help="set the one-line outcome of a scout")
+o.add_argument("ship")
+o.add_argument("line")
+a = p.parse_args()
+
+
+def fail(text):
+    sys.exit(f"crew-ship: {text}")
+
+
+def clean(name, value):
+    value = value.strip()
+    if not value:
+        fail(f"{name} is empty.")
+    return value
+
+
+def link(name, value):
+    value = clean(name, value)
+    if not re.fullmatch(r"https?://\S+", value):
+        fail(f"{name} must be a link that starts with http:// or https://.")
+    return value
+
+
+def mr_entry(n):
+    remote = clean("--remote", a.remote)
+    if not re.fullmatch(r"[A-Za-z0-9.-]+/\S+", remote) or "://" in remote:
+        fail("--remote must be host and project path, like gitlab.com/group/project.")
+    paths = {}
+    for name, value in (("--repo", a.repo), ("--worktree", a.worktree)):
+        path = os.path.expanduser(clean(name, value))
+        if not os.path.isabs(path):
+            fail(f"{name} must be an absolute path.")
+        paths[name] = path
+    return {
+        "n": n,
+        "repo": paths["--repo"],
+        "remote": remote,
+        "worktree": paths["--worktree"],
+        "branch": clean("--branch", a.branch),
+        "url": None,
+    }
+
+
+if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", a.ship):
+    fail(f"bad ship name: {a.ship}")
+folder = os.path.join(os.path.expanduser(a.root), a.ship)
+path = os.path.join(folder, "ship.json")
+now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+if a.cmd in ("create", "scout"):
+    is_scout = a.cmd == "scout"
+    if os.path.exists(path):
+        fail(f"{path} exists. Use add-mr or url.")
+    data = {
+        "version": 1,
+        "ship": a.ship,
+        "title": clean("--title", a.title),
+        "task": link("--task", a.task) if a.task else None,
+        "fleet": clean("--fleet", a.fleet),
+        "kind": "scout" if is_scout else "ship",
+        "outcome": None,
+        "created": now,
+        "session": None,
+        "mrs": [] if is_scout else [mr_entry(1)],
+    }
+    message = "scout started" if is_scout else "MR 1 added"
+else:
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        fail(f"{path} not found. Run create or scout first.")
+    except ValueError:
+        fail(f"{path} is not valid JSON.")
+    data.setdefault("kind", "ship")
+    data.setdefault("outcome", None)
+    if a.cmd == "add-mr":
+        n = max((x["n"] for x in data["mrs"]), default=0) + 1
+        data["mrs"].append(mr_entry(n))
+        data["outcome"] = None
+        message = f"MR {n} added"
+    elif a.cmd == "outcome":
+        if data["kind"] != "scout":
+            fail(f"{a.ship} is not a scout.")
+        data["outcome"] = clean("outcome", a.line)
+        message = "outcome set"
+    else:
+        mr = next((x for x in data["mrs"] if x["n"] == a.n), None)
+        if mr is None:
+            fail(f"no MR {a.n} in {path}.")
+        mr["url"] = link("url", a.url)
+        message = f"MR {a.n} url set"
+
+session = os.environ.get("CLAUDE_CODE_SESSION_ID")
+if session and (a.cmd in ("create", "scout") or not os.environ.get("CLAUDE_CODE_CHILD_SESSION")):
+    data["session"] = {"id": session, "updated": now}
+
+os.makedirs(folder, exist_ok=True)
+fd, tmp = tempfile.mkstemp(dir=folder, prefix="ship.json.", suffix=".tmp")
+with os.fdopen(fd, "w") as f:
+    json.dump(data, f, indent=2)
+    f.write("\n")
+os.chmod(tmp, 0o644)
+os.replace(tmp, path)
+print(f"{a.ship}: {message}")

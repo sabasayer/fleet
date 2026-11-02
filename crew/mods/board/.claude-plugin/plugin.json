@@ -1,0 +1,37 @@
+{
+  "name": "crew-board",
+  "version": "0.15.0",
+  "description": "Live board of /crew agents: state, phase, progress and stale warnings, read from ~/.crew",
+  "author": {
+    "name": "Salih Sayer"
+  },
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "port": {
+      "type": "string",
+      "title": "Web view port",
+      "description": "Port for /crew-board serve, the web view for a browser or phone.",
+      "default": "7777"
+    },
+    "alerts": {
+      "type": "string",
+      "title": "Alerts",
+      "description": "on: send a notification when an agent becomes blocked (waits for the captain), fails or goes stale. off: no notifications.",
+      "default": "on",
+      "options": [
+        "on",
+        "off"
+      ]
+    },
+    "style": {
+      "type": "string",
+      "title": "Board style",
+      "description": "full: faces with hats on the ship, a hat in each row, and a blank line between terminal rows. simple: small dots for the crew and compact rows.",
+      "default": "full",
+      "options": [
+        "full",
+        "simple"
+      ]
+    }
+  }
+}

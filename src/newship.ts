@@ -73,9 +73,10 @@ export function shipName(task: string, uuid: string, prefix = '') {
   return isShipName(name) ? name : fallback
 }
 
-export const crewPrompt = (task: string, fleet: string) => `/crew ${task} fleet: ${fleet}`
+const withFleet = (task: string, fleet: string) => `${task}${task.includes('\n') ? '\n' : ' '}fleet: ${fleet}`
+export const crewPrompt = (task: string, fleet: string) => `/crew ${withFleet(task, fleet)}`
 
-export const scoutPrompt = (task: string, fleet: string) => `/scout ${task} fleet: ${fleet}`
+export const scoutPrompt = (task: string, fleet: string) => `/scout ${withFleet(task, fleet)}`
 
 export const startArgv = (uuid: string, ship: string, prompt: string) => ['claude', '--session-id', uuid, '-n', ship, prompt]
 

@@ -108,7 +108,7 @@ test('a multi-line task stays one argv item', async () => {
   assert.equal(result.status, 'started')
   const argv = only(t.calls, 'agent.start')[0].params.argv
   assert.equal(argv.length, 6)
-  assert.equal(argv[5], `/crew ${multiline} fleet: portal`)
+  assert.equal(argv[5], `/crew ${multiline}\nfleet: portal`)
 })
 
 test('a multi-line task is one quoted word in the copy command', async () => {
@@ -117,7 +117,7 @@ test('a multi-line task is one quoted word in the copy command', async () => {
   assert.equal(result.status, 'fallback')
   const run = result.command.replace(/^cd '\/repo' && claude/, 'printf "<%s>" ARG')
   const out = execFileSync('/bin/sh', ['-c', `cd /tmp && ${run}`], { encoding: 'utf8' })
-  assert.equal(out, `<ARG><--session-id><${UUID}><-n><${result.ship}><${`/crew ${multiline} fleet: portal`}>`)
+  assert.equal(out, `<ARG><--session-id><${UUID}><-n><${result.ship}><${`/crew ${multiline}\nfleet: portal`}>`)
 })
 
 test('a task of exactly 4000 characters is accepted', async () => {

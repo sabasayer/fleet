@@ -1,0 +1,6 @@
+{
+  "name": "crew",
+  "owner": { "name": "Salih Sayer" },
+  "description": "crew-board: a live board and skills for /crew runs",
+  "plugins": [{ "name": "crew-board", "source": "./crew/mods/board" }]
+}

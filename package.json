@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node bin/crew-fleet.ts",
     "demo": "rm -rf .demo-home && cp -R fixtures/demo-home .demo-home && CREW_BOARD_ROOT=fixtures/demo CREW_FLEET_HOME=.demo-home node bin/crew-fleet.ts",
-    "test": "node --test"
+    "test": "node --test 'test/**/*.test.ts'"
   },
   "license": "MIT"
 }

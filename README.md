@@ -2,6 +2,8 @@
 
 Fleet is a local web page. It shows every crew ship, grouped by fleet (project). The captain can go back to any ship from it.
 
+This repo also holds [crew](crew/README.md), the Claude Code mod and skills that run each ship.
+
 Zoom in with → and out with ←. There are three levels.
 
 **Armada:** all fleets. The "Needs captain" panel lists the ships that wait for you.

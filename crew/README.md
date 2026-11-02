@@ -10,13 +10,13 @@ It only reads. It never writes the status files.
 In a Claude Code session:
 
 ```
-/plugin install crew-board --marketplace sabasayer/crew
+/plugin install crew-board --marketplace sabasayer/fleet
 ```
 
-To try it from a local clone, without install:
+To try it from a local clone of fleet, without install:
 
 ```sh
-claude --plugin-dir ./mods/board
+claude --plugin-dir ./crew/mods/board
 ```
 
 ## Use
@@ -167,6 +167,8 @@ Unknown roles go last.
 
 ## Develop
 
+Run these from the `crew` folder.
+
 ```sh
 claude plugin validate mods/board
 claude plugin test mods/board
@@ -184,4 +186,4 @@ mkdir -p ~/.crew/demo && echo '{"role":"red","state":"running","phase":"demo","d
 
 The mod is one folder: `mods/board`, with its hooks and its skills. It does not use mr-triage or any server.
 To merge it with other mods, copy that folder and add a line to the other repo's
-`.claude-plugin/marketplace.json`.
+`.claude-plugin/marketplace.json`. Here that file is at the root of the fleet repo.

@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+import argparse
+import json
+import os
+import re
+import sys
+import tempfile
+from datetime import datetime, timezone
+
+STATES = ("queued", "running", "blocked", "done", "failed")
+NEEDS_SUMMARY = ("blocked", "done", "failed")
+
+p = argparse.ArgumentParser(
+    prog="crew-status",
+    description="Write the status file of one role in the run folder.",
+)
+p.add_argument("role")
+p.add_argument("state", choices=STATES)
+p.add_argument("summary", nargs="?", default="")
+p.add_argument("--run", default=os.environ.get("CREW_RUN"), help="run folder (or set CREW_RUN)")
+p.add_argument("--order", type=int, help="chain order; needed when the file is new")
+p.add_argument("--phase")
+p.add_argument("--done", type=int)
+p.add_argument("--total", type=int)
+a = p.parse_args()
+
+
+def fail(text):
+    sys.exit(f"crew-status: {text}")
+
+
+if not a.run:
+    fail("no run folder. Pass --run <folder> or set CREW_RUN.")
+if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", a.role):
+    fail(f"bad role name: {a.role}")
+summary = a.summary.strip()
+if a.state in NEEDS_SUMMARY and not summary:
+    fail(f"state {a.state} needs a summary. Say in one line what happened or what you need.")
+
+run = os.path.expanduser(a.run)
+path = os.path.join(run, f"{a.role}.json")
+old = {}
+try:
+    with open(path) as f:
+        old = json.load(f)
+except FileNotFoundError:
+    pass
+except ValueError:
+    old = {}
+
+order = a.order if a.order is not None else old.get("order")
+if not isinstance(order, int):
+    fail("new file needs --order <number>.")
+
+phase = a.phase if a.phase is not None else old.get("phase", "")
+if a.state in ("done", "failed"):
+    phase = ""
+
+data = {"role": a.role, "order": order, "state": a.state, "phase": phase}
+done = a.done if a.done is not None else old.get("done")
+total = a.total if a.total is not None else old.get("total")
+if isinstance(done, int) and isinstance(total, int):
+    data["done"] = done
+    data["total"] = total
+data["summary"] = summary
+data["updated"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+os.makedirs(run, exist_ok=True)
+fd, tmp = tempfile.mkstemp(dir=run, prefix=f"{a.role}.json.", suffix=".tmp")
+with os.fdopen(fd, "w") as f:
+    json.dump(data, f, separators=(",", ":"))
+    f.write("\n")
+os.chmod(tmp, 0o644)
+os.replace(tmp, path)
+
+session = os.environ.get("CLAUDE_CODE_SESSION_ID")
+ship_path = os.path.join(os.path.dirname(os.path.abspath(run)), re.sub(r"-mr\d+$", "", os.path.basename(os.path.abspath(run))), "ship.json")
+if session and not os.environ.get("CLAUDE_CODE_CHILD_SESSION") and os.path.exists(ship_path):
+    try:
+        with open(ship_path) as f:
+            ship = json.load(f)
+        ship["session"] = {"id": session, "updated": data["updated"]}
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(ship_path), prefix="ship.json.", suffix=".tmp")
+        with os.fdopen(fd, "w") as f:
+            json.dump(ship, f, indent=2)
+            f.write("\n")
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, ship_path)
+    except (OSError, ValueError):
+        pass
+print(f"{a.role}: {a.state}" + (f" - {summary}" if summary else ""))

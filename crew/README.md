@@ -79,9 +79,6 @@ The plugin has a `bin` folder with three commands. Claude Code puts it on the PA
   `kind` is `"ship"` or `"scout"`. `outcome` is the one-line result, or `null`.
 - `crew-visual-diff <test-results folder>` prints the changed pixels and the changed area of each Playwright `*-actual.png` and `*-expected.png` pair. Agents read this text and do not open the images.
 
-If you also use [mr-triage](https://github.com/sabasayer/mr-triage) and its `track-work` skill, the first mate adds a task for each branch.
-It moves the task to `reviewing` and `local_testing`, and adds the MR link. It skips this when mr-triage is not running.
-
 ## Web view (browser or phone)
 
 `/crew-board serve` starts a small web server and prints the links:

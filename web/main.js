@@ -1,4 +1,4 @@
-import { focusFleet, initialView, move, reconcile, showScoutBand, toArmada, toFleet, toShip, zoomIn, zoomOut } from './layout.js'
+import { afterDock, focusFleet, initialView, move, reconcile, showScoutBand, toArmada, toFleet, toShip, zoomIn, zoomOut } from './layout.js'
 import { requestJump } from './jump.js'
 import { isTyping, keyAction, keysHtml, pressAction } from './keys.js'
 import { sendAction } from './actions.js'
@@ -348,8 +348,7 @@ async function poll() {
     fleets = shownFleets(seaBase, search)
     const docked = wasOnSea && !seaBase.some(f => f.ships.some(s => s.ship === wasOnSea)) ? allFleets.find(f => f.ships.some(s => s.ship === wasOnSea)) : null
     if (docked) {
-      harbourOpen = wasOnSea
-      view = fleets.some(f => f.id === docked.id) ? toFleet(initialView(fleets), fleets, docked.id) : initialView(fleets)
+      view = afterDock(docked.id, fleets)
     } else view = first ? initialView(fleets) : reconcile(view, fleets)
     const opened = allFleets.flatMap(f => f.ships).find(s => s.ship === harbourOpen)
     if (opened && onSea(opened, now)) {

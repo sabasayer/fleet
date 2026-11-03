@@ -72,7 +72,7 @@ const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-
   rect(7, 1, 1, 9, '#5c3a1c'),
   rect(8, 2, 1, 1, '#e8e4d8'), rect(8, 3, 2, 1, '#e8e4d8'), rect(8, 4, 3, 1, '#e8e4d8'), rect(8, 5, 4, 1, '#e8e4d8'), rect(8, 6, 5, 1, '#e8e4d8'), rect(8, 7, 6, 1, '#e8e4d8'),
   rect(4, 4, 3, 4, '#e8e4d8'),
-  rect(2, 9, 12, 1, '#5c3a1c'), rect(3, 10, 10, 1, '#5c3a1c'), rect(4, 11, 8, 1, '#5c3a1c'),
+  rect(2, 9, 12, 1, '#8b5a2b'), rect(3, 10, 10, 1, '#8b5a2b'), rect(4, 11, 8, 1, '#8b5a2b'),
   rect(0, 12, 16, 2, '#1e4a72'),
 ].join('')}</svg>`
 

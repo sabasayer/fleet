@@ -28,6 +28,7 @@ Decisions came from the captain on 2026-11-03: pixel ship in the app colours, in
 - `src/page.ts`: new `<link rel="icon">` with an inline SVG data URI. The SVG is built from `<rect>` squares on a 16x16 grid.
 - `test/server.test.ts`: new test checks the served page has the icon link with an `image/svg+xml` data URI.
 - `npm test`: 213 pass, 0 fail.
+- The captain asked for a lighter hull. The three hull rects now use `#8b5a2b` (WOOD). The mast keeps `#5c3a1c`.
 
 Choices where the ticket was silent:
 - The icon has a dark `#0d1b2a` background square, so the ship shows on light and dark tab bars.

@@ -75,7 +75,7 @@ test('page has an svg favicon', async () => {
   assert.match(body, /<link rel="icon"[^>]*href="data:image\/svg\+xml,/)
   const href = /<link rel="icon"[^>]*href="([^"]+)"/.exec(body)?.[1] ?? ''
   const svg = decodeURIComponent(href.replace('data:image/svg+xml,', ''))
-  assert.match(svg, /<rect x="0" y="0" width="16" height="16" fill="#2a5c88"\/>/)
+  assert.match(svg, /<rect x="0" y="0" width="16" height="16" fill="#4f8fd9"\/>/)
 })
 
 test('wrong Origin or Host gets 403', async () => {

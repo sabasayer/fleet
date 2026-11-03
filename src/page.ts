@@ -65,6 +65,19 @@ body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospa
 .label .clamp { display: -webkit-box; -webkit-box-orient: vertical; white-space: normal; }
 `
 
+const rect = (x: number, y: number, w: number, h: number, fill: string) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`
+
+const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">${[
+  rect(0, 0, 16, 16, '#0d1b2a'),
+  rect(7, 1, 1, 9, '#5c3a1c'),
+  rect(8, 2, 1, 1, '#e8e4d8'), rect(8, 3, 2, 1, '#e8e4d8'), rect(8, 4, 3, 1, '#e8e4d8'), rect(8, 5, 4, 1, '#e8e4d8'), rect(8, 6, 5, 1, '#e8e4d8'), rect(8, 7, 6, 1, '#e8e4d8'),
+  rect(4, 4, 3, 4, '#e8e4d8'),
+  rect(2, 9, 12, 1, '#8b5a2b'), rect(3, 10, 10, 1, '#8b5a2b'), rect(4, 11, 8, 1, '#8b5a2b'),
+  rect(0, 12, 16, 2, '#1e4a72'),
+].join('')}</svg>`
+
+const iconHref = `data:image/svg+xml,${encodeURIComponent(icon)}`
+
 export const page = (token: string) => `<!doctype html>
 <html lang="en">
 <head>
@@ -72,6 +85,7 @@ export const page = (token: string) => `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="fleet-token" content="${token}">
 <title>fleet</title>
+<link rel="icon" type="image/svg+xml" href="${iconHref}">
 <style>${style}</style>
 </head>
 <body>

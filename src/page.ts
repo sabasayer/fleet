@@ -5,8 +5,16 @@ body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospa
 #stage { position: relative; min-width: 0; height: 100vh; overflow: hidden; }
 #sea { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
 #ui { position: absolute; inset: 0; pointer-events: none; }
-#side:empty { display: none; }
-#side { width: 360px; height: 100vh; overflow: auto; padding: 12px 12px 12px 0; display: flex; flex-direction: column; gap: 10px; }
+#right { width: 360px; height: 100vh; padding: 12px 12px 12px 0; display: flex; flex-direction: column; gap: 10px; }
+#right.empty { display: none; }
+#search-box { display: flex; flex-direction: column; gap: 6px; }
+#search-text { font: inherit; background: #08121d; color: #e8e4d8; border: 2px solid #4f7aa3; padding: 5px 6px; width: 100%; }
+#chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-size: 12px; padding: 1px 6px; border: 1px solid #4f7aa3; cursor: pointer; color: #9fc3e6; }
+.chip:hover { background: #1b3550; }
+.chip.on { background: #2c4a66; color: #e8e4d8; }
+#side { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.row.pick { border-left-color: #9fc3e6; }
 .hud-block { background: #0d1b2aee; border: 2px solid #2c4a66; padding: 10px 12px; flex: none; }
 .needs-panel { border-color: #e5c04b; }
 .needs-panel h3 { color: #e5c04b; }
@@ -95,7 +103,10 @@ export const page = (token: string) => `<!doctype html>
 <div id="crumbs" class="hud"></div>
 <button type="button" id="newship-open">+ new ship (n)</button>
 </div>
-<aside id="side"></aside>
+<aside id="right">
+<div id="search-box" class="hud-block"><input id="search-text" type="search" placeholder="search ships (/)" autocomplete="off" spellcheck="false" aria-label="Search ships"><div id="chips"></div></div>
+<div id="side"></div>
+</aside>
 <div id="modal"></div>
 <script type="module" src="/web/main.js"></script>
 </body>

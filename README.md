@@ -80,6 +80,28 @@ launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.salihsayer.crew-fleet.
 
 If port 4932 is taken, a new copy prints `crew-fleet: fleet already runs at http://127.0.0.1:4932`. It then exits with code 0. launchd does not restart it.
 
+## Search and filter
+
+The box at the top of the right column finds ships. Press `/` to type in it. Keys do nothing else while you type.
+
+A ship matches when the text is part of its name, title, task link, MR number (`561` or `!561`), MR link or branch. Case does not matter. Search also finds ships that the harbour hides.
+
+Under the box, one row of chips filters by state. Only one chip is on. Each chip shows how many ships match it, and the counts follow the search text.
+
+| Chip | Ships it shows |
+| --- | --- |
+| `all` | Every ship. This is the default. |
+| `needs you` | Ships that wait for you. |
+| `running` | Ships at sea that do not need you. Scouts that still scout count here. |
+| `stale` | Ships with a crew member that has not reported for 15 minutes. |
+| `in review` | Ships in review. |
+| `merged` | Merged or released ships. They wait for your test. |
+| `testing` | Ships you are testing. |
+| `done` | Done ships, and scouts that turned back. |
+| `paused/failed` | Paused, failed or abandoned ships. |
+
+While you search or filter, the right column shows one list of the matching ships. Click a row, or press `Enter` to open the highlighted row. Use `↑` and `↓` in the box to move the highlight. On the sea, ships that do not match fade out. `Esc` clears the text. The text and the chip are not kept over a reload.
+
 ## Automatic states
 
 Every 2 minutes, fleet checks each MR that is `in_review`. It runs `gh pr view <url> --json state,mergeCommit` for GitHub links. It runs `glab mr view <url> --output json` for all other links. A merged MR becomes `merged` and keeps its merge SHA. An MR closed without a merge becomes `abandoned`. If the CLI is missing or fails, the page says so. The captain then uses the buttons.
@@ -163,6 +185,7 @@ Keys act on the open ship: the one under the cursor, or the one opened in the ha
 | `b` | Bug found, back to sea. Press twice to confirm. |
 | `u` | Undock |
 | `n` | New ship |
+| `/` | Search ships. `Esc` clears the text and leaves the box. |
 | `o` | Show or hide the scouting band |
 | `?` | Show or hide the key list |
 

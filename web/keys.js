@@ -10,6 +10,7 @@ export const KEY_LIST = [
   ['b', 'Bug found → back to sea (press twice)'],
   ['u', 'Undock'],
   ['n', 'New ship'],
+  ['/', 'Search ships (Esc clears)'],
   ['o', 'Show or hide the scouting band'],
   ['?', 'Show or hide this list'],
   ['↑ ↓ ← → Enter Esc', 'Move and zoom'],
@@ -21,6 +22,7 @@ export function keyAction({ key, ship, typing }) {
   if (typing) return null
   if (key === 'n') return 'new'
   if (key === '?') return 'help'
+  if (key === '/') return 'search'
   if (!ship) return null
   if (key === 'j') return ship.session ? 'jump' : null
 

@@ -28,6 +28,58 @@ Needs Node 22.18 or newer. No install step. `npm run demo` starts it with fake d
 
 Fleet reads ships from `~/.crew` and keeps its own files in `~/.fleet`. Set `CREW_BOARD_ROOT` or `CREW_FLEET_HOME` to use other folders.
 
+## Start at login
+
+Fleet can start when you log in to the Mac. A launchd agent does this. It also restarts fleet after a crash. It does not restart fleet after a clean stop.
+
+Make the log folder first: `mkdir -p ~/.fleet`. Then save this as `~/Library/LaunchAgents/com.salihsayer.crew-fleet.plist`. Change `<you>` to your user name. launchd does not expand `~`, so write full paths.
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.salihsayer.crew-fleet</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>-lc</string>
+    <string>exec node bin/crew-fleet.ts</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/<you>/Private/fleet</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/Users/<you>/.fleet/fleet.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/<you>/.fleet/fleet.log</string>
+</dict>
+</plist>
+```
+
+The login shell gives fleet your normal `PATH`. So fleet finds `node`, `glab`, `gh` and `herdr`. Fleet uses the default port 4932.
+
+Load it:
+
+```
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.salihsayer.crew-fleet.plist
+```
+
+Unload it:
+
+```
+launchctl bootout gui/$(id -u) ~/Library/LaunchAgents/com.salihsayer.crew-fleet.plist
+```
+
+If port 4932 is taken, a new copy prints `crew-fleet: fleet already runs at http://127.0.0.1:4932`. It then exits with code 0. launchd does not restart it.
+
 ## Automatic states
 
 Every 2 minutes, fleet checks each MR that is `in_review`. It runs `gh pr view <url> --json state,mergeCommit` for GitHub links. It runs `glab mr view <url> --output json` for all other links. A merged MR becomes `merged` and keeps its merge SHA. An MR closed without a merge becomes `abandoned`. If the CLI is missing or fails, the page says so. The captain then uses the buttons.

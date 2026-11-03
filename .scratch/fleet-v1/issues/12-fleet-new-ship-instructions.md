@@ -1,7 +1,7 @@
 # Fleet: longer instructions in the new-ship form
 
 Repo: sabasayer/fleet
-Status: ready-for-agent
+Status: closed
 Blocked by: none (scouts is on main)
 
 ## What

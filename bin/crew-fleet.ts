@@ -11,5 +11,9 @@ if (!Number.isInteger(port) || port < 0 || port > 65535) {
   process.exit(1)
 }
 
-const server = await startServer({ port, watcher: startWatcher() })
+const server = await startServer({ port, watcher: startWatcher() }).catch(error => {
+  if (error?.code !== 'EADDRINUSE') throw error
+  console.log(`crew-fleet: fleet already runs at http://127.0.0.1:${port}`)
+  process.exit(0)
+})
 console.log(`crew-fleet: http://127.0.0.1:${server.port}`)

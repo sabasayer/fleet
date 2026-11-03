@@ -1,7 +1,7 @@
 # Prototype: ship zoom with several MRs
 
 Type: prototype
-Status: open
+Status: parked
 Blocked by: 04
 
 ## Question
@@ -17,3 +17,17 @@ What does ship zoom show? Build on the sea view (variant G) and settle these:
 ## Seen in use (2026-10-27)
 
 The overlap is now a bug ticket: [Fleet: the sea fits long crews and any window width](11-fleet-sea-fits-long-crews.md). This ticket keeps only the several-MRs question.
+
+## Parked (2026-11-03)
+
+No real ship has used two MRs yet, so this waits. The captain chose a new word: a **convoy** (see `GLOSSARY.md`). It replaces "one ship with several MRs".
+
+Proposed, not yet confirmed by the captain:
+
+1. The first mate makes a convoy when it starts a second MR for the same ticket. A ship alone is not a convoy.
+2. One ship is one MR. The "least advanced MR" rule in `src/life.ts` goes away.
+3. Every ship in a convoy jumps back to the same first-mate session.
+4. On the sea, convoy ships sail close together in the fleet's lane, joined by a line or flag. The panel shows the convoy name with its ships under it.
+5. A bug found in testing is a new ship in the same convoy.
+
+Start again when the first real multi-MR run comes. Stale crews and "why does this step wait" become their own tickets.

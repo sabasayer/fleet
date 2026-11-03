@@ -76,7 +76,7 @@ body { margin: 0; background: #0d1b2a; color: #e8e4d8; font: 14px/1.4 ui-monospa
 const rect = (x: number, y: number, w: number, h: number, fill: string) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`
 
 const icon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">${[
-  rect(0, 0, 16, 16, '#0d1b2a'),
+  rect(0, 0, 16, 16, '#2a5c88'),
   rect(7, 1, 1, 9, '#5c3a1c'),
   rect(8, 2, 1, 1, '#e8e4d8'), rect(8, 3, 2, 1, '#e8e4d8'), rect(8, 4, 3, 1, '#e8e4d8'), rect(8, 5, 4, 1, '#e8e4d8'), rect(8, 6, 5, 1, '#e8e4d8'), rect(8, 7, 6, 1, '#e8e4d8'),
   rect(4, 4, 3, 4, '#e8e4d8'),

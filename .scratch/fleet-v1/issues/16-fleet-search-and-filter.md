@@ -15,7 +15,7 @@ The captain finds a crew run fast by its ticket ID, MR number or title. The capt
 - A text box at the top of the right column. `/` moves the focus into it. `Esc` clears it and leaves the box. Other keys do nothing while you type (fleet already works this way for form fields).
 - A ship matches when the text is part of any of these, ignoring case: the ship name, the title, the task link (so a Linear ID like `ENG-3067` matches), each MR's number (`561` or `!561`), each MR's URL and each MR's branch.
 - Search includes harbour ships, including the ones the harbour hides after 3 days.
-- While search or a filter is on, the right column shows one result list of the matching ships. Each row looks like a ships-panel row. A click, or `Enter` on the row under the cursor, zooms to that ship, as a panel click does today. On the sea, ships that do not match are dimmed.
+- While search or a filter is on, the right column shows one result list of the matching ships. Each row looks like a ships-panel row. A click, or `Enter` on the row under the cursor, zooms to that ship, as a panel click does today. On the sea, ships that do not match are hidden, not faded.
 
 **Filter**
 
@@ -58,8 +58,9 @@ What changed:
 
 - New `web/search.js`: match rule, chip rules, counts, chip row, search keys. Unit tests in `test/search.test.ts`, including the result list in the panel.
 - `web/panel.js`: with search or a chip on, the right column shows one "results" list. Rows are the usual ship rows. Harbour ships use the harbour row.
-- `web/main.js`: search state, `/` focus, `Esc`, arrows and `Enter` inside the box, chip clicks, dimming on the sea.
-- `web/sea.js`: ships that do not match draw at 25% opacity.
+- `web/main.js`: search state, `/` focus, `Esc`, arrows and `Enter` inside the box, chip clicks, `showFleets` builds the shown fleets for the sea.
+- `web/sea.js`: no fade. The sea only gets the shown fleets.
+- `web/search.js`: `shownFleets(fleets, search)` keeps matching ships and drops empty fleets. The sea draws, lays out and navigates on these fleets. Ships that do not match are hidden, not faded. The rest close up the gaps.
 - `src/page.ts`: search box and chip row at the top of the right column. The ship list scrolls under it.
 - `web/keys.js`: `/` key and key list entry.
 - `fixtures/demo`: new ship PORTAL-111 with a stale crew member. Every chip now has at least one ship.
@@ -67,6 +68,7 @@ What changed:
 
 Choices where the ticket was silent:
 
+- Captain feedback after testing: hide, do not dim. If the cursor's ship is hidden, the view goes to the armada level on the first shown fleet. Clearing the search shows all ships again. The view stays where it is.
 - `Esc` clears the text and leaves the box. It keeps the chip.
 - In the box, `↑` and `↓` move a highlight over the results. It starts on the first row. `Enter` opens the highlighted row and leaves the box, so the ship keys work.
 - A harbour row opens its detail in place, as it does today. A sea row zooms to the ship.

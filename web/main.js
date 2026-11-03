@@ -3,7 +3,7 @@ import { requestJump } from './jump.js'
 import { isTyping, keyAction, keysHtml, pressAction } from './keys.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets, shipPhase } from './life.js'
-import { chipsHtml, isActive, matching, movePick, pickedName, searchKey } from './search.js'
+import { chipsHtml, isActive, movePick, pickedName, searchKey, shownFleets } from './search.js'
 import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml } from './newship.js'
 import { allShips, openShipName, panelHtml, resultShips } from './panel.js'
 import { createSea } from './sea.js'
@@ -21,6 +21,7 @@ const token = document.querySelector('meta[name="fleet-token"]')?.content ?? ''
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
 let allFleets = []
+let seaBase = []
 let fleets = []
 let harbourOpen = null
 let now = Date.now()
@@ -56,7 +57,7 @@ function crumbHtml() {
 function render() {
   pending = 0
   const band = showScoutBand(manual, anyScout())
-  const { html, animating } = sea.draw({ fleets, view, frame, band, dim: dimmedShips() })
+  const { html, animating } = sea.draw({ fleets, view, frame, band })
   if (html !== lastUi) ui.innerHTML = lastUi = html
   const crumb = crumbHtml()
   if (crumb !== lastCrumbs) crumbs.innerHTML = lastCrumbs = crumb
@@ -64,11 +65,9 @@ function render() {
   if (animating) schedule()
 }
 
-function dimmedShips() {
-  if (!isActive(search)) return null
-  const hits = new Set(matching(fleets.flatMap(f => f.ships), search).map(ship => ship.ship))
-
-  return new Set(fleets.flatMap(f => f.ships).filter(ship => !hits.has(ship.ship)).map(ship => ship.ship))
+function showFleets() {
+  fleets = shownFleets(seaBase, search)
+  view = reconcile(view, fleets)
 }
 
 const resultNames = () => resultShips(allFleets, search).map(entry => entry.ship.ship)
@@ -129,6 +128,7 @@ function activate(name) {
 
 function setSearch(next) {
   search = { ...search, pick: null, ...next }
+  showFleets()
   schedule()
 }
 
@@ -340,12 +340,13 @@ addEventListener('resize', schedule)
 async function poll() {
   try {
     const state = await (await fetch('/api/state')).json()
-    const first = fleets.length === 0
+    const first = seaBase.length === 0
     const wasOnSea = view.level !== 'armada' ? view.cursor : null
     allFleets = state.fleets
     now = state.now
-    fleets = seaFleets(allFleets, now)
-    const docked = wasOnSea && !fleets.some(f => f.ships.some(s => s.ship === wasOnSea)) ? allFleets.find(f => f.ships.some(s => s.ship === wasOnSea)) : null
+    seaBase = seaFleets(allFleets, now)
+    fleets = shownFleets(seaBase, search)
+    const docked = wasOnSea && !seaBase.some(f => f.ships.some(s => s.ship === wasOnSea)) ? allFleets.find(f => f.ships.some(s => s.ship === wasOnSea)) : null
     if (docked) {
       harbourOpen = wasOnSea
       view = fleets.some(f => f.id === docked.id) ? toFleet(initialView(fleets), fleets, docked.id) : initialView(fleets)

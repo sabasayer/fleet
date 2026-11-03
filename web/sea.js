@@ -40,7 +40,7 @@ export function createSea(canvas, ui) {
     return { layout: tween.cur, animating: t < 1 }
   }
 
-  function draw({ fleets, view, frame, band = false, dim = null }) {
+  function draw({ fleets, view, frame, band = false }) {
     const dpr = window.devicePixelRatio || 1
     const size = { w: canvas.clientWidth, h: canvas.clientHeight }
     const buffer = { w: Math.round(size.w * dpr), h: Math.round(size.h * dpr) }
@@ -96,7 +96,7 @@ export function createSea(canvas, ui) {
       fleet.ships.forEach(ship => {
         const place = layout.ships[ship.ship]
         const life = lifeState(ship)
-        const alpha = place.a * laneAlpha * (life === 'abandoned' ? 0.6 : life === 'paused' ? 0.75 : 1) * (dim?.has(ship.ship) ? 0.25 : 1)
+        const alpha = place.a * laneAlpha * (life === 'abandoned' ? 0.6 : life === 'paused' ? 0.75 : 1)
         if (alpha < 0.02) return
         ctx.globalAlpha = alpha
         const crew = crewOf(ship)

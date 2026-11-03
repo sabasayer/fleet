@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { chipCounts, chipsHtml, CHIPS, isActive, matches, matching, movePick, pickedName, searchKey } from '../web/search.js'
+import { chipCounts, chipsHtml, CHIPS, isActive, matches, matching, movePick, pickedName, searchKey, shownFleets } from '../web/search.js'
 import { keyAction } from '../web/keys.js'
 import { panelHtml, resultShips } from '../web/panel.js'
 
@@ -177,4 +177,17 @@ test('the picked row is marked, the first one by default', () => {
   const two = [ship('a-1'), ship('a-2')]
   assert.match(panel(two, { text: 'a-', chip: 'all', pick: null }), /class="row pick" data-ship="a-1"/)
   assert.match(panel(two, { text: 'a-', chip: 'all', pick: 'a-2' }), /class="row pick" data-ship="a-2"/)
+})
+
+test('shownFleets returns the fleets as they are when no search is on', () => {
+  const fleets = [{ id: 'f', ships }]
+  assert.equal(shownFleets(fleets, { text: '', chip: 'all' }), fleets)
+})
+
+test('shownFleets keeps only matching ships and drops empty fleets', () => {
+  const fleets = [{ id: 'f1', name: 'one', ships }, { id: 'f2', name: 'two', ships: [needs] }, { id: 'f3', name: 'three', ships: [linear] }]
+  const shown = shownFleets(fleets, { text: '', chip: 'needs' })
+  assert.deepEqual(shown.map(f => [f.id, f.ships.map(s => s.ship)]), [['f1', ['n-1']], ['f2', ['n-1']]])
+  assert.equal(shown[0].name, 'one')
+  assert.deepEqual(shownFleets(fleets, { text: 'zzz-none', chip: 'all' }), [])
 })

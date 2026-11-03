@@ -28,6 +28,9 @@ export const isActive = ({ text, chip }) => text.trim() !== '' || chip !== 'all'
 
 export const matching = (ships, { text, chip }) => ships.filter(ship => matches(ship, text) && chipOf(chip).test(ship))
 
+export const shownFleets = (fleets, search) =>
+  isActive(search) ? fleets.map(fleet => ({ ...fleet, ships: matching(fleet.ships, search) })).filter(fleet => fleet.ships.length > 0) : fleets
+
 export const chipCounts = (ships, text) => {
   const found = ships.filter(ship => matches(ship, text))
 

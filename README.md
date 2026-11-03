@@ -100,7 +100,7 @@ Under the box, one row of chips filters by state. Only one chip is on. Each chip
 | `done` | Done ships, and scouts that turned back. |
 | `paused/failed` | Paused, failed or abandoned ships. |
 
-While you search or filter, the right column shows one list of the matching ships. Click a row, or press `Enter` to open the highlighted row. Use `↑` and `↓` in the box to move the highlight. On the sea, ships that do not match fade out. `Esc` clears the text. The text and the chip are not kept over a reload.
+While you search or filter, the right column shows one list of the matching ships. Click a row, or press `Enter` to open the highlighted row. Use `↑` and `↓` in the box to move the highlight. On the sea, ships that do not match are hidden. The other ships close up the gaps. A fleet with no match hides its lane. If the cursor was on a hidden ship, it moves to the first fleet. `Esc` clears the text. The text and the chip are not kept over a reload.
 
 ## Automatic states
 

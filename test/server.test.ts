@@ -70,6 +70,11 @@ test('page holds the token', async () => {
   assert.ok(body.includes(server.token))
 })
 
+test('page has an svg favicon', async () => {
+  const { body } = await call('GET', '/')
+  assert.match(body, /<link rel="icon"[^>]*href="data:image\/svg\+xml,/)
+})
+
 test('wrong Origin or Host gets 403', async () => {
   assert.equal((await call('GET', '/api/state', { origin: 'http://evil.example' })).status, 403)
   assert.equal((await call('GET', '/', { host: 'evil.example' })).status, 403)

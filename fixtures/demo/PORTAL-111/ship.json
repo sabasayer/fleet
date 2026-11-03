@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "ship": "PORTAL-111",
+  "title": "Speed up the appointment list",
+  "task": "https://linear.app/demo/issue/PORTAL-111",
+  "fleet": "portal",
+  "created": "2026-10-21T09:00:00Z",
+  "session": {
+    "id": "00000000-0000-4000-8000-000000000111",
+    "updated": "2099-01-01T00:00:00Z"
+  },
+  "mrs": [
+    {
+      "n": 1,
+      "repo": "/work/portal",
+      "remote": "gitlab.com/demo/portal",
+      "worktree": "/work/portal-PORTAL-111",
+      "branch": "feat/PORTAL-111",
+      "url": null
+    }
+  ]
+}

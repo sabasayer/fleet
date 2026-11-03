@@ -3,20 +3,25 @@ import { requestJump } from './jump.js'
 import { isTyping, keyAction, keysHtml, pressAction } from './keys.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets, shipPhase } from './life.js'
+import { chipsHtml, isActive, movePick, pickedName, searchKey, shownFleets } from './search.js'
 import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml } from './newship.js'
-import { openShipName, panelHtml } from './panel.js'
+import { allShips, openShipName, panelHtml, resultShips } from './panel.js'
 import { createSea } from './sea.js'
 
 const canvas = document.getElementById('sea')
 const ui = document.getElementById('ui')
 const crumbs = document.getElementById('crumbs')
 const side = document.getElementById('side')
+const right = document.getElementById('right')
+const searchInput = document.getElementById('search-text')
+const chipsBox = document.getElementById('chips')
 const modal = document.getElementById('modal')
 const sea = createSea(canvas, ui)
 const token = document.querySelector('meta[name="fleet-token"]')?.content ?? ''
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
 let allFleets = []
+let seaBase = []
 let fleets = []
 let harbourOpen = null
 let now = Date.now()
@@ -32,6 +37,8 @@ let starting = []
 let newShip = null
 let helpOpen = false
 let confirm = null
+let search = { text: '', chip: 'all', pick: null }
+let lastChips = ''
 let confirmTimer = 0
 let manual
 
@@ -44,7 +51,7 @@ function crumbHtml() {
   if (view.level !== 'armada' && fleet) parts.push(`<a data-fleet="${escapeHtml(fleet.id)}">${escapeHtml(fleet.name)}</a>`)
   if (view.level === 'ship') parts.push(escapeHtml(fleet.ships.find(s => s.ship === view.cursor)?.title ?? view.cursor))
 
-  return `${parts.join(' › ')} <span class="dim">(↑↓ move · → in · ← out · o scouting · ? keys)</span>`
+  return `${parts.join(' › ')} <span class="dim">(↑↓ move · → in · ← out · o scouting · / search · ? keys)</span>`
 }
 
 function render() {
@@ -58,8 +65,22 @@ function render() {
   if (animating) schedule()
 }
 
+function showFleets() {
+  fleets = shownFleets(seaBase, search)
+  view = reconcile(view, fleets)
+}
+
+const resultNames = () => resultShips(allFleets, search).map(entry => entry.ship.ship)
+
+function renderChips() {
+  const html = chipsHtml(allShips(allFleets).map(entry => entry.ship), search)
+  if (html !== lastChips) chipsBox.innerHTML = lastChips = html
+}
+
 function renderSide() {
-  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump, starting, confirm })
+  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump, starting, confirm, search })
+  right.classList.toggle('empty', allFleets.length === 0 && html === '')
+  renderChips()
   if (html === lastSide) return
   const scroll = side.scrollTop
   side.innerHTML = lastSide = html
@@ -93,6 +114,46 @@ canvas.addEventListener('click', event => {
   const ship = sea.hitAt(event.clientX - box.left, event.clientY - box.top)
   if (ship) setView(toShip(ship))
 })
+
+function activate(name) {
+  const ship = allShips(allFleets).find(entry => entry.ship.ship === name)?.ship
+  if (ship && !onSea(ship, now)) {
+    harbourOpen = harbourOpen === name ? null : name
+    schedule()
+
+    return
+  }
+  setView(toShip(name))
+}
+
+function setSearch(next) {
+  search = { ...search, pick: null, ...next }
+  showFleets()
+  schedule()
+}
+
+searchInput.addEventListener('input', () => setSearch({ text: searchInput.value }))
+
+chipsBox.addEventListener('click', event => {
+  const chip = event.target.closest('[data-chip]')
+  if (chip) setSearch({ chip: chip.dataset.chip })
+})
+
+function pressSearchKey(event) {
+  const action = searchKey(event.key)
+  if (!action) return
+  event.preventDefault()
+  if (action === 'clear') {
+    searchInput.value = ''
+    searchInput.blur()
+    setSearch({ text: '' })
+  } else if (action === 'open') {
+    const name = pickedName(resultNames(), search.pick)
+    if (!isActive(search) || !name) return
+    searchInput.blur()
+    activate(name)
+  } else setSearch({ pick: movePick(resultNames(), search.pick, action === 'next' ? 1 : -1) })
+}
 
 async function startJump(ship) {
   if (jump?.busy) return
@@ -224,6 +285,7 @@ function pressKey(event) {
   event.preventDefault()
   if (action === 'help') toggleHelp()
   else if (action === 'new') openNewShip()
+  else if (action === 'search') searchInput.focus()
   else if (action === 'jump') void startJump(ship.ship)
   else {
     const press = pressAction(confirm, ship.ship, action)
@@ -242,6 +304,11 @@ document.addEventListener('keydown', event => {
   }
   if (helpOpen) {
     if (event.key === 'Escape' || event.key === '?') toggleHelp()
+
+    return
+  }
+  if (event.target === searchInput) {
+    pressSearchKey(event)
 
     return
   }
@@ -273,12 +340,13 @@ addEventListener('resize', schedule)
 async function poll() {
   try {
     const state = await (await fetch('/api/state')).json()
-    const first = fleets.length === 0
+    const first = seaBase.length === 0
     const wasOnSea = view.level !== 'armada' ? view.cursor : null
     allFleets = state.fleets
     now = state.now
-    fleets = seaFleets(allFleets, now)
-    const docked = wasOnSea && !fleets.some(f => f.ships.some(s => s.ship === wasOnSea)) ? allFleets.find(f => f.ships.some(s => s.ship === wasOnSea)) : null
+    seaBase = seaFleets(allFleets, now)
+    fleets = shownFleets(seaBase, search)
+    const docked = wasOnSea && !seaBase.some(f => f.ships.some(s => s.ship === wasOnSea)) ? allFleets.find(f => f.ships.some(s => s.ship === wasOnSea)) : null
     if (docked) {
       harbourOpen = wasOnSea
       view = fleets.some(f => f.id === docked.id) ? toFleet(initialView(fleets), fleets, docked.id) : initialView(fleets)

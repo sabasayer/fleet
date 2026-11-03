@@ -33,5 +33,4 @@ Decisions came from the captain on 2026-11-03. The captain asked to merge withou
 
 Choices:
 - Put the dock decision in a small pure function, `afterDock`, so it can be tested.
-- Kept the sea line `#1e4a72` as the ticket said. It is only slightly darker than the new background. I did not look at it.
 - When the docked ship's fleet still has ships, the cursor goes to that fleet's first ship, not the one after the docked ship (the existing `toFleet` rule).

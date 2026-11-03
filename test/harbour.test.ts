@@ -3,7 +3,7 @@ import { test } from 'node:test'
 
 import { harbourOf, onSea, seaFleets } from '../web/life.js'
 import { panelHtml } from '../web/panel.js'
-import { shipPlaceX } from '../web/layout.js'
+import { afterDock, shipPlaceX } from '../web/layout.js'
 
 const DAY = 86400000
 const NOW = 100 * DAY
@@ -46,4 +46,23 @@ test('after-crew zones hold the ship in order', () => {
   const x = (stage: string) => shipPlaceX({ life: { stage } }, crew, 100, 600)
   assert.ok(x('in_review') < x('merged') && x('merged') < x('released') && x('released') < x('testing'))
   assert.ok(x('sailing') < x('in_review'))
+})
+
+test('after the open ship docks, the panel shows the cursor ship, not the docked one', () => {
+  const sea = (name: string, stage: string, endedAt: number | null = null) => ship(name, stage, endedAt)
+  const after = [{ id: 'a', name: 'A', color: '#fff', ships: [sea('s1', 'done', NOW - 1000), sea('s2', 'sailing')] }]
+  const view = afterDock('a', seaFleets(after, NOW))
+  assert.deepEqual(view, { level: 'fleet', cursor: 's2' })
+  const html = panelHtml({ fleets: after, view, now: NOW })
+  assert.doesNotMatch(html, /data-action="undock"/)
+  assert.match(html, /class="row cur" data-ship="s2"/)
+  assert.doesNotMatch(html, /class="row cur" data-ship="s1"/)
+})
+
+test('after a dock empties the fleet, the cursor goes to the first fleet', () => {
+  const two = [
+    { id: 'a', name: 'A', color: '#fff', ships: [ship('s1', 'done', NOW - 1000)] },
+    { id: 'b', name: 'B', color: '#fff', ships: [ship('b1', 'sailing')] },
+  ]
+  assert.deepEqual(afterDock('a', seaFleets(two, NOW)), { level: 'armada', cursor: 'b' })
 })

@@ -147,6 +147,9 @@ export function reconcile(view, fleets) {
   return fleetOfShip(fleets, view.cursor) ? view : { level: 'armada', cursor: fleets[0]?.id ?? null }
 }
 
+export const afterDock = (dockedFleetId, fleets) =>
+  fleets.some(f => f.id === dockedFleetId) ? toFleet(initialView(fleets), fleets, dockedFleetId) : initialView(fleets)
+
 export const shapeKey = fleets => fleets.map(f => `${f.id}:${f.ships.map(s => s.ship).join(',')}`).join('|')
 
 export function layoutFor(view, fleets, size) {

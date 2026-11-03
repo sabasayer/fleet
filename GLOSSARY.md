@@ -19,6 +19,10 @@ _Avoid_: Linear project (a project is not tied to any task manager)
 One unit of work (a feature, bugfix or task) that a crew carries to the end. It may produce several merge requests.
 _Avoid_: Run, ticket (a ship is not tied to any task manager)
 
+**Convoy** (planned, not built):
+Ships in one fleet that carry one piece of work together, for example one feature in several MRs or several repos. Each ship is one MR. A convoy reaches the harbour when its last ship is done. A fleet has no end, but a convoy does.
+_Avoid_: Group, flotilla, squadron (they sound lasting, like a fleet)
+
 **Crew member**:
 One agent role on a ship, such as red, green or review-spec.
 _Avoid_: Agent, worker

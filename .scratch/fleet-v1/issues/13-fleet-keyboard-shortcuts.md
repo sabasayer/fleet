@@ -1,7 +1,7 @@
 # Fleet: keyboard shortcuts for ship actions
 
 Repo: sabasayer/fleet
-Status: ready-for-agent
+Status: closed
 Blocked by: none (scouts is on main)
 
 ## What

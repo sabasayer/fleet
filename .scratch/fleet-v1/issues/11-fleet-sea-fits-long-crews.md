@@ -1,7 +1,7 @@
 # Fleet: the sea fits long crews and any window width
 
 Repo: sabasayer/fleet
-Status: ready-for-agent
+Status: closed
 Blocked by: none (scouts is on main)
 
 ## What

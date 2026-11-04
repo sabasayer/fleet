@@ -23,12 +23,12 @@ const ship = (name: string, fleet: string, extra = {}) => ({
 const status = (role: string, state: string, extra = {}) => ({ role, state, updated: new Date().toISOString(), ...extra })
 
 before(async () => {
-  write(join(crew, 'ENG-1', 'ship.json'), ship('ENG-1', 'alpha'))
-  write(join(crew, 'ENG-1-mr1', 'red.json'), status('red', 'done', { order: 10 }))
-  write(join(crew, 'ENG-1-mr1', 'gate-spec.json'), status('gate-spec', 'blocked', { order: 5, summary: 'approve the spec' }))
-  write(join(crew, 'ENG-2', 'ship.json'), ship('ENG-2', 'beta'))
-  write(join(crew, 'ENG-3', 'spec', 'notes.json'), {})
-  write(join(crew, 'ENG-3-mr1', 'red.json'), status('red', 'running'))
+  write(join(crew, 'abc-1', 'ship.json'), ship('abc-1', 'alpha'))
+  write(join(crew, 'abc-1-mr1', 'red.json'), status('red', 'done', { order: 10 }))
+  write(join(crew, 'abc-1-mr1', 'gate-spec.json'), status('gate-spec', 'blocked', { order: 5, summary: 'approve the spec' }))
+  write(join(crew, 'abc-2', 'ship.json'), ship('abc-2', 'beta'))
+  write(join(crew, 'abc-3', 'spec', 'notes.json'), {})
+  write(join(crew, 'abc-3-mr1', 'red.json'), status('red', 'running'))
   write(join(home, 'fleets.json'), { alpha: { name: 'Alpha Team', color: '#123456' } })
   server = await startServer({ port: 0, env: { CREW_BOARD_ROOT: crew, CREW_FLEET_HOME: home } })
 })
@@ -50,8 +50,8 @@ test('state groups ships by fleet, skips folders without ship.json', async () =>
   assert.equal(status, 200)
   const state = JSON.parse(body)
   assert.deepEqual(state.fleets.map((f: any) => [f.name, f.color, f.ships.map((s: any) => s.ship)]), [
-    ['Alpha Team', '#123456', ['ENG-1']],
-    ['beta', state.fleets[1].color, ['ENG-2']],
+    ['Alpha Team', '#123456', ['abc-1']],
+    ['beta', state.fleets[1].color, ['abc-2']],
   ])
   assert.match(state.fleets[1].color, /^hsl\(/)
 })

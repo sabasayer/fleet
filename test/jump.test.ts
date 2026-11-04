@@ -5,7 +5,7 @@ import { jump, resumeCommand, type JumpDeps, type JumpShip, type LiveSession } f
 
 const ID = '11111111-2222-3333-4444-555555555555'
 const OTHER = '99999999-2222-3333-4444-555555555555'
-const ship: JumpShip = { name: 'ENG-1', fleetName: 'Alpha', sessionId: ID, worktrees: ['/old', '/work'] }
+const ship: JumpShip = { name: 'abc-1', fleetName: 'Alpha', sessionId: ID, worktrees: ['/old', '/work'] }
 const goodSchema = {
   protocol: 16,
   schemas: {
@@ -124,14 +124,14 @@ test('gone: creates the fleet workspace, starts claude --resume with argv, focus
   assert.deepEqual(t.methods(), ['agent.list', 'workspace.list', 'workspace.create', 'agent.start', 'tab.rename', 'agent.focus'])
   assert.deepEqual(t.calls.find(c => c.method === 'workspace.create')!.params, { label: 'Alpha', cwd: '/work', focus: false })
   assert.deepEqual(started(t.calls)[0].params, {
-    name: 'ENG-1',
+    name: 'abc-1',
     argv: ['claude', '--resume', ID],
     cwd: '/work',
     workspace_id: 'w9',
     tab_id: 'w9:t1',
     focus: true,
   })
-  assert.deepEqual(t.calls.find(c => c.method === 'tab.rename')!.params, { tab_id: 'w9:t1', label: 'ENG-1' })
+  assert.deepEqual(t.calls.find(c => c.method === 'tab.rename')!.params, { tab_id: 'w9:t1', label: 'abc-1' })
   assert.equal(t.ghostty(), 1)
 })
 
@@ -141,11 +141,11 @@ test('gone: reuses the fleet workspace and adds a tab named after the ship', asy
   assert.equal(t.methods().includes('workspace.create'), false)
   assert.equal(started(t.calls)[0].params.workspace_id, 'w2')
   assert.equal('tab_id' in started(t.calls)[0].params, false)
-  assert.deepEqual(t.calls.find(c => c.method === 'tab.rename')!.params, { tab_id: 'w1:tNew', label: 'ENG-1' })
+  assert.deepEqual(t.calls.find(c => c.method === 'tab.rename')!.params, { tab_id: 'w1:tNew', label: 'abc-1' })
 })
 
 test('gone: reuses the ship tab when it exists, without renaming', async () => {
-  const t = build({ workspaces: [{ label: 'Alpha', workspace_id: 'w2' }], tabs: [{ label: 'ENG-1', tab_id: 'w2:t5' }] })
+  const t = build({ workspaces: [{ label: 'Alpha', workspace_id: 'w2' }], tabs: [{ label: 'abc-1', tab_id: 'w2:t5' }] })
   assert.equal((await jump(ship, t.deps)).status, 'resumed')
   assert.equal(started(t.calls)[0].params.tab_id, 'w2:t5')
   assert.equal(t.methods().includes('tab.rename'), false)

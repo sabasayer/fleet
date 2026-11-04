@@ -20,7 +20,7 @@ What does the ship file hold (project, title, task link, repos, worktrees, sessi
 - `fleet`.
 - `created`.
 - `session`: `{ id, updated }`, the newest first-mate Claude session.
-- `mrs[]`: one entry per MR, with `n`, `repo` (local main checkout path), `remote` (host and project path, like `gitlab.com/founda/application/xds-viewer-ui`), `worktree`, `branch` and `url` (`null` until the MR opens).
+- `mrs[]`: one entry per MR, with `n`, `repo` (local main checkout path), `remote` (host and project path, like `gitlab.com/acme/apps/web-base`), `worktree`, `branch` and `url` (`null` until the MR opens).
 
 A feature across several repos is MRs with different `repo` values.
 

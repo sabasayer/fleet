@@ -33,7 +33,7 @@ What states does a ship go through after its crew stops at "pipeline green": MR 
 | any → `paused` and back | The captain |
 | → `failed` | The captain only. A failed crew member does not fail the ship. |
 
-**Release check.** "Released" means something else per project. Examples: an ArgoCD sync to acc for Founda work, or a new LAN build for a game. A project can set one shell command. Fleet runs it for each merged ship and passes the ship's facts (merge commit SHA, repo, MR link). Exit code 0 means `released`. No command means a person marks it.
+**Release check.** "Released" means something else per project. Examples: an ArgoCD sync to acc for Acme work, or a new LAN build for a game. A project can set one shell command. Fleet runs it for each merged ship and passes the ship's facts (merge commit SHA, repo, MR link). Exit code 0 means `released`. No command means a person marks it.
 
 **Several MRs.** The ship's state is the state of its least advanced MR. The ship is `done` only when every MR is `done`. Zooming in to the ship shows each MR's state.
 

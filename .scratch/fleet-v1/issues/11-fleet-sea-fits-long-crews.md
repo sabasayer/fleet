@@ -6,7 +6,7 @@ Blocked by: none (scouts is on main)
 
 ## What
 
-Seen in use on 2026-10-27, with real crews of 11 members (ENG-711, scouts-crew, scouts-fleet) at fleet and ship zoom:
+Seen in use on 2026-10-27, with real crews of 11 members (abc-482, scouts-crew, scouts-fleet) at fleet and ship zoom:
 
 - The role names under the stones overlap each other.
 - The ship sprite covers the ship's title and ID on the left.

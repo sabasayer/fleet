@@ -17,6 +17,7 @@ export type Stored = {
   failed: boolean
   docked: string | null
   backToSea: number | null
+  found: Record<string, string>
 }
 export type MrInput = { n: number; url: string | null; crew: { state: string }[] }
 export type Life = {
@@ -35,7 +36,7 @@ const SHIP_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/
 export const isShipName = (name: unknown): name is string => typeof name === 'string' && SHIP_NAME.test(name)
 export const isAction = (name: unknown): name is Action => ACTIONS.includes(name as Action)
 
-export const emptyStored = (): Stored => ({ version: 1, mrs: {}, paused: false, failed: false, docked: null, backToSea: null })
+export const emptyStored = (): Stored => ({ version: 1, mrs: {}, paused: false, failed: false, docked: null, backToSea: null, found: {} })
 
 export function normalizeStored(raw: any): Stored {
   const out = emptyStored()
@@ -44,6 +45,9 @@ export function normalizeStored(raw: any): Stored {
     if (mr && AFTER_STATES.includes(mr.state)) {
       out.mrs[n] = { state: mr.state, sha: typeof mr.sha === 'string' ? mr.sha : null, changed: String(mr.changed ?? '') }
     }
+  }
+  for (const [n, url] of Object.entries<any>(raw.found && typeof raw.found === 'object' ? raw.found : {})) {
+    if (typeof url === 'string' && url) out.found[n] = url
   }
   out.paused = raw.paused === true
   out.failed = raw.failed === true
@@ -175,4 +179,8 @@ export function withSha(stored: Stored, n: number, sha: string): Stored | null {
   if (!kept || kept.state === 'abandoned' || kept.sha) return null
 
   return { ...stored, mrs: { ...stored.mrs, [String(n)]: { ...kept, sha } } }
+}
+
+export function withFound(stored: Stored, n: number, url: string): Stored {
+  return { ...stored, found: { ...stored.found, [String(n)]: url } }
 }

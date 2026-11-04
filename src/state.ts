@@ -98,6 +98,7 @@ export function readShip(root: string, home: string, folder: string, folders: st
   const j = readJson(join(root, folder, 'ship.json'))
   if (!j || typeof j.ship !== 'string' || typeof j.fleet !== 'string' || !Array.isArray(j.mrs)) return undefined
   const prefix = `${j.ship.toLowerCase()}-mr`
+  const stored = readStored(home, j.ship)
   const mrs: Mr[] = j.mrs.map((m: any) => {
     const mrFolder = folders.find(f => f.toLowerCase() === `${prefix}${m.n}`)
     const crew = mrFolder ? readCrew(join(root, mrFolder), now) : []
@@ -108,14 +109,14 @@ export function readShip(root: string, home: string, folder: string, folders: st
       remote: m.remote,
       worktree: m.worktree,
       branch: m.branch,
-      url: m.url ?? null,
+      url: m.url ?? stored.found[String(m.n)] ?? null,
       crew,
       needsCaptain: needsCaptain(crew),
     }
   })
   const kind = j.kind === 'scout' ? 'scout' : 'ship'
   const outcome = j.outcome ?? null
-  const life = lifeOf(mrs, readStored(home, j.ship), turnedBackScout({ kind, mrs, outcome }))
+  const life = lifeOf(mrs, stored, turnedBackScout({ kind, mrs, outcome }))
   const sailing = life.state === 'sailing'
   const waiting = mrs.map((m, i) => (life.mrs[i].state === 'sailing' ? m.needsCaptain : null))
 

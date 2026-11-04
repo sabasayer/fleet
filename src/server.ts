@@ -1,5 +1,6 @@
 import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 
 import { realNewShipDeps, startNewShip, type NewShipDeps } from './newship.ts'
@@ -36,10 +37,34 @@ const readBody = (req: IncomingMessage, max = MAX_BODY) =>
     req.on('error', reject)
   })
 
+const TOKEN_FORMAT = /^[0-9a-f]{48}$/
+
+const loadToken = (home: string) => {
+  const file = join(home, 'token')
+
+  try {
+    const saved = readFileSync(file, 'utf8').trim()
+
+    if (TOKEN_FORMAT.test(saved)) {
+      if ((statSync(file).mode & 0o777) !== 0o600) chmodSync(file, 0o600)
+
+      return saved
+    }
+  } catch {}
+
+  const fresh = randomBytes(24).toString('hex')
+
+  mkdirSync(home, { recursive: true })
+  writeFileSync(file, fresh, { mode: 0o600 })
+  chmodSync(file, 0o600)
+
+  return fresh
+}
+
 export type Running = { port: number; token: string; close: () => Promise<void> }
 
 export async function startServer({ port, env = process.env, watcher, jumpDeps = realJumpDeps(env), newShipDeps = realNewShipDeps, clock = Date.now }: { port: number; env?: NodeJS.ProcessEnv; watcher?: Watcher; jumpDeps?: JumpDeps; newShipDeps?: NewShipDeps; clock?: () => number }): Promise<Running> {
-  const token = randomBytes(24).toString('hex')
+  const token = loadToken(fleetHome(env))
   let own = new Set<string>()
   const jumping = new Map<string, Promise<JumpResult>>()
   let starting: Starting[] = []

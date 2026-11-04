@@ -28,6 +28,8 @@ Needs Node 22.18 or newer. No install step. `npm run demo` starts it with fake d
 
 Fleet reads ships from `~/.crew` and keeps its own files in `~/.fleet`. Set `CREW_BOARD_ROOT` or `CREW_FLEET_HOME` to use other folders.
 
+Fleet keeps its token in `~/.fleet/token`. So open tabs keep working after a restart. Delete the file to get a new token.
+
 ## Start at login
 
 Fleet can start when you log in to the Mac. A launchd agent does this. It also restarts fleet after a crash. It does not restart fleet after a clean stop.

@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+import json
+import os
+import shlex
+import shutil
+import subprocess
+import sys
+
+USAGE = "usage: crew-open diff <worktree> [<base>] | crew-open <file>"
+
+
+def fail(text, code=2):
+    print(f"crew-open: {text}", file=sys.stderr)
+    sys.exit(code)
+
+
+def git(folder, *args):
+    r = subprocess.run(["git", "-C", folder, *args], capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def default_base(worktree):
+    for remote in ("origin/HEAD", "origin/main"):
+        base = git(worktree, "merge-base", "HEAD", remote)
+        if base:
+            return base
+    return ""
+
+
+def find_pane(data):
+    if isinstance(data, dict):
+        pane = data.get("root_pane")
+        if isinstance(pane, dict) and pane.get("pane_id"):
+            return pane["pane_id"]
+        for value in data.values():
+            found = find_pane(value)
+            if found:
+                return found
+    return None
+
+
+def plan(args):
+    if args and args[0] == "diff":
+        if len(args) not in (2, 3):
+            fail(USAGE)
+        worktree = os.path.abspath(os.path.expanduser(args[1]))
+        if not os.path.isdir(worktree):
+            fail(f"worktree not found: {args[1]}")
+        base = args[2] if len(args) == 3 else default_base(worktree)
+        command = ["hunk", "diff", base] if base else ["hunk", "diff"]
+        return worktree, command, f"diff {os.path.basename(worktree)}"
+    if len(args) != 1:
+        fail(USAGE)
+    path = os.path.abspath(os.path.expanduser(args[0]))
+    if not os.path.isfile(path):
+        fail(f"file not found: {args[0]}")
+    folder = os.path.dirname(path)
+    root = git(folder, "rev-parse", "--show-toplevel")
+    command = ["glow", "-p", path] if path.endswith(".md") else ["hx", path]
+    return root or folder, command, os.path.basename(path)
+
+
+def main():
+    cwd, command, label = plan(sys.argv[1:])
+    line = shlex.join(command)
+    if not shutil.which("herdr"):
+        print(f"herdr not found. Run: cd {shlex.quote(cwd)} && {line}")
+        return
+    made = subprocess.run(
+        ["herdr", "tab", "create", "--cwd", cwd, "--label", label, "--no-focus"],
+        capture_output=True,
+        text=True,
+    )
+    pane = None
+    if made.returncode == 0:
+        try:
+            pane = find_pane(json.loads(made.stdout))
+        except ValueError:
+            pass
+    ran = pane and subprocess.run(["herdr", "pane", "run", pane, line], capture_output=True)
+    if not ran or ran.returncode != 0:
+        print(f"herdr failed. Run: cd {shlex.quote(cwd)} && {line}")
+        return
+    print(f"opened {line} in tab '{label}'")
+
+
+main()

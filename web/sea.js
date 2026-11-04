@@ -1,13 +1,14 @@
-import { ANCHOR, BACKDROP, beaconGrid, blit, boatGrid, CALM, flagColor, GOLD, hash, memberColor, shipGrid, snap, STATE, STONE_LINE, WAVE, WOOD } from './art.js'
+import { anchorGrid, beaconGrid, blit, boatGrid, flagColor, hash, memberColor, shipGrid, snap, WOOD } from './art.js'
 import { crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, headRoom, laneHeadText, layoutFor, LABEL_COLUMN, lerp, mixLayout, placeX, RIGHT_MARGIN, roleLabels, scoutRight, shapeKey, shipLeft, stoneX, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
+import { theme } from './theme.js'
 import { lifeState, LIFE_COLOR, LIFE_SHORT, shipPhase, ZONE_NAME, ZONES } from './life.js'
 
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
 function calmLane(ctx, dpr, frame, x, y, w, h, shade) {
-  ctx.fillStyle = CALM[shade]
+  ctx.fillStyle = (shade ? theme.calm1 : theme.calm0)
   ctx.fillRect(Math.round(x * dpr), Math.round(y * dpr), Math.round(w * dpr), Math.round(h * dpr))
-  ctx.fillStyle = WAVE
+  ctx.fillStyle = theme.wave
   for (let r = 0; r * 22 < h - 10; r++) {
     for (let k = 0; k < w / 140; k++) {
       const wx = x + ((k * 140 + r * 53 + frame * 2 + (hash(`${Math.round(y)},${r}`) % 90)) % w)
@@ -50,7 +51,7 @@ export function createSea(canvas, ui) {
     }
     ctx.imageSmoothingEnabled = false
     ctx.globalAlpha = 1
-    ctx.fillStyle = BACKDROP
+    ctx.fillStyle = theme.bg
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     hits = []
 
@@ -72,18 +73,18 @@ export function createSea(canvas, ui) {
       const start = crewLeft(left, right, band)
       if (band) {
         const edge = scoutRight(left, right)
-        ctx.fillStyle = '#1d3f6655'
+        ctx.fillStyle = theme.bandTint
         ctx.fillRect(Math.round(left * dpr), Math.round((lane.y + 24) * dpr), Math.round((edge - left) * dpr), Math.round((lane.h - 24) * dpr))
-        ctx.fillStyle = '#ffffff22'
+        ctx.fillStyle = theme.divider
         ctx.fillRect(Math.round(edge * dpr), Math.round((lane.y + 24) * dpr), dpr, Math.round((lane.h - 24) * dpr))
         html += label((left + edge) / 2, lane.y + 6, `<span class="dim">scouting</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
       }
-      ctx.fillStyle = '#2d6a9c55'
+      ctx.fillStyle = theme.zoneTint
       ctx.fillRect(Math.round(stop * dpr), Math.round((lane.y + 24) * dpr), Math.round((right - stop) * dpr), Math.round((lane.h - 24) * dpr))
       html += label(start + (stop - start) / 2, lane.y + 6, `<span class="dim">crew at work</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
       ZONES.forEach((zone, j) => {
         const edge = zoneEdge(j, left, right)
-        ctx.fillStyle = '#ffffff22'
+        ctx.fillStyle = theme.divider
         ctx.fillRect(Math.round(edge * dpr), Math.round((lane.y + 24) * dpr), dpr, Math.round((lane.h - 24) * dpr))
         html += label((edge + zoneEdge(j + 1, left, right)) / 2, lane.y + 6, `<span class="dim">${ZONE_NAME[zone]}</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
       })
@@ -91,7 +92,7 @@ export function createSea(canvas, ui) {
       ctx.fillRect(Math.round((right + 40) * dpr), Math.round(lane.y * dpr), 12 * dpr, Math.round(lane.h * dpr))
 
       const waiting = fleet.ships.filter(s => s.needsCaptain).length
-      html += `<div class="lane-head" data-fleet="${escapeHtml(fleet.id)}" style="top:${lane.y + 5}px;max-width:${headRoom(left, right, band)}px;${opacity(laneAlpha)}"><span class="head-name" style="color:${escapeHtml(fleet.color)}">▶ ${escapeHtml(fleet.name.toUpperCase())}</span><span class="dim head-count">${laneHeadText(fleet.ships)}</span>${waiting ? `<span class="needs">${waiting} need you</span>` : ''}</div>`
+      html += `<div class="lane-head" data-fleet="${escapeHtml(fleet.id)}" style="top:${lane.y + 5}px;max-width:${headRoom(left, right, band)}px;${opacity(laneAlpha)}"><span class="head-name" style="color:color-mix(in srgb, ${escapeHtml(fleet.color)} var(--head-mix), #000)">▶ ${escapeHtml(fleet.name.toUpperCase())}</span><span class="dim head-count">${laneHeadText(fleet.ships)}</span>${waiting ? `<span class="needs">${waiting} need you</span>` : ''}</div>`
 
       fleet.ships.forEach(ship => {
         const place = layout.ships[ship.ship]
@@ -107,7 +108,7 @@ export function createSea(canvas, ui) {
         const rowPx = snap(scale, dpr)
         const top = scouting ? floatTop(lineY, grid.length, rowPx) : rowY
 
-        ctx.fillStyle = STONE_LINE
+        ctx.fillStyle = theme.stoneLine
         ctx.fillRect(Math.round(left * dpr), Math.round(lineY * dpr), Math.round((right + 40 - left) * dpr), dpr)
         crew.forEach((member, k) => {
           const stone = 4 + scale
@@ -126,10 +127,10 @@ export function createSea(canvas, ui) {
         const working = life === 'sailing' && crew.some(m => m.state === 'running' && !m.stale)
         const sy = top + (working && frame % 2 ? rowPx / 2 : 0)
         blit(ctx, grid, sx, sy, scale, dpr)
-        if (life === 'paused') blit(ctx, ANCHOR, sx + grid[0].length * rowPx + 2, top + grid.length * rowPx - 5 * snap(Math.max(2, scale / 2), dpr), Math.max(2, scale / 2), dpr)
+        if (life === 'paused') blit(ctx, anchorGrid(), sx + grid[0].length * rowPx + 2, top + grid.length * rowPx - 5 * snap(Math.max(2, scale / 2), dpr), Math.max(2, scale / 2), dpr)
         if (ship.needsCaptain) {
           const bangScale = Math.max(3, scale / 2)
-          const color = ship.needsCaptain.kind === 'failed' ? STATE.failed : GOLD
+          const color = ship.needsCaptain.kind === 'failed' ? theme.state.failed : theme.gold
           if (frame % 4 < 3) blit(ctx, beaconGrid(color), cx - 2.5 * snap(bangScale, dpr), sy - (8 + (frame % 2)) * snap(bangScale, dpr), bangScale, dpr)
         }
         if (place.a > 0.5) hits.push({ x: sx, y: sy, w: grid[0].length * rowPx, h: grid.length * rowPx + 10, ship: ship.ship })
@@ -146,7 +147,7 @@ export function createSea(canvas, ui) {
       cursorBox = cursorBox ? { top: lerp(cursorBox.top, box.top, 0.3), height: lerp(cursorBox.height, box.height, 0.3) } : box
       const settled = Math.abs(cursorBox.top - box.top) + Math.abs(cursorBox.height - box.height) < 0.5
       if (settled) cursorBox = box
-      ctx.strokeStyle = '#ffffffcc'
+      ctx.strokeStyle = theme.cursor
       ctx.lineWidth = 2 * dpr
       ctx.strokeRect(4 * dpr, Math.round(cursorBox.top * dpr), Math.round((right + 52) * dpr), Math.round(cursorBox.height * dpr))
       if (!settled) return { html, animating: true }

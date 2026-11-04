@@ -1,19 +1,14 @@
+import { theme } from './theme.js'
+
 export const WOOD = '#8b5a2b'
 const HULL = '#5c3a1c'
-const DECK = '#a87a4a'
-const SAIL = '#e8e4d8'
 const EYE = '#222'
 const MOUTH = '#6b2d2d'
-export const GOLD = '#e5c04b'
 const BAND = '#3b5fa8'
 const SLEEPY = '#9a9a9a'
-export const CALM = ['#1e4a72', '#204e78']
-export const WAVE = '#2a5c88'
-export const STONE_LINE = '#3d6f9e'
-export const BACKDROP = '#0d1b2a'
 const SKINS = ['#f2c9a0', '#e0ac7e', '#c68642', '#8d5524', '#ffdbac']
 const HATS = ['#4f8fd9', '#9b6fd1', '#3fb3a0', '#d96fa8', '#e08a3c', '#8a8a8a']
-export const STATE = { queued: '#8a8a8a', running: '#33c3d6', blocked: '#e5c04b', done: '#4fbf6f', failed: '#e5484d' }
+export const STATE = theme.state
 const HAT_SHAPES = {
   gate: { rows: ['.XXX.', 'XXGXX'], color: '#e8e4d8' },
   red: { rows: ['....X', 'XXXXX'], color: '#d9534f' },
@@ -21,7 +16,7 @@ const HAT_SHAPES = {
   green: { rows: ['X.X.X', 'XXXXX'], color: '#4fbf6f' },
   move: { rows: ['X.X.X', 'XXXXX'], color: '#4fbf6f' },
   review: { rows: ['..X..', '.XXX.'] },
-  fixer: { rows: ['.XGX.', 'XXXXX'], color: GOLD },
+  fixer: { rows: ['.XGX.', 'XXXXX'], get color() { return theme.gold } },
   browser: { rows: ['XXXXX', 'BBBBB'], color: '#e8e4d8' },
 }
 
@@ -39,7 +34,7 @@ const skinFor = member => (member.state === 'queued' ? SLEEPY : SKINS[(hash(memb
 
 function face(put, x, top, member) {
   const hat = hatFor(member.role)
-  const paint = ch => (ch === 'X' ? hat.color : ch === 'G' ? GOLD : ch === 'B' ? BAND : null)
+  const paint = ch => (ch === 'X' ? hat.color : ch === 'G' ? theme.gold : ch === 'B' ? BAND : null)
   const skin = skinFor(member)
 
   hat.rows.forEach((row, r) => [...row].forEach((ch, c) => paint(ch) && put(x + c, top + r, paint(ch))))
@@ -67,7 +62,7 @@ function face(put, x, top, member) {
 
 export function flagColor(ship, fleetColor) {
   if (ship.life?.state === 'failed') return STATE.failed
-  if (ship.needsCaptain) return ship.needsCaptain.kind === 'failed' ? STATE.failed : GOLD
+  if (ship.needsCaptain) return ship.needsCaptain.kind === 'failed' ? STATE.failed : theme.gold
 
   return fleetColor
 }
@@ -87,7 +82,7 @@ export function shipGrid(crew, flag, frame, detail, life = 'sailing') {
   for (let y = deckTop; y < height - 1; y++) {
     const inset = Math.abs(y - (deckTop + 2.5)) > 2 ? 1 : 0
     const bow = y === deckTop + 2 || y === deckTop + 3 ? 2 : 0
-    for (let x = 1 + inset; x < width - 3 + bow; x++) put(x, y, y === height - 2 ? HULL : DECK)
+    for (let x = 1 + inset; x < width - 3 + bow; x++) put(x, y, y === height - 2 ? HULL : theme.deck)
   }
   for (let x = 2; x < width - 3; x++) {
     put(x, height - 1, HULL)
@@ -99,8 +94,8 @@ export function shipGrid(crew, flag, frame, detail, life = 'sailing') {
   put(5, flagRow, flag)
   if (sailing && frame % 2) put(6, flagRow, flag)
   else put(5, flagRow + 1, flag)
-  if (sailing) for (let y = 2; y < deckTop; y++) for (let x = Math.max(0, 4 - y); x <= 2; x++) put(x, y, SAIL)
-  else for (let x = 0; x <= 2; x++) put(x, deckTop - 1, SAIL)
+  if (sailing) for (let y = 2; y < deckTop; y++) for (let x = Math.max(0, 4 - y); x <= 2; x++) put(x, y, theme.sail)
+  else for (let x = 0; x <= 2; x++) put(x, deckTop - 1, theme.sail)
 
   crew.forEach((member, i) => {
     const hop = sailing && member.state === 'running' && !member.stale && (frame + i) % 2 ? 1 : 0
@@ -140,13 +135,15 @@ export function boatGrid(frame, flag) {
   grid[top][5] = flag
   grid[top][6] = flag
   const deck = top + MAST_ROWS
-  for (let x = 1; x < width - 1; x++) grid[deck][x] = DECK
+  for (let x = 1; x < width - 1; x++) grid[deck][x] = theme.deck
   for (let x = 2; x < width - 2; x++) grid[deck + 1][x] = HULL
 
   return grid
 }
 
-export const ANCHOR = ['..X..', '.XXX.', '..X..', 'X.X.X', '.XXX.'].map(row => [...row].map(ch => (ch === 'X' ? '#c9d6e3' : null)))
+const ANCHOR = ['..X..', '.XXX.', '..X..', 'X.X.X', '.XXX.']
+
+export const anchorGrid = () => ANCHOR.map(row => [...row].map(ch => (ch === 'X' ? theme.anchor : null)))
 
 export const BANG = ['.XXX.', 'XX.XX', 'XX.XX', 'XX.XX', 'XXXXX', 'XX.XX', '.XXX.'].map(row =>
   [...row].map(ch => (ch === 'X' ? 'beacon' : ch === '.' ? '#2a1d00' : null)),

@@ -108,6 +108,8 @@ While you search or filter, the right column shows one list of the matching ship
 
 Every 2 minutes, fleet checks each MR that is `in_review`. It runs `gh pr view <url> --json state,mergeCommit` for GitHub links. It runs `glab mr view <url> --output json` for all other links. A merged MR becomes `merged` and keeps its merge SHA. An MR closed without a merge becomes `abandoned`. If the CLI is missing or fails, the page says so. The captain then uses the buttons.
 
+Fleet also finds a missing MR link. For an MR with no `url` and a branch that is not `main` or `master`, fleet asks the host for an MR on that branch. It runs `gh pr list --head <branch> --state all` for GitHub and `glab mr list --source-branch <branch> --all` for GitLab. A remote with no host means `gitlab.com`. The newest match wins. Fleet keeps the link in its own file under `~/.fleet/ships/` and never writes crew files. A merged match makes the MR `merged`, even when crew roles are not `done`. A closed match makes it `abandoned`. An open match is the MR link, so the ship is `in_review` when every crew member is `done`. When nothing is found, fleet asks again after 10 minutes. If the CLI is missing or fails, fleet does nothing.
+
 Every 2 minutes, fleet also runs the fleet's `release_check` for each `merged` MR. Exit code 0 moves the MR to `released`. Any other result keeps it `merged`. The page shows the last result.
 
 ## New ship

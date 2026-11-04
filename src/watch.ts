@@ -2,11 +2,12 @@ import { execFile, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 
-import { observeMr, readStored, withSha, writeStored } from './life.ts'
+import { observeMr, readStored, withFound, withSha, writeStored } from './life.ts'
 import { fleetHome, readState, turnedBackScout, type Mr } from './state.ts'
 
 export const POLL_MS = 2 * 60 * 1000
 export const CHECK_LIMIT_MS = 60 * 1000
+export const SEARCH_WAIT_MS = 10 * 60 * 1000
 const CLI_LIMIT_MS = 30 * 1000
 
 export type CliResult = { ok: true; stdout: string } | { ok: false; missing: boolean; message: string }
@@ -61,12 +62,14 @@ export const hostCli = (url: string): 'glab' | 'gh' => {
 type Seen2 = { state: 'merged' | 'abandoned' | 'open'; sha: string | null }
 
 export function parseHost(file: 'glab' | 'gh', stdout: string): Seen2 | null {
-  let j: any
   try {
-    j = JSON.parse(stdout)
+    return parseItem(file, JSON.parse(stdout))
   } catch {
     return null
   }
+}
+
+function parseItem(file: 'glab' | 'gh', j: any): Seen2 | null {
   const str = (v: unknown) => (typeof v === 'string' && v ? v : null)
   if (file === 'gh') {
     const state = String(j?.state).toUpperCase()
@@ -87,6 +90,54 @@ const glabArgs = (url: string) => {
 
 export const hostArgs = (file: 'glab' | 'gh', url: string) =>
   file === 'gh' ? ['pr', 'view', url, '--json', 'state,mergeCommit'] : glabArgs(url)
+
+const DEFAULT_BRANCHES = ['main', 'master']
+
+export function parseRemote(remote: string): { host: string; path: string } {
+  let rest = remote.trim().replace(/\/+$/, '').replace(/\.git$/, '')
+  const scheme = /^[a-z+]+:\/\/(?:[^@/]+@)?(.+)$/i.exec(rest)
+  const scp = /^[^@/\s]+@([^:/]+):(.+)$/.exec(rest)
+  if (scp) return { host: scp[1], path: scp[2] }
+  if (scheme) rest = scheme[1]
+  const slash = rest.indexOf('/')
+  const first = slash < 0 ? rest : rest.slice(0, slash)
+  if (slash > 0 && (scheme || first.includes('.'))) return { host: first.replace(/:\d+$/, ''), path: rest.slice(slash + 1) }
+
+  return { host: 'gitlab.com', path: rest }
+}
+
+export function searchPlan(remote: string, branch: string): { file: 'glab' | 'gh'; args: string[] } {
+  const { host, path } = parseRemote(remote)
+  if (host.includes('github')) {
+    const repo = host === 'github.com' ? path : `${host}/${path}`
+
+    return { file: 'gh', args: ['pr', 'list', '-R', repo, '--head', branch, '--state', 'all', '--json', 'number,state,url,mergeCommit'] }
+  }
+  const repo = host === 'gitlab.com' ? path : `https://${host}/${path}`
+
+  return { file: 'glab', args: ['mr', 'list', '-R', repo, '--source-branch', branch, '--all', '--output', 'json'] }
+}
+
+export function newestMatch(file: 'glab' | 'gh', stdout: string): (Seen2 & { url: string }) | null {
+  let list: any
+  try {
+    list = JSON.parse(stdout)
+  } catch {
+    return null
+  }
+  if (!Array.isArray(list)) return null
+  let best: { id: number; item: any } | null = null
+  for (const item of list) {
+    const id = Number(file === 'gh' ? item?.number : item?.iid)
+    const url = file === 'gh' ? item?.url : item?.web_url
+    if (!Number.isFinite(id) || typeof url !== 'string' || !url) continue
+    if (!best || id > best.id) best = { id, item }
+  }
+  if (!best) return null
+  const seen = parseItem(file, best.item)
+
+  return seen ? { ...seen, url: file === 'gh' ? best.item.url : best.item.web_url } : null
+}
 
 export type Watcher = { tick: () => Promise<void>; backfill: (ship: string) => Promise<void>; seen: (ship: string) => Seen[]; stop: () => void }
 
@@ -123,6 +174,22 @@ export function startWatcher({
     if (seen.state === 'open') return note(ship, mr.n, 'merge', 'merge check: still open')
     forget(ship, mr.n, 'merge')
     move(ship, mr.n, seen.state, seen.sha)
+  }
+
+  const searched = new Map<string, number>()
+
+  const searchMr = async (ship: string, mr: Mr) => {
+    const key = `${ship}#${mr.n}`
+    const last = searched.get(key)
+    if (last !== undefined && deps.now() - last < SEARCH_WAIT_MS) return
+    searched.set(key, deps.now())
+    const plan = searchPlan(mr.remote, mr.branch)
+    const got = await deps.cli(plan.file, plan.args)
+    if (!got.ok) return
+    const found = newestMatch(plan.file, got.stdout)
+    if (!found) return
+    writeStored(home, ship, withFound(readStored(home, ship), mr.n, found.url))
+    if (found.state !== 'open') move(ship, mr.n, found.state, found.sha)
   }
 
   const asked = new Set<string>()
@@ -169,9 +236,11 @@ export function startWatcher({
     for (const fleet of readState(env, deps.now()).fleets) {
       for (const ship of fleet.ships) {
         if (turnedBackScout(ship)) dockScout(ship.ship)
+        const found = readStored(home, ship.ship).found
         ship.mrs.forEach((mr, i) => {
           const life = ship.life.mrs[i]
-          if (life.state === 'in_review' && mr.url) jobs.push(...once(`${ship.ship}#${mr.n}#merge`, () => pollMerge(ship.ship, mr)))
+          if (life.state === 'sailing' && !mr.url && mr.branch && !DEFAULT_BRANCHES.includes(mr.branch)) jobs.push(...once(`${ship.ship}#${mr.n}#search`, () => searchMr(ship.ship, mr)))
+          else if ((life.state === 'in_review' || (life.state === 'sailing' && found[String(mr.n)])) && mr.url) jobs.push(...once(`${ship.ship}#${mr.n}#merge`, () => pollMerge(ship.ship, mr)))
           else if (life.state === 'merged') {
             const fetching = wantsSha(ship.ship, mr, life)
             if (fleet.release_check) {

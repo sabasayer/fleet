@@ -69,10 +69,10 @@ test('a started ship shows in state.starting and survives later reads', async ()
 })
 
 test('the entry goes away once a ship with that session ID shows, whatever its name', async () => {
-  mkdirSync(join(tmp, 'crew', 'ENG-711'), { recursive: true })
+  mkdirSync(join(tmp, 'crew', 'abc-482'), { recursive: true })
   writeFileSync(
-    join(tmp, 'crew', 'ENG-711', 'ship.json'),
-    JSON.stringify({ version: 1, ship: 'ENG-711', title: 't', task: null, fleet: 'alpha', created: '2026-10-20T10:00:00Z', session: { id: SESSION.toUpperCase(), updated: 'x' }, mrs: [{ n: 1, repo: '/r', remote: 'x', worktree: '/w', branch: 'b', url: null }] }),
+    join(tmp, 'crew', 'abc-482', 'ship.json'),
+    JSON.stringify({ version: 1, ship: 'abc-482', title: 't', task: null, fleet: 'alpha', created: '2026-10-20T10:00:00Z', session: { id: SESSION.toUpperCase(), updated: 'x' }, mrs: [{ n: 1, repo: '/r', remote: 'x', worktree: '/w', branch: 'b', url: null }] }),
   )
   assert.deepEqual((await state()).starting, [])
 })

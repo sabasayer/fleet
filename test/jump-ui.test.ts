@@ -3,20 +3,20 @@ import { test } from 'node:test'
 
 import { describe, jumpHtml, requestJump } from '../web/jump.js'
 
-const ship = { ship: 'ENG-1', session: { id: 'x' } }
+const ship = { ship: 'abc-1', session: { id: 'x' } }
 
 test('outside herdr message shows folder and PID', () => {
   assert.match(describe({ status: 'outside_herdr', message: 'm', cwd: '/f', pid: 9 }), /Folder: \/f\. PID 9/)
 })
 
 test('button is disabled while busy or without a session', () => {
-  assert.match(jumpHtml(ship, { ship: 'ENG-1', busy: true }), /disabled/)
-  assert.match(jumpHtml({ ship: 'ENG-1', session: null }, null), /disabled/)
+  assert.match(jumpHtml(ship, { ship: 'abc-1', busy: true }), /disabled/)
+  assert.match(jumpHtml({ ship: 'abc-1', session: null }, null), /disabled/)
   assert.doesNotMatch(jumpHtml(ship, null), /disabled/)
 })
 
 test('fallback result shows the command and a copy button, escaped', () => {
-  const html = jumpHtml(ship, { ship: 'ENG-1', result: { status: 'fallback', message: 'down', command: "cd '/a' && <b>" } })
+  const html = jumpHtml(ship, { ship: 'abc-1', result: { status: 'fallback', message: 'down', command: "cd '/a' && <b>" } })
   assert.match(html, /data-copy=/)
   assert.doesNotMatch(html, /<b>/)
 })

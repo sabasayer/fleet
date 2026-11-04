@@ -13,7 +13,7 @@ The captain finds a crew run fast by its ticket ID, MR number or title. The capt
 **Search**
 
 - A text box at the top of the right column. `/` moves the focus into it. `Esc` clears it and leaves the box. Other keys do nothing while you type (fleet already works this way for form fields).
-- A ship matches when the text is part of any of these, ignoring case: the ship name, the title, the task link (so a Linear ID like `ENG-3067` matches), each MR's number (`561` or `!561`), each MR's URL and each MR's branch.
+- A ship matches when the text is part of any of these, ignoring case: the ship name, the title, the task link (so a Linear ID like `abc-7391` matches), each MR's number (`561` or `!561`), each MR's URL and each MR's branch.
 - Search includes harbour ships, including the ones the harbour hides after 3 days.
 - While search or a filter is on, the right column shows one result list of the matching ships. Each row looks like a ships-panel row. A click, or `Enter` on the row under the cursor, zooms to that ship, as a panel click does today. On the sea, ships that do not match are hidden, not faded.
 

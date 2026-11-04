@@ -33,7 +33,7 @@ No refresh needed.
 - A `running` agent with no update for 15 minutes shows in red with `STALE`.
 - A file that is not valid JSON shows as `unreadable`.
 
-Show one ticket only: `/crew-board <ticket>`, for example `/crew-board eng-708-mr2`.
+Show one ticket only: `/crew-board <ticket>`, for example `/crew-board abc-395-mr2`.
 Type `/crew-board` with no name to see all tickets again.
 
 The first mate can open the board itself. The mod gives it a tool,

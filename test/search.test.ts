@@ -16,7 +16,7 @@ const ship = (name: string, extra: Record<string, unknown> = {}, stage = 'sailin
   life: { stage, state, endedAt: null, mrs: [], actions: [] },
   ...extra,
 })
-const linear = ship('fix-a', { task: 'https://linear.app/acme/issue/ENG-3067', mrs: [{ n: 561, url: 'https://gitlab.com/x/y/-/merge_requests/561', branch: 'feat/slow-search', crew: crew() }] })
+const linear = ship('fix-a', { task: 'https://linear.app/acme/issue/abc-7391', mrs: [{ n: 561, url: 'https://gitlab.com/x/y/-/merge_requests/561', branch: 'feat/slow-search', crew: crew() }] })
 const needs = ship('n-1', { needsCaptain: { role: 'gate', reason: 'r', kind: 'blocked' } })
 const stale = ship('s-1', { mrs: [{ n: 1, url: null, branch: 'b', crew: crew(true) }] })
 const ships = [
@@ -41,7 +41,7 @@ test('match by ship name, title, case ignored', () => {
 })
 
 test('match a Linear ID in the task link', () => {
-  assert.ok(matches(linear, 'eng-3067'))
+  assert.ok(matches(linear, 'abc-7391'))
 })
 
 test('match an MR number with or without the bang, and the MR url', () => {
@@ -82,15 +82,15 @@ test('a scout that is still scouting counts as running', () => {
 })
 
 test('search and chip work together', () => {
-  assert.deepEqual(ids('running', 'eng-3067'), ['fix-a'])
-  assert.deepEqual(ids('needs', 'eng-3067'), [])
+  assert.deepEqual(ids('running', 'abc-7391'), ['fix-a'])
+  assert.deepEqual(ids('needs', 'abc-7391'), [])
 })
 
 test('counts follow the search text', () => {
   const all = Object.fromEntries(chipCounts(ships, '').map(c => [c.id, c.count]))
   assert.equal(all.all, 11)
   assert.equal(all.merged, 2)
-  const narrowed = Object.fromEntries(chipCounts(ships, 'eng-3067').map(c => [c.id, c.count]))
+  const narrowed = Object.fromEntries(chipCounts(ships, 'abc-7391').map(c => [c.id, c.count]))
   assert.equal(narrowed.all, 1)
   assert.equal(narrowed.running, 1)
   assert.equal(narrowed.merged, 0)
@@ -147,7 +147,7 @@ test('without search the panel keeps its normal blocks', () => {
 })
 
 test('search text narrows the list to one result block', () => {
-  const html = panel(ships, { text: 'eng-3067', chip: 'all', pick: null })
+  const html = panel(ships, { text: 'abc-7391', chip: 'all', pick: null })
   assert.deepEqual(rowsIn(html), ['fix-a'])
   assert.match(html, /results \(1\)/)
   assert.doesNotMatch(html, /needs captain|harbour/)

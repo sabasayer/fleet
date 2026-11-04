@@ -227,7 +227,7 @@ test('the real git check finds the main checkout from a worktree and refuses a p
 
 test('ship names: task slug with a short ID, a link uses its last part, nothing usable gives new-<id>', () => {
   assert.equal(shipName('Fix: the Login bug!', UUID), 'fix-the-login-bug-abcd')
-  assert.equal(shipName('https://linear.app/x/issue/ENG-1710?a=b', UUID), 'eng-1710-abcd')
+  assert.equal(shipName('https://linear.app/x/issue/abc-6204?a=b', UUID), 'abc-6204-abcd')
   assert.equal(shipName('日本語', UUID), 'new-abcd1234')
   assert.equal(shipName('a'.repeat(200), UUID), `${'a'.repeat(40)}-abcd`)
   assert.equal(shipName('  ', UUID), 'new-abcd1234')

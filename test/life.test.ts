@@ -130,5 +130,5 @@ test('bad stored data falls back to safe values', () => {
 
 test('ship names reject path tricks', () => {
   for (const bad of ['', '../x', 'a/b', '.hidden', 'a b', 5, null]) assert.equal(isShipName(bad), false)
-  for (const good of ['ENG-1', 'PORTAL-101', 'a.b_c']) assert.equal(isShipName(good), true)
+  for (const good of ['abc-1', 'PORTAL-101', 'a.b_c']) assert.equal(isShipName(good), true)
 })

@@ -7,6 +7,11 @@ import { chipsHtml, isActive, movePick, pickedName, searchKey, shownFleets } fro
 import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml } from './newship.js'
 import { allShips, openShipName, panelHtml, resultShips } from './panel.js'
 import { createSea } from './sea.js'
+import { applyTheme, DARK, LIGHT } from './theme.js'
+
+const lightQuery = matchMedia('(prefers-color-scheme: light)')
+const applySystemTheme = () => applyTheme(lightQuery.matches ? LIGHT : DARK)
+applySystemTheme()
 
 const canvas = document.getElementById('sea')
 const ui = document.getElementById('ui')
@@ -94,6 +99,13 @@ function renderSide() {
 function schedule() {
   if (!pending) pending = requestAnimationFrame(render)
 }
+
+lightQuery.addEventListener('change', () => {
+  applySystemTheme()
+  lastUi = ''
+  lastSide = ''
+  schedule()
+})
 
 function setConfirm(next) {
   clearTimeout(confirmTimer)

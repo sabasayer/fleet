@@ -1,3 +1,5 @@
+import { theme } from './theme.js'
+
 export const ZONES = ['in_review', 'merged', 'released', 'testing']
 export const ZONE_NAME = { in_review: 'in review', merged: 'merged', released: 'released', testing: 'testing' }
 export const KEEP_DAYS = 3
@@ -15,7 +17,7 @@ export const LIFE_TAG = {
   abandoned: 'abandoned · MR closed',
 }
 export const LIFE_SHORT = { in_review: 'in review', merged: 'merged', released: 'released · test it', testing: 'testing', paused: 'paused', failed: 'failed', abandoned: 'abandoned' }
-export const LIFE_COLOR = { in_review: '#9fc3e6', merged: '#9fc3e6', released: '#c9a6ff', testing: '#c9a6ff', paused: '#8a8a8a', failed: '#e5484d', abandoned: '#6b6b6b' }
+export const LIFE_COLOR = theme.life
 
 export const ACTION_LABEL = {
   mark_merged: 'mark merged',

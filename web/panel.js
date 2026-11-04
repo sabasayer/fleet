@@ -1,4 +1,5 @@
-import { GOLD, memberColor, STATE } from './art.js'
+import { memberColor, STATE } from './art.js'
+import { theme } from './theme.js'
 import { jumpHtml } from './jump.js'
 import { startingHtml } from './newship.js'
 import { crewOf, currentIndex, focusFleet } from './layout.js'
@@ -7,7 +8,7 @@ import { isActive, matching, pickedName } from './search.js'
 
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
-export const needsColor = needs => (needs?.kind === 'failed' ? STATE.failed : GOLD)
+export const needsColor = needs => (needs?.kind === 'failed' ? STATE.failed : theme.gold)
 
 export function updatedAt(ship) {
   const times = ship.mrs.flatMap(mr => mr.crew.map(m => m.updatedMs)).filter(Number.isFinite)

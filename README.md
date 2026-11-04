@@ -44,7 +44,7 @@ Make the log folder first: `mkdir -p ~/.fleet`. Then save this as `~/Library/Lau
   <key>ProgramArguments</key>
   <array>
     <string>/bin/zsh</string>
-    <string>-lc</string>
+    <string>-lic</string>
     <string>exec node bin/crew-fleet.ts</string>
   </array>
   <key>WorkingDirectory</key>
@@ -64,7 +64,7 @@ Make the log folder first: `mkdir -p ~/.fleet`. Then save this as `~/Library/Lau
 </plist>
 ```
 
-The login shell gives fleet your normal `PATH`. So fleet finds `node`, `glab`, `gh` and `herdr`. Fleet uses the default port 4932.
+`-lic` starts an interactive login shell. It reads `~/.zprofile` and `~/.zshrc`, so fleet gets the same `PATH` as your terminal and finds `node`, `claude`, `herdr`, `glab` and `gh`. With only `-lc`, zsh skips `~/.zshrc`. If your `PATH` is set there, jump back and new ship then fail. Fleet uses the default port 4932.
 
 Load it:
 

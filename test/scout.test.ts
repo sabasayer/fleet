@@ -91,7 +91,7 @@ test('a scout that gained MR 1 stays a normal ship', () => {
   const ship = shipOf(env, 'SCOUT-3')
   assert.equal(ship.kind, 'scout')
   assert.equal(ship.life.stage, 'sailing')
-  assert.deepEqual(ship.life.actions, ['pause', 'mark_failed'])
+  assert.deepEqual(ship.life.actions, ['mark_in_review', 'pause', 'mark_failed'])
 })
 
 test('a tick docks a turned-back scout with the time it ran', async () => {

@@ -7,11 +7,15 @@ import { chipsHtml, isActive, movePick, pickedName, searchKey, shownFleets } fro
 import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml } from './newship.js'
 import { allShips, openShipName, panelHtml, resultShips } from './panel.js'
 import { createSea } from './sea.js'
-import { applyTheme, DARK, LIGHT } from './theme.js'
+import { applyTheme, cssVars, DARK, LIGHT } from './theme.js'
 
+const params = new URLSearchParams(location.search)
+const themeName = ['light', 'dark'].includes(params.get('theme')) ? params.get('theme') : null
+const forced = themeName && { light: LIGHT, dark: DARK }[themeName]
 const lightQuery = matchMedia('(prefers-color-scheme: light)')
-const applySystemTheme = () => applyTheme(lightQuery.matches ? LIGHT : DARK)
+const applySystemTheme = () => applyTheme(forced ?? (lightQuery.matches ? LIGHT : DARK))
 applySystemTheme()
+if (forced) document.documentElement.style.cssText = `color-scheme: ${themeName}; ${cssVars(forced)}`
 
 const canvas = document.getElementById('sea')
 const ui = document.getElementById('ui')
@@ -28,7 +32,7 @@ const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCo
 let allFleets = []
 let seaBase = []
 let fleets = []
-let harbourOpen = null
+let harbourOpen = params.get('ship')
 let now = Date.now()
 let view = initialView(fleets)
 let frame = 0

@@ -104,6 +104,12 @@ Under the box, one row of chips filters by state. Only one chip is on. Each chip
 
 While you search or filter, the right column shows one list of the matching ships. Click a row, or press `Enter` to open the highlighted row. Use `↑` and `↓` in the box to move the highlight. On the sea, ships that do not match are hidden. The other ships close up the gaps. A fleet with no match hides its lane. If the cursor was on a hidden ship, it moves to the first fleet. `Esc` clears the text. The text and the chip are not kept over a reload.
 
+## Console
+
+`GET /console.json` gives one panel for the console at `http://localhost:4940`. "Waiting on you" lists the ships that need the captain. "Sailing" lists the other open ships. Closed ships are left out.
+
+The page reads two URL parameters. `?ship=<name>` opens that ship on load. `?theme=light` or `?theme=dark` forces that theme for this load.
+
 ## Automatic states
 
 Every 2 minutes, fleet checks each MR that is `in_review`. It runs `gh pr view <url> --json state,mergeCommit` for GitHub links. It runs `glab mr view <url> --output json` for all other links. A merged MR becomes `merged` and keeps its merge SHA. An MR closed without a merge becomes `abandoned`. If the CLI is missing or fails, the page says so. The captain then uses the buttons.

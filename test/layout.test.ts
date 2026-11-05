@@ -132,3 +132,62 @@ test('lane head leaves room before the first header label', () => {
   assert.ok(headRoom(170, 1210, true) < headRoom(170, 1210, false))
   assert.ok(headRoom(170, 1210, false) > 0)
 })
+
+import { COMPACT_PX, isCompact, laneLabels, metricsFor, MIN_TAP, padHit, placeRows } from '../web/layout.js'
+
+const overlaps = (items: { x: number; width: number; row: number }[]) =>
+  items.some((a, i) => items.some((b, j) => i < j && a.row === b.row && Math.abs(a.x - b.x) < (a.width + b.width) / 2))
+
+test('lane labels never overlap at any narrow width, with or without the scout band', () => {
+  for (const w of [320, 360, 390, 400, 480, 600, COMPACT_PX - 1]) {
+    for (const band of [false, true]) {
+      const { items, rows } = laneLabels(100, w - 60, band, true)
+      assert.equal(overlaps(items), false, `${w} band=${band}`)
+      assert.ok(rows <= 4)
+      for (const item of items) {
+        assert.ok(item.x - item.width / 2 >= 0, `${w} left edge`)
+        assert.ok(item.x + item.width / 2 <= w, `${w} right edge`)
+      }
+    }
+  }
+})
+
+test('wide lane labels stay on one row', () => {
+  const { items, rows } = laneLabels(170, 1080 - 70, true, false)
+  assert.equal(rows, 1)
+  assert.deepEqual(items.map(item => item.text), ['scouting', 'crew at work', 'in review', 'merged', 'released', 'testing'])
+})
+
+test('placeRows uses the next row when labels collide', () => {
+  const rows = placeRows([{ text: 'aaaaaaaa', x: 50 }, { text: 'bbbbbbbb', x: 80 }, { text: 'cccc', x: 400 }], 3)
+  assert.deepEqual(rows.map(r => r.row), [0, 1, 0])
+})
+
+test('wide metrics keep the old numbers; compact metrics start below the width break', () => {
+  assert.equal(isCompact(COMPACT_PX), false)
+  assert.equal(isCompact(COMPACT_PX - 1), true)
+  const wide = metricsFor({ w: 1080 })
+  assert.deepEqual([wide.labelColumn, wide.rightMargin, wide.head, wide.tintTop, wide.labelTop], [LABEL_COLUMN, RIGHT_MARGIN, 28, 24, 6])
+  const narrow = metricsFor({ w: 390 })
+  assert.equal(narrow.compact, true)
+  assert.ok(narrow.head >= 44 + 18)
+})
+
+test('a tap box is at least 40 by 40 and keeps the ship inside', () => {
+  const box = padHit({ x: 100, y: 50, w: 30, h: 36, ship: 's' })
+  assert.ok(box.w >= MIN_TAP && box.h >= MIN_TAP)
+  assert.ok(box.x <= 100 && box.x + box.w >= 130 && box.y <= 50 && box.y + box.h >= 86)
+  assert.deepEqual(padHit({ x: 0, y: 0, w: 60, h: 60 }), { x: 0, y: 0, w: 60, h: 60 })
+})
+
+test('compact layout does not shift lanes; it reports the full height to scroll', () => {
+  const many = Array.from({ length: 6 }, (_, i) => ({ id: `f${i}`, name: `F${i}`, color: '#fff', ships: [ship(`s${i}a`), ship(`s${i}b`)] }))
+  const view = { level: 'armada', cursor: 'f5' }
+  const out = layoutFor(view, many, { w: 390, h: 400 })
+  const head = metricsFor({ w: 390 }).head
+  assert.equal(out.lanes.f0.y, 64)
+  assert.ok(out.bottom > 400)
+  assert.equal(out.lanes.f1.y, 64 + head + 2 * out.rowHeight + 8 + 8)
+  const wide = layoutFor(view, many, { w: 1000, h: 400 })
+  assert.ok(wide.lanes.f0.y < 64)
+})

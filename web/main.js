@@ -3,7 +3,7 @@ import { requestJump } from './jump.js'
 import { isTyping, keyAction, keysHtml, pressAction } from './keys.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets, shipPhase } from './life.js'
-import { chipsHtml, isActive, movePick, pickedName, searchKey, shownFleets } from './search.js'
+import { chipsHtml, filterCount, filterLabel, isActive, movePick, pickedName, searchKey, shownFleets } from './search.js'
 import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml } from './newship.js'
 import { allShips, openShipName, panelHtml, resultShips } from './panel.js'
 import { createSea } from './sea.js'
@@ -24,6 +24,9 @@ const side = document.getElementById('side')
 const right = document.getElementById('right')
 const searchInput = document.getElementById('search-text')
 const chipsBox = document.getElementById('chips')
+const filterButton = document.getElementById('filter-toggle')
+const searchBox = document.getElementById('search-box')
+const shortQuery = matchMedia('(max-width: 759px) and (max-height: 639px)')
 const modal = document.getElementById('modal')
 const sea = createSea(canvas, ui, document.getElementById('scroll'), document.getElementById('world'))
 const token = document.querySelector('meta[name="fleet-token"]')?.content ?? ''
@@ -84,17 +87,19 @@ const resultNames = () => resultShips(allFleets, search).map(entry => entry.ship
 function renderChips() {
   const html = chipsHtml(allShips(allFleets).map(entry => entry.ship), search)
   if (html !== lastChips) chipsBox.innerHTML = lastChips = html
+  filterButton.textContent = filterLabel(search)
+  searchBox.classList.toggle('filtered', filterCount(search) > 0)
 }
 
 function renderSide() {
-  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump, starting, confirm, search })
+  const html = panelHtml({ fleets: allFleets, view, now, opened: harbourOpen, jump, starting, confirm, search, split: shortQuery.matches })
   right.classList.toggle('empty', allFleets.length === 0 && html === '')
   renderChips()
   if (html === lastSide) return
   const scroll = side.scrollTop
   side.innerHTML = lastSide = html
-  const open = side.querySelector('.cur')
-  const opened = open?.dataset.ship ?? null
+  const open = side.querySelector(shortQuery.matches ? '.open-panel' : '.cur')
+  const opened = open?.dataset.ship ?? open?.dataset.open ?? null
   if (opened !== lastOpen) open?.scrollIntoView({ block: 'nearest' })
   else side.scrollTop = scroll
   lastOpen = opened
@@ -149,6 +154,16 @@ function setSearch(next) {
 }
 
 searchInput.addEventListener('input', () => setSearch({ text: searchInput.value }))
+
+filterButton.addEventListener('click', () => {
+  const shown = searchBox.classList.toggle('chips-open')
+  filterButton.setAttribute('aria-expanded', String(shown))
+})
+
+shortQuery.addEventListener('change', () => {
+  lastSide = ''
+  schedule()
+})
 
 chipsBox.addEventListener('click', event => {
   const chip = event.target.closest('[data-chip]')

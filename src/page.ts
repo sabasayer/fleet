@@ -15,6 +15,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 #right.empty { display: none; }
 #search-box { display: flex; flex-direction: column; gap: 6px; }
 #search-text { font: inherit; background: var(--field); color: var(--ink); border: 2px solid var(--line); padding: 5px 6px; width: 100%; }
+#search-line { display: flex; gap: 6px; }
+#filter-toggle { display: none; }
 #chips { display: flex; flex-wrap: wrap; gap: 4px; }
 .chip { font-size: 12px; padding: 1px 6px; border: 1px solid var(--line); cursor: pointer; color: var(--accent); }
 .chip:hover { background: var(--hover); }
@@ -83,9 +85,27 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
   #stage { height: 100%; }
   #right { width: auto; height: 100%; min-height: 0; padding: 8px 12px 12px; }
   #right.empty { display: none; }
-  #chips { flex-wrap: nowrap; overflow-x: auto; }
+  #search-box { padding: 4px 12px; }
+  #search-line > #search-text { flex: 1; min-width: 0; }
+  #filter-toggle { display: inline-flex; align-items: center; flex: none; font: inherit; font-size: 12px; background: var(--active); color: var(--ink); border: 2px solid var(--line); padding: 0 12px; min-height: 40px; cursor: pointer; }
+  #chips { display: none; flex-wrap: wrap; }
+  #search-box.chips-open #chips { display: flex; }
+  #search-box.filtered:not(.chips-open) #chips { display: flex; flex-wrap: nowrap; overflow-x: auto; }
+  #search-box.filtered:not(.chips-open) .chip:not(.on) { display: none; }
   #crumbs { top: 8px; left: 8px; right: 8px; }
   #newship-open { left: 8px; bottom: 8px; }
+}
+@media (max-width: 759px) and (max-height: 639px) {
+  body { display: flex; flex-direction: column; height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }
+  #stage { order: 3; flex: none; height: 340px; }
+  #right, #side { display: contents; }
+  #right.empty { display: none; }
+  #search-box { order: 4; margin: 8px 12px 0; }
+  #side > * { order: 5; margin: 8px 12px 0; }
+  #side > .open-panel { order: 1; }
+  #side > .needs-panel { order: 2; }
+  #side > :last-child { margin-bottom: 12px; }
+  .open-panel .open { margin-top: 0; border-top: 0; }
 }
 @media (max-width: 759px), (pointer: coarse) {
   .chip { flex: none; display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; }
@@ -136,7 +156,7 @@ export const page = (token: string) => `<!doctype html>
 <button type="button" id="newship-open">+ new ship (n)</button>
 </div>
 <aside id="right">
-<div id="search-box" class="hud-block"><input id="search-text" type="search" placeholder="search ships (/)" autocomplete="off" spellcheck="false" aria-label="Search ships"><div id="chips"></div></div>
+<div id="search-box" class="hud-block"><div id="search-line"><input id="search-text" type="search" placeholder="search ships (/)" autocomplete="off" spellcheck="false" aria-label="Search ships"><button type="button" id="filter-toggle" aria-expanded="false">filter</button></div><div id="chips"></div></div>
 <div id="side"></div>
 </aside>
 <div id="modal"></div>

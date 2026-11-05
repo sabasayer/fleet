@@ -37,6 +37,10 @@ export const chipCounts = (ships, text) => {
   return CHIPS.map(({ id, label, test }) => ({ id, label, count: found.filter(test).length }))
 }
 
+export const filterCount = ({ chip }) => (chip === 'all' ? 0 : 1)
+
+export const filterLabel = search => (filterCount(search) > 0 ? `filter (${filterCount(search)})` : 'filter')
+
 export const chipsHtml = (ships, { text, chip }) =>
   chipCounts(ships, text)
     .map(({ id, label, count }) => `<span class="chip${id === chip ? ' on' : ''}" role="button" data-chip="${id}">${label} (${count})</span>`)

@@ -139,7 +139,7 @@ export function createSea(canvas, ui, scroller, world) {
         if (life === 'paused') blit(ctx, anchorGrid(), sx + grid[0].length * rowPx + 2, top + grid.length * rowPx - 5 * snap(Math.max(2, scale / 2), dpr), Math.max(2, scale / 2), dpr)
         if (ship.needsCaptain) {
           const bangScale = Math.max(3, scale / 2)
-          const color = ship.needsCaptain.kind === 'failed' ? theme.state.failed : theme.gold
+          const color = ship.needsCaptain.kind === 'failed' ? theme.beaconFail : theme.gold
           if (frame % 4 < 3) blit(ctx, beaconGrid(color), cx - 2.5 * snap(bangScale, dpr), sy - (8 + (frame % 2)) * snap(bangScale, dpr), bangScale, dpr)
         }
         if (place.a > 0.5) {

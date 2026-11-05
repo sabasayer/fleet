@@ -125,3 +125,17 @@ test('light: no black text shadow', () => {
   assert.equal(LIGHT.labelShadow, 'none')
   assert.equal(DARK.labelShadow, '1px 1px 0 #000')
 })
+
+for (const [mode, set] of [['dark', DARK], ['light', LIGHT]] as const) {
+  test(`${mode}: the beacon "!" is readable and the box stands out from the sea`, () => {
+    for (const box of [set.gold, set.beaconFail]) {
+      assert.ok(contrast(set.beaconInk, box) >= 4.5, `beacon ink on ${box}`)
+      for (const sea of [set.calm0, set.calm1]) assert.ok(contrast(box, sea) >= 3, `beacon box ${box} on ${sea}`)
+    }
+  })
+
+  test(`${mode}: panel badges are readable`, () => {
+    assert.ok(contrast(set.needsInk, set.gold) >= 4.5)
+    assert.ok(contrast(set.failInk, set.state.failed) >= 4.5)
+  })
+}

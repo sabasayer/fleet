@@ -6,6 +6,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http'
 import { realNewShipDeps, startNewShip, type NewShipDeps } from './newship.ts'
 import { jump, realJumpDeps, type JumpDeps, type JumpResult } from './jump.ts'
 import { applyAction, isAction, isShipName, readStored, writeStored } from './life.ts'
+import { consoleFeed } from './console.ts'
 import { page } from './page.ts'
 import { fleetHome, readState, turnedBackScout } from './state.ts'
 import type { Watcher } from './watch.ts'
@@ -138,6 +139,7 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
       }
     }
     if (req.method === 'GET' && url.pathname === '/api/state') return send(200, 'application/json', JSON.stringify(stateWithChecks()))
+    if (req.method === 'GET' && url.pathname === '/console.json') return send(200, 'application/json', JSON.stringify(consoleFeed(readState(env, clock()))))
     if (req.method === 'POST') {
       if (!validToken(req)) return send(403, 'text/plain', 'forbidden')
       if (url.pathname === '/api/ping') return send(200, 'application/json', '{"ok":true}')

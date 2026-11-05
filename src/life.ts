@@ -3,10 +3,10 @@ import { join } from 'node:path'
 
 export const STAGES = ['sailing', 'in_review', 'merged', 'released', 'testing', 'done'] as const
 export type Stage = (typeof STAGES)[number]
-export type AfterState = 'merged' | 'released' | 'testing' | 'done' | 'abandoned'
+export type AfterState = 'in_review' | 'merged' | 'released' | 'testing' | 'done' | 'abandoned'
 export type MrState = Stage | 'abandoned'
 export type LifeState = MrState | 'paused' | 'failed'
-export const ACTIONS = ['mark_merged', 'mark_released', 'start_testing', 'done', 'bug_found', 'pause', 'resume', 'mark_failed', 'undock'] as const
+export const ACTIONS = ['mark_in_review', 'mark_merged', 'mark_released', 'start_testing', 'done', 'bug_found', 'pause', 'resume', 'mark_failed', 'undock'] as const
 export type Action = (typeof ACTIONS)[number]
 
 export type StoredMr = { state: AfterState; sha: string | null; changed: string }
@@ -30,7 +30,7 @@ export type Life = {
   actions: Action[]
 }
 
-const AFTER_STATES: AfterState[] = ['merged', 'released', 'testing', 'done', 'abandoned']
+const AFTER_STATES: AfterState[] = ['in_review', 'merged', 'released', 'testing', 'done', 'abandoned']
 const SHIP_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/
 
 export const isShipName = (name: unknown): name is string => typeof name === 'string' && SHIP_NAME.test(name)
@@ -78,12 +78,13 @@ export function shipStage(mrs: MrInput[], stored: Stored, turnedBack = false): M
 
 const flagActions = (state: LifeState): Action[] => (state === 'failed' ? ['resume'] : state === 'paused' ? ['resume', 'mark_failed'] : ['pause', 'mark_failed'])
 
-export function actionsFor(state: LifeState, turnedBack = false): Action[] {
+export function actionsFor(state: LifeState, turnedBack = false, hasLinkedSailingMr = false): Action[] {
   if (turnedBack) return []
   if (state === 'abandoned') return []
   if (state === 'done') return ['undock']
   if (state === 'paused' || state === 'failed') return flagActions(state)
   const step: Partial<Record<Stage, Action[]>> = {
+    sailing: hasLinkedSailingMr ? ['mark_in_review'] : [],
     in_review: ['mark_merged'],
     merged: ['mark_released'],
     released: ['start_testing'],
@@ -99,6 +100,8 @@ const ms = (iso: string | null) => {
   return Number.isNaN(t) ? null : t
 }
 
+const hasLinkedSailingMr = (mrs: MrInput[], stored: Stored) => mrs.some(mr => Boolean(mr.url) && mrState(mr, stored) === 'sailing')
+
 export function lifeOf(mrs: MrInput[], stored: Stored, turnedBack = false): Life {
   const stage = shipStage(mrs, stored, turnedBack)
   const state: LifeState = stored.failed ? 'failed' : stored.paused ? 'paused' : stage
@@ -112,7 +115,7 @@ export function lifeOf(mrs: MrInput[], stored: Stored, turnedBack = false): Life
   const latest = changes.length > 0 ? Math.max(...changes) : null
   const endedAt = stage === 'done' ? (ms(stored.docked) ?? latest) : stage === 'abandoned' ? latest : null
 
-  return { stage, state, paused: stored.paused, failed: stored.failed, endedAt, mrs: rows, actions: actionsFor(state, turnedBack) }
+  return { stage, state, paused: stored.paused, failed: stored.failed, endedAt, mrs: rows, actions: actionsFor(state, turnedBack, hasLinkedSailingMr(mrs, stored)) }
 }
 
 export function applyAction(mrs: MrInput[], stored: Stored, action: Action, now: string, turnedBack = false): Stored {
@@ -123,7 +126,9 @@ export function applyAction(mrs: MrInput[], stored: Stored, action: Action, now:
     for (const mr of mrs) if (mrState(mr, stored) === from) next.mrs[String(mr.n)] = { state: to, sha: stored.mrs[String(mr.n)]?.sha ?? null, changed: now }
   }
 
-  if (action === 'mark_merged') move('in_review', 'merged')
+  if (action === 'mark_in_review') {
+    for (const mr of mrs) if (mr.url && mrState(mr, stored) === 'sailing') next.mrs[String(mr.n)] = { state: 'in_review', sha: null, changed: now }
+  } else if (action === 'mark_merged') move('in_review', 'merged')
   else if (action === 'mark_released') move('merged', 'released')
   else if (action === 'start_testing') move('released', 'testing')
   else if (action === 'done') {
@@ -168,7 +173,7 @@ export function writeStored(home: string, ship: string, stored: Stored) {
 
 export function observeMr(stored: Stored, n: number, to: 'merged' | 'abandoned' | 'released', sha: string | null, now: string): Stored | null {
   const kept = stored.mrs[String(n)]
-  const allowed = to === 'released' ? kept?.state === 'merged' : kept === undefined
+  const allowed = to === 'released' ? kept?.state === 'merged' : kept === undefined || kept.state === 'in_review'
   if (!allowed) return null
 
   return { ...stored, mrs: { ...stored.mrs, [String(n)]: { state: to, sha: sha ?? kept?.sha ?? null, changed: now } } }

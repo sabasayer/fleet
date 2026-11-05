@@ -20,6 +20,7 @@ export const LIFE_SHORT = { in_review: 'in review', merged: 'merged', released: 
 export const LIFE_COLOR = theme.life
 
 export const ACTION_LABEL = {
+  mark_in_review: 'mark in review',
   mark_merged: 'mark merged',
   mark_released: 'mark released',
   start_testing: 'start testing',
@@ -32,6 +33,7 @@ export const ACTION_LABEL = {
 }
 
 export const ACTION_KEY = {
+  mark_in_review: 's',
   mark_merged: 's',
   mark_released: 's',
   start_testing: 's',

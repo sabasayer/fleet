@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { applyAction, emptyStored, isShipName, lifeOf, normalizeStored, shipStage, type MrInput, type Stored } from '../src/life.ts'
+import { applyAction, emptyStored, isShipName, lifeOf, normalizeStored, observeMr, shipStage, type MrInput, type Stored } from '../src/life.ts'
 
 const done = [{ state: 'done' }, { state: 'done' }]
 const mr = (n: number, crew = done, url: string | null = `https://x/mr/${n}`): MrInput => ({ n, url, crew })
@@ -82,7 +82,7 @@ test('buttons show only where they apply', () => {
   assert.deepEqual(actions(stored({ 1: at('done') })), ['undock'])
   assert.deepEqual(actions(stored({}, { paused: true })), ['resume', 'mark_failed'])
   assert.deepEqual(actions(stored({}, { failed: true })), ['resume'])
-  assert.deepEqual(actions(stored(), [mr(1, [{ state: 'running' }])]), ['pause', 'mark_failed'])
+  assert.deepEqual(actions(stored(), [mr(1, [{ state: 'running' }])]), ['mark_in_review', 'pause', 'mark_failed'])
 })
 
 test('walking a ship from in_review to done and back out', () => {
@@ -131,4 +131,46 @@ test('bad stored data falls back to safe values', () => {
 test('ship names reject path tricks', () => {
   for (const bad of ['', '../x', 'a/b', '.hidden', 'a b', 5, null]) assert.equal(isShipName(bad), false)
   for (const good of ['abc-1', 'PORTAL-101', 'a.b_c']) assert.equal(isShipName(good), true)
+})
+
+test('a sailing ship with a linked MR offers mark_in_review before the flag actions', () => {
+  const sailing = [mr(1, [{ state: 'running' }])]
+  assert.deepEqual(lifeOf(sailing, stored()).actions, ['mark_in_review', 'pause', 'mark_failed'])
+})
+
+test('a sailing ship with no link does not offer mark_in_review', () => {
+  assert.deepEqual(lifeOf([mr(1, [{ state: 'running' }], null)], stored()).actions, ['pause', 'mark_failed'])
+  assert.deepEqual(lifeOf([], stored()).actions, ['pause', 'mark_failed'])
+})
+
+test('mark_in_review moves the ship to in_review and mark_merged then applies', () => {
+  const sailing = [mr(1, [{ state: 'running' }])]
+  const next = applyAction(sailing, stored(), 'mark_in_review', NOW)
+  assert.equal(lifeOf(sailing, next).stage, 'in_review')
+  assert.deepEqual(lifeOf(sailing, next).actions, ['mark_merged', 'pause', 'mark_failed'])
+  assert.equal(next.mrs['1'].changed, NOW)
+})
+
+test('a found link counts: the state gives it as the MR url', () => {
+  const found = mr(1, [], 'https://x/found/1')
+  assert.equal(lifeOf([found], stored()).stage, 'sailing')
+  assert.equal(lifeOf([found], applyAction([found], stored(), 'mark_in_review', NOW)).stage, 'in_review')
+})
+
+test('with two MRs, only the linked one moves and the ship stays sailing', () => {
+  const mrs = [mr(1, [{ state: 'running' }]), mr(2, [{ state: 'running' }], null)]
+  const next = applyAction(mrs, stored(), 'mark_in_review', NOW)
+  const life = lifeOf(mrs, next)
+  assert.deepEqual(life.mrs.map(m => m.state), ['in_review', 'sailing'])
+  assert.equal(life.stage, 'sailing')
+  assert.ok(!life.actions.includes('mark_in_review'))
+})
+
+test('mark_in_review is refused when no MR has a link', () => {
+  assert.throws(() => applyAction([mr(1, [], null)], stored(), 'mark_in_review', NOW), /does not apply/)
+})
+
+test('the watcher can still mark an in_review MR as merged', () => {
+  const kept = stored({ 1: at('in_review') })
+  assert.equal(observeMr(kept, 1, 'merged', 'abc', NOW)?.mrs['1'].state, 'merged')
 })

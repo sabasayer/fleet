@@ -146,10 +146,10 @@ const ANCHOR = ['..X..', '.XXX.', '..X..', 'X.X.X', '.XXX.']
 export const anchorGrid = () => ANCHOR.map(row => [...row].map(ch => (ch === 'X' ? theme.anchor : null)))
 
 export const BANG = ['.XXX.', 'XX.XX', 'XX.XX', 'XX.XX', 'XXXXX', 'XX.XX', '.XXX.'].map(row =>
-  [...row].map(ch => (ch === 'X' ? 'beacon' : ch === '.' ? '#2a1d00' : null)),
+  [...row].map(ch => (ch === 'X' ? 'beacon' : ch === '.' ? 'ink' : null)),
 )
 
-export const beaconGrid = color => BANG.map(row => row.map(cell => (cell === 'beacon' ? color : cell)))
+export const beaconGrid = color => BANG.map(row => row.map(cell => (cell === 'beacon' ? color : cell === 'ink' ? theme.beaconInk : cell)))
 
 export const snap = (scale, dpr) => Math.max(1, Math.round(scale * dpr)) / dpr
 

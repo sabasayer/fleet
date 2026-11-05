@@ -7,6 +7,8 @@ export const style = `
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-monospace, Menlo, monospace; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
 #stage { position: relative; min-width: 0; height: 100vh; overflow: hidden; }
+#scroll { position: absolute; inset: 0; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+#world { position: relative; width: 100%; height: 100%; }
 #sea { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
 #ui { position: absolute; inset: 0; pointer-events: none; }
 #right { width: 360px; height: 100vh; padding: 12px 12px 12px 0; display: flex; flex-direction: column; gap: 10px; }
@@ -57,7 +59,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 #newship-open:hover { background: var(--active-hover); }
 #modal:empty { display: none; }
 #modal { position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: center; justify-content: center; z-index: 10; }
-.modal-box { width: min(520px, 92vw); display: flex; flex-direction: column; gap: 10px; }
+.modal-box { width: min(520px, 92vw); max-height: 92vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 .modal-box label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
 .modal-box label.check { flex-direction: row; align-items: center; gap: 6px; }
 .modal-box label.check input { width: auto; }
@@ -69,12 +71,36 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 .fail { color: var(--fail-ink); background: var(--state-failed); padding: 0 5px; font-weight: bold; }
 .label { position: absolute; font-size: 12px; white-space: nowrap; text-shadow: var(--label-shadow); }
 .lane-head { position: absolute; left: 12px; display: flex; gap: 6px; white-space: nowrap; pointer-events: auto; cursor: pointer; font-weight: bold; letter-spacing: 1px; }
+.lane-head.compact { min-height: 40px; align-items: center; }
 .lane-head > * { flex: 0 0 auto; }
 .lane-head > .head-name, .lane-head > .head-count { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .lane-head > .head-name { flex: 0 1 auto; }
 .lane-head > .head-count { flex: 0 100 auto; }
 .label .ship-id, .label .clamp { overflow: hidden; text-overflow: ellipsis; }
 .label .clamp { display: -webkit-box; -webkit-box-orient: vertical; white-space: normal; }
+@media (max-width: 759px) {
+  body { height: 100dvh; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 55fr) minmax(0, 45fr); }
+  #stage { height: 100%; }
+  #right { width: auto; height: 100%; min-height: 0; padding: 8px 12px 12px; }
+  #right.empty { display: none; }
+  #chips { flex-wrap: nowrap; overflow-x: auto; }
+  #crumbs { top: 8px; left: 8px; right: 8px; }
+  #newship-open { left: 8px; bottom: 8px; }
+}
+@media (max-width: 759px), (pointer: coarse) {
+  .chip { flex: none; display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px; }
+  #search-text { min-height: 40px; font-size: 16px; }
+  .row { min-height: 40px; padding: 8px 4px; }
+  .jump button, .buttons button, .modal-box button, #newship-open { min-height: 40px; min-width: 40px; }
+  .modal-box input, .modal-box textarea { min-height: 40px; font-size: 16px; }
+  .modal-box label.check { min-height: 40px; }
+  .modal-box label.check input { width: 24px; height: 24px; min-height: 0; }
+  .modal-box { max-height: 92dvh; }
+  .open a { display: inline-block; min-height: 40px; line-height: 40px; }
+  #crumbs { padding: 4px 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; }
+  #crumbs a { display: inline-flex; align-items: center; min-height: 40px; min-width: 40px; padding: 0 4px; }
+  #crumbs .keys { display: none; }
+}
 `
 
 const rect = (x: number, y: number, w: number, h: number, fill: string) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}"/>`
@@ -102,8 +128,10 @@ export const page = (token: string) => `<!doctype html>
 </head>
 <body>
 <div id="stage">
+<div id="scroll"><div id="world">
 <canvas id="sea"></canvas>
 <div id="ui"></div>
+</div></div>
 <div id="crumbs" class="hud"></div>
 <button type="button" id="newship-open">+ new ship (n)</button>
 </div>

@@ -1,4 +1,4 @@
-import { CREW_SHARE, lifeStage, shipPhase, ZONES } from './life.js'
+import { CREW_SHARE, lifeStage, shipPhase, ZONE_NAME, ZONES } from './life.js'
 
 export const LEVEL_SCALE = { armada: 2, fleet: 4, ship: 8 }
 export const TWEEN_MS = 450
@@ -7,6 +7,11 @@ export const RIGHT_MARGIN = 70
 export const FLEET_HEAD = 28
 export const TOP = 64
 export const EDGE = 16
+export const COMPACT_PX = 640
+export const COMPACT_LABEL_COLUMN = 100
+export const COMPACT_RIGHT_MARGIN = 60
+export const MIN_TAP = 40
+export const LABEL_ROW = 18
 
 const DECK_ROWS = 13
 const FACE_ROWS = 16
@@ -96,6 +101,56 @@ export const scoutX = (left, right) => (left + scoutRight(left, right)) / 2
 export const placeX = (ship, crew, left, right, band = false) =>
   band && shipPhase(ship) === 'scouting' ? scoutX(left, right) : shipPlaceX(ship, crew, left, right, band)
 
+export const isCompact = width => width < COMPACT_PX
+
+const ZONE_SHORT = { in_review: 'review', merged: 'merged', released: 'released', testing: 'testing' }
+const LABEL_GAP = 6
+
+export function placeRows(items, maxRows) {
+  const ends = []
+
+  return items.map(item => {
+    const width = item.text.length * ROLE_CHAR_PX
+    const from = item.x - width / 2
+    let row = ends.findIndex(end => from >= end + LABEL_GAP)
+    if (row < 0) row = ends.length < maxRows ? ends.length : ends.indexOf(Math.min(...ends))
+    ends[row] = item.x + width / 2
+
+    return { ...item, row, width }
+  })
+}
+
+export function laneLabels(left, right, band, compact) {
+  const start = crewLeft(left, right, band)
+  const stop = crewRight(left, right)
+  const names = compact ? ZONE_SHORT : ZONE_NAME
+  const items = [
+    ...(band ? [{ text: compact ? 'scout' : 'scouting', x: scoutX(left, right) }] : []),
+    { text: compact ? 'crew' : 'crew at work', x: start + (stop - start) / 2 },
+    ...ZONES.map((zone, j) => ({ text: names[zone], x: (zoneEdge(j, left, right) + zoneEdge(j + 1, left, right)) / 2 })),
+  ]
+  const placed = placeRows(items, compact ? 6 : 1)
+
+  return { items: placed, rows: Math.max(...placed.map(item => item.row)) + 1 }
+}
+
+const WIDE = { compact: false, labelColumn: LABEL_COLUMN, rightMargin: RIGHT_MARGIN, head: FLEET_HEAD, tintTop: 24, labelTop: 6, bottomPad: 0 }
+
+export function metricsFor({ w, band = false }) {
+  if (!isCompact(w)) return WIDE
+  const rows = laneLabels(COMPACT_LABEL_COLUMN, w - COMPACT_RIGHT_MARGIN, band, true).rows
+  const labelTop = 44
+
+  return { compact: true, labelColumn: COMPACT_LABEL_COLUMN, rightMargin: COMPACT_RIGHT_MARGIN, head: labelTop + rows * LABEL_ROW + 4, tintTop: labelTop - 2, labelTop, bottomPad: 64 }
+}
+
+export function padHit(hit, min = MIN_TAP) {
+  const dx = Math.max(0, (min - hit.w) / 2)
+  const dy = Math.max(0, (min - hit.h) / 2)
+
+  return { ...hit, x: hit.x - dx, y: hit.y - dy, w: hit.w + 2 * dx, h: hit.h + 2 * dy }
+}
+
 export const initialView = fleets => ({ level: 'armada', cursor: fleets[0]?.id ?? null })
 
 export const fleetOfShip = (fleets, name) => fleets.find(f => f.ships.some(s => s.ship === name))
@@ -158,6 +213,8 @@ export function layoutFor(view, fleets, size) {
   const focus = focusFleet(view, fleets)
   const focusIndex = fleets.indexOf(focus)
   const rowHeight = spriteRows(detail) * scale + (view.level === 'armada' ? 22 : 40)
+  const metrics = metricsFor(size)
+  const head = metrics.head
   const out = { scale, lanes: {}, ships: {} }
   const shiftable = { lanes: [], ships: [] }
   let target = null
@@ -165,22 +222,22 @@ export function layoutFor(view, fleets, size) {
 
   fleets.forEach((fleet, index) => {
     if (view.level !== 'armada' && fleet !== focus) {
-      const hiddenY = index < focusIndex ? -260 : size.h + 60
-      out.lanes[fleet.id] = { y: hiddenY, h: FLEET_HEAD + fleet.ships.length * rowHeight, a: 0 }
+      const hiddenY = index < focusIndex ? -260 : (metrics.compact ? Math.max(size.h, y) : size.h) + 60
+      out.lanes[fleet.id] = { y: hiddenY, h: head + fleet.ships.length * rowHeight, a: 0 }
       fleet.ships.forEach((ship, i) => {
-        out.ships[ship.ship] = { y: hiddenY + FLEET_HEAD + i * rowHeight, a: 0 }
+        out.ships[ship.ship] = { y: hiddenY + head + i * rowHeight, a: 0 }
       })
 
       return
     }
     const shown = fleet.ships.filter(s => view.level !== 'ship' || s.ship === view.cursor)
-    const laneHeight = FLEET_HEAD + shown.length * rowHeight + 8
+    const laneHeight = head + shown.length * rowHeight + 8
     out.lanes[fleet.id] = { y, h: laneHeight, a: 1 }
     shiftable.lanes.push(fleet.id)
     shiftable.ships.push(...fleet.ships.map(s => s.ship))
     fleet.ships.forEach(ship => {
       const k = shown.indexOf(ship)
-      out.ships[ship.ship] = k < 0 ? { y: y + FLEET_HEAD, a: 0 } : { y: y + FLEET_HEAD + k * rowHeight, a: 1 }
+      out.ships[ship.ship] = k < 0 ? { y: y + head, a: 0 } : { y: y + head + k * rowHeight, a: 1 }
     })
     if (view.level === 'armada' && fleet.id === view.cursor) target = { top: y, bottom: y + laneHeight }
     if (view.level !== 'armada' && out.ships[view.cursor]?.a === 1) {
@@ -190,13 +247,13 @@ export function layoutFor(view, fleets, size) {
     y += laneHeight + 8
   })
 
-  const shift = target ? scrollShift(target, size.h) : 0
+  const shift = target && !metrics.compact ? scrollShift(target, size.h) : 0
   if (shift !== 0) {
     shiftable.lanes.forEach(id => (out.lanes[id].y -= shift))
     shiftable.ships.forEach(name => (out.ships[name].y -= shift))
   }
 
-  return { ...out, rowHeight, cursorBox: target && { top: target.top - shift, height: target.bottom - target.top } }
+  return { ...out, rowHeight, bottom: y + metrics.bottomPad, cursorBox: target && { top: target.top - shift, height: target.bottom - target.top } }
 }
 
 export function scrollShift(target, height) {

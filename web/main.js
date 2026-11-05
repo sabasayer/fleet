@@ -21,7 +21,7 @@ const right = document.getElementById('right')
 const searchInput = document.getElementById('search-text')
 const chipsBox = document.getElementById('chips')
 const modal = document.getElementById('modal')
-const sea = createSea(canvas, ui)
+const sea = createSea(canvas, ui, document.getElementById('scroll'), document.getElementById('world'))
 const token = document.querySelector('meta[name="fleet-token"]')?.content ?? ''
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
@@ -56,7 +56,7 @@ function crumbHtml() {
   if (view.level !== 'armada' && fleet) parts.push(`<a data-fleet="${escapeHtml(fleet.id)}">${escapeHtml(fleet.name)}</a>`)
   if (view.level === 'ship') parts.push(escapeHtml(fleet.ships.find(s => s.ship === view.cursor)?.title ?? view.cursor))
 
-  return `${parts.join(' › ')} <span class="dim">(↑↓ move · → in · ← out · o scouting · / search · ? keys)</span>`
+  return `${parts.join(' › ')} <span class="dim keys">(↑↓ move · → in · ← out · o scouting · / search · ? keys)</span>`
 }
 
 function render() {

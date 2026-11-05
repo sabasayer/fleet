@@ -1,7 +1,7 @@
 import { anchorGrid, beaconGrid, blit, boatGrid, flagColor, hash, memberColor, shipGrid, snap, WOOD } from './art.js'
-import { crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, headRoom, laneHeadText, layoutFor, LABEL_COLUMN, lerp, mixLayout, placeX, RIGHT_MARGIN, roleLabels, scoutRight, shapeKey, shipLeft, stoneX, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
+import { crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, headRoom, laneHeadText, laneLabels, LABEL_ROW, layoutFor, lerp, metricsFor, mixLayout, padHit, placeX, roleLabels, scoutRight, shapeKey, shipLeft, stoneX, TOP, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
 import { theme } from './theme.js'
-import { lifeState, LIFE_COLOR, LIFE_SHORT, shipPhase, ZONE_NAME, ZONES } from './life.js'
+import { lifeState, LIFE_COLOR, LIFE_SHORT, shipPhase, ZONES } from './life.js'
 
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
@@ -21,14 +21,15 @@ const needsBadge = ship => (ship.needsCaptain ? `<span class="${ship.needsCaptai
 
 const label = (x, y, html, extra = '') => `<div class="label" style="left:${x}px;top:${y}px;${extra}">${html}</div>`
 
-export function createSea(canvas, ui) {
+export function createSea(canvas, ui, scroller, world) {
   const ctx = canvas.getContext('2d')
   const tween = { key: '', from: null, to: null, cur: null, t0: 0 }
   let cursorBox = null
   let hits = []
+  let scrolledFor = ''
 
   const layoutNow = (view, fleets, size) => {
-    const key = `${JSON.stringify(view)}|${size.w}x${size.h}|${shapeKey(fleets)}`
+    const key = `${JSON.stringify(view)}|${size.w}x${size.h}|${size.band}|${shapeKey(fleets)}`
     if (tween.key !== key) {
       tween.to = layoutFor(view, fleets, size)
       tween.from = tween.cur ?? tween.to
@@ -43,8 +44,15 @@ export function createSea(canvas, ui) {
 
   function draw({ fleets, view, frame, band = false }) {
     const dpr = window.devicePixelRatio || 1
-    const size = { w: canvas.clientWidth, h: canvas.clientHeight }
-    const buffer = { w: Math.round(size.w * dpr), h: Math.round(size.h * dpr) }
+    const size = { w: scroller.clientWidth, h: scroller.clientHeight, band }
+    const metrics = metricsFor(size)
+    const { layout, animating } = layoutNow(view, fleets, size)
+    world.style.height = metrics.compact ? `${Math.max(size.h, Math.ceil(layout.bottom))}px` : ''
+    const viewKey = JSON.stringify(view)
+    if (metrics.compact && viewKey !== scrolledFor) scroller.scrollTop = layout.cursorBox ? Math.max(0, layout.cursorBox.top - TOP + 8) : 0
+    scrolledFor = viewKey
+    const canvasSize = { w: canvas.clientWidth, h: canvas.clientHeight }
+    const buffer = { w: Math.round(canvasSize.w * dpr), h: Math.round(canvasSize.h * dpr) }
     if (canvas.width !== buffer.w || canvas.height !== buffer.h) {
       canvas.width = buffer.w
       canvas.height = buffer.h
@@ -55,17 +63,18 @@ export function createSea(canvas, ui) {
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     hits = []
 
-    const { layout, animating } = layoutNow(view, fleets, size)
     const scale = layout.scale
     const detail = detailFor(scale)
-    const left = LABEL_COLUMN
-    const right = size.w - RIGHT_MARGIN
+    const left = metrics.labelColumn
+    const right = size.w - metrics.rightMargin
+    const tintTop = metrics.tintTop
+    const labelSet = laneLabels(left, right, band, metrics.compact)
     const opacity = a => `opacity:${a.toFixed(2)};`
     let html = ''
 
     fleets.forEach((fleet, li) => {
       const lane = layout.lanes[fleet.id]
-      if (lane.a < 0.01 && (lane.y + lane.h < 0 || lane.y > size.h)) return
+      if (lane.a < 0.01 && (lane.y + lane.h < 0 || lane.y > canvasSize.h)) return
       const laneAlpha = Math.max(lane.a, 0.15)
       ctx.globalAlpha = laneAlpha
       calmLane(ctx, dpr, frame, 0, lane.y, right + 60, lane.h, li % 2)
@@ -74,25 +83,25 @@ export function createSea(canvas, ui) {
       if (band) {
         const edge = scoutRight(left, right)
         ctx.fillStyle = theme.bandTint
-        ctx.fillRect(Math.round(left * dpr), Math.round((lane.y + 24) * dpr), Math.round((edge - left) * dpr), Math.round((lane.h - 24) * dpr))
+        ctx.fillRect(Math.round(left * dpr), Math.round((lane.y + tintTop) * dpr), Math.round((edge - left) * dpr), Math.round((lane.h - tintTop) * dpr))
         ctx.fillStyle = theme.divider
-        ctx.fillRect(Math.round(edge * dpr), Math.round((lane.y + 24) * dpr), dpr, Math.round((lane.h - 24) * dpr))
-        html += label((left + edge) / 2, lane.y + 6, `<span class="dim">scouting</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
+        ctx.fillRect(Math.round(edge * dpr), Math.round((lane.y + tintTop) * dpr), dpr, Math.round((lane.h - tintTop) * dpr))
       }
       ctx.fillStyle = theme.zoneTint
-      ctx.fillRect(Math.round(stop * dpr), Math.round((lane.y + 24) * dpr), Math.round((right - stop) * dpr), Math.round((lane.h - 24) * dpr))
-      html += label(start + (stop - start) / 2, lane.y + 6, `<span class="dim">crew at work</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
+      ctx.fillRect(Math.round(stop * dpr), Math.round((lane.y + tintTop) * dpr), Math.round((right - stop) * dpr), Math.round((lane.h - tintTop) * dpr))
+      labelSet.items.forEach(item => {
+        html += label(item.x, lane.y + metrics.labelTop + item.row * LABEL_ROW, `<span class="dim">${item.text}</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
+      })
       ZONES.forEach((zone, j) => {
         const edge = zoneEdge(j, left, right)
         ctx.fillStyle = theme.divider
-        ctx.fillRect(Math.round(edge * dpr), Math.round((lane.y + 24) * dpr), dpr, Math.round((lane.h - 24) * dpr))
-        html += label((edge + zoneEdge(j + 1, left, right)) / 2, lane.y + 6, `<span class="dim">${ZONE_NAME[zone]}</span>`, `transform:translateX(-50%);${opacity(laneAlpha)}`)
+        ctx.fillRect(Math.round(edge * dpr), Math.round((lane.y + tintTop) * dpr), dpr, Math.round((lane.h - tintTop) * dpr))
       })
       ctx.fillStyle = WOOD
       ctx.fillRect(Math.round((right + 40) * dpr), Math.round(lane.y * dpr), 12 * dpr, Math.round(lane.h * dpr))
 
       const waiting = fleet.ships.filter(s => s.needsCaptain).length
-      html += `<div class="lane-head" data-fleet="${escapeHtml(fleet.id)}" style="top:${lane.y + 5}px;max-width:${headRoom(left, right, band)}px;${opacity(laneAlpha)}"><span class="head-name" style="color:color-mix(in srgb, ${escapeHtml(fleet.color)} var(--head-mix), #000)">▶ ${escapeHtml(fleet.name.toUpperCase())}</span><span class="dim head-count">${laneHeadText(fleet.ships)}</span>${waiting ? `<span class="needs">${waiting} need you</span>` : ''}</div>`
+      html += `<div class="lane-head${metrics.compact ? ' compact' : ''}" data-fleet="${escapeHtml(fleet.id)}" style="top:${lane.y + (metrics.compact ? 2 : 5)}px;max-width:${metrics.compact ? size.w - 24 : headRoom(left, right, band)}px;${opacity(laneAlpha)}"><span class="head-name" style="color:color-mix(in srgb, ${escapeHtml(fleet.color)} var(--head-mix), #000)">▶ ${escapeHtml(fleet.name.toUpperCase())}</span><span class="dim head-count">${laneHeadText(fleet.ships)}</span>${waiting ? `<span class="needs">${waiting} need you</span>` : ''}</div>`
 
       fleet.ships.forEach(ship => {
         const place = layout.ships[ship.ship]
@@ -133,11 +142,14 @@ export function createSea(canvas, ui) {
           const color = ship.needsCaptain.kind === 'failed' ? theme.state.failed : theme.gold
           if (frame % 4 < 3) blit(ctx, beaconGrid(color), cx - 2.5 * snap(bangScale, dpr), sy - (8 + (frame % 2)) * snap(bangScale, dpr), bangScale, dpr)
         }
-        if (place.a > 0.5) hits.push({ x: sx, y: sy, w: grid[0].length * rowPx, h: grid.length * rowPx + 10, ship: ship.ship })
+        if (place.a > 0.5) {
+          const hit = { x: sx, y: sy, w: grid[0].length * rowPx, h: grid.length * rowPx + 10, ship: ship.ship }
+          hits.push(metrics.compact ? padHit(hit) : hit)
+        }
         const armada = view.level === 'armada'
-        const tag = LIFE_SHORT[life] ? `<span style="color:${LIFE_COLOR[life]};font-size:11px">${LIFE_SHORT[life]}</span>` : ''
+        const tag = LIFE_SHORT[life] ? `<span style="color:${LIFE_COLOR[life]};font-size:12px">${LIFE_SHORT[life]}</span>` : ''
         const id = armada ? '' : `<div class="dim ship-id">${escapeHtml(ship.ship)}</div>`
-        html += label(left - 6, rowY + 2, `${id}<div class="clamp" style="-webkit-line-clamp:${armada ? 1 : 2}">${needsBadge(ship)} ${escapeHtml(ship.title)}${armada && tag ? ` ${tag}` : ''}</div>${armada ? '' : tag}`, `text-align:right;transform:translateX(-100%);max-width:${LABEL_COLUMN - 10}px;${opacity(alpha)}`)
+        html += label(left - 6, rowY + 2, `${id}<div class="clamp" style="-webkit-line-clamp:${armada && !metrics.compact ? 1 : 2}">${needsBadge(ship)} ${escapeHtml(ship.title)}${armada && tag ? ` ${tag}` : ''}</div>${armada ? '' : tag}`, `text-align:right;transform:translateX(-100%);max-width:${metrics.labelColumn - 10}px;${opacity(alpha)}`)
       })
     })
     ctx.globalAlpha = 1

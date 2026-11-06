@@ -39,3 +39,33 @@ test('ago words', () => {
   assert.equal(ago(0, 5 * 60000), '5 min ago')
   assert.equal(ago(0, 3 * 3600000), '3 h ago')
 })
+
+import { panelHtml } from '../web/panel.js'
+import { filterCount, filterLabel } from '../web/search.js'
+
+const panelArgs = { fleets: fleets as never, now: Date.now(), jump: {} as never }
+const armada = { level: 'armada', cursor: 'a' }
+const opened = { level: 'ship', cursor: 'a2' }
+
+test('split panel puts the open ship block first, above the needs list', () => {
+  const html = panelHtml({ ...panelArgs, view: opened, split: true })
+  assert.ok(html.indexOf('open-panel') >= 0 && html.indexOf('open-panel') < html.indexOf('needs-panel'))
+  assert.equal(html.match(/class="open"/g)?.length, 1)
+  assert.equal(html.includes('data-open="a2"'), true)
+})
+
+test('split panel has no open block when no ship is open', () => {
+  assert.equal(panelHtml({ ...panelArgs, view: armada, split: true }).includes('open-panel'), false)
+})
+
+test('the normal panel keeps the open ship inside its row', () => {
+  const html = panelHtml({ ...panelArgs, view: opened })
+  assert.equal(html.includes('open-panel'), false)
+  assert.equal(html.match(/class="open"/g)?.length, 1)
+})
+
+test('filter button counts the active chip filter', () => {
+  assert.equal(filterCount({ text: 'x', chip: 'all' }), 0)
+  assert.equal(filterLabel({ text: '', chip: 'needs' }), 'filter (1)')
+  assert.equal(filterLabel({ text: '', chip: 'all' }), 'filter')
+})

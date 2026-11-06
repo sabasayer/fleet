@@ -99,7 +99,7 @@ function openView(ship, jump, confirm) {
   </div>`
 }
 
-function shipRow({ ship, fleet }, open, now, showFleet, jump, confirm, picked = false) {
+function shipRow({ ship, fleet }, open, now, showFleet, jump, confirm, picked = false, inline = true) {
   const crew = crewOf(ship)
   const need = ship.needsCaptain
   const life = lifeState(ship)
@@ -112,32 +112,32 @@ function shipRow({ ship, fleet }, open, now, showFleet, jump, confirm, picked = 
     ${need ? `<span style="color:${needsColor(need)}">Waiting for you: ${escapeHtml(need.reason)}</span><br>` : ''}
     <span class="dim">${phase} · ${ago(updatedAt(ship), now)}</span>
     ${scouting ? '' : bar(crew, ship)}
-    ${open ? openView(ship, jump, confirm) : ''}
+    ${open && inline ? openView(ship, jump, confirm) : ''}
   </div>`
 }
 
 const dockedLabel = (ship, now) => (ship.life.endedAt === null ? 'docked' : `docked ${ago(ship.life.endedAt, now)}`)
 
-function harbourRow({ ship, fleet }, open, now, jump, confirm, picked = false) {
+function harbourRow({ ship, fleet }, open, now, jump, confirm, picked = false, inline = true) {
   const mrCount = `${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}`
   const summary = shipPhase(ship) === 'turned_back' ? escapeHtml(ship.outcome) : mrCount
 
   return `<div class="row${open ? ' cur' : ''}${picked ? ' pick' : ''}" data-ship="${escapeHtml(ship.ship)}" data-harbour>
     <b>${escapeHtml(ship.title)}</b> <span class="dim">${escapeHtml(ship.ship)} · ${escapeHtml(fleet.name)}</span><br>
     <span class="dim">${dockedLabel(ship, now)} · ${summary}</span>
-    ${open ? openView(ship, jump, confirm) : ''}
+    ${open && inline ? openView(ship, jump, confirm) : ''}
   </div>`
 }
 
-function harbourSection(fleets, view, now, opened, jump, confirm) {
+function harbourSection(fleets, view, now, opened, jump, confirm, inline) {
   const scope = view.level === 'armada' ? fleets : fleets.filter(f => f.id === focusFleet(view, fleets)?.id)
   const { docked, hidden } = harbourOf(scope, now)
-  const rows = docked.map(entry => harbourRow(entry, entry.ship.ship === opened, now, jump, confirm)).join('')
+  const rows = docked.map(entry => harbourRow(entry, entry.ship.ship === opened, now, jump, confirm, false, inline)).join('')
 
   return `<section class="hud-block harbour-panel"><h3>⚓ harbour (${docked.length})${hidden ? ` <span class="dim">+${hidden} hidden</span>` : ''}</h3>${rows || '<p class="dim">No ships docked.</p>'}</section>`
 }
 
-function resultsHtml(all, search, view, now, opened, jump, confirm) {
+function resultsHtml(all, search, view, now, opened, jump, confirm, inline) {
   const entries = resultShips(all, search)
   const openName = opened ?? openShipName(view)
   const pick = pickedName(entries.map(e => e.ship.ship), search.pick)
@@ -146,17 +146,26 @@ function resultsHtml(all, search, view, now, opened, jump, confirm) {
       const open = entry.ship.ship === openName
       const picked = entry.ship.ship === pick
 
-      return onSea(entry.ship, now) ? shipRow(entry, open, now, true, jump, confirm, picked) : harbourRow(entry, open, now, jump, confirm, picked)
+      return onSea(entry.ship, now) ? shipRow(entry, open, now, true, jump, confirm, picked, inline) : harbourRow(entry, open, now, jump, confirm, picked, inline)
     })
     .join('')
 
   return `<section class="hud-block results-panel"><h3>results (${entries.length})</h3>${rows || '<p class="dim">No ships match.</p>'}</section>`
 }
 
-export function panelHtml({ fleets: all, view, now, opened = null, jump, starting = [], confirm = null, search = null }) {
+function openBlock(all, view, now, opened, jump, confirm) {
+  const name = opened ?? openShipName(view)
+  const ship = allShips(all).find(entry => entry.ship.ship === name)?.ship
+
+  return ship ? `<section class="hud-block open-panel" data-open="${escapeHtml(ship.ship)}"><h3>${escapeHtml(ship.title)}</h3>${openView(ship, jump, confirm)}</section>` : ''
+}
+
+export function panelHtml({ fleets: all, view, now, opened = null, jump, starting = [], confirm = null, search = null, split = false }) {
+  const inline = !split
   const startingBlock = startingHtml(starting, now)
   if (all.length === 0) return startingBlock
-  if (search && isActive(search)) return `${startingBlock}${resultsHtml(all, search, view, now, opened, jump, confirm)}`
+  const top = split ? openBlock(all, view, now, opened, jump, confirm) : ''
+  if (search && isActive(search)) return `${top}${startingBlock}${resultsHtml(all, search, view, now, opened, jump, confirm, inline)}`
   const fleets = seaFleets(all, now)
   const waiting = waitingShips(fleets)
   const openName = opened ?? openShipName(view)
@@ -167,9 +176,9 @@ export function panelHtml({ fleets: all, view, now, opened = null, jump, startin
         `<div class="row hot${ship.needsCaptain.kind === 'failed' ? ' failed' : ''}" data-ship="${escapeHtml(ship.ship)}">${badge(ship)} ${escapeHtml(ship.title)} <span class="dim">${escapeHtml(ship.ship)}</span><br><span class="dim">${escapeHtml(ship.needsCaptain.reason)}</span></div>`,
     )
     .join('')
-  const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada', jump, confirm)).join('')
+  const shipRows = list.map(entry => shipRow(entry, entry.ship.ship === openName, now, view.level === 'armada', jump, confirm, false, inline)).join('')
 
-  return `${startingBlock}<section class="hud-block needs-panel"><h3>needs captain (${waiting.length})</h3>${waitingRows || '<p class="dim">Nothing waits for you.</p>'}</section>
+  return `${top}${startingBlock}<section class="hud-block needs-panel"><h3>needs captain (${waiting.length})</h3>${waitingRows || '<p class="dim">Nothing waits for you.</p>'}</section>
   <section class="hud-block ships-panel"><h3>ships</h3>${shipRows || '<p class="dim">No ships at sea.</p>'}</section>
-  ${harbourSection(all, view, now, opened, jump, confirm)}`
+  ${harbourSection(all, view, now, opened, jump, confirm, inline)}`
 }

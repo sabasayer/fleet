@@ -41,16 +41,21 @@ export const MIN_ROLE_CHARS = 4
 
 const clip = (text, chars) => (text.length <= chars ? text : `${text.slice(0, chars - 1)}…`)
 
+const ROLE_SHORT = { 'gate-spec': 'spec', 'gate-tests': 'tests', 'gate-captain': 'captain', 'review-spec': 'r-spec', 'review-standards': 'r-std' }
+
+export const roleText = role => ROLE_SHORT[role] ?? role
+
 export function roleLabels(crew, start, stop) {
-  const chars = Math.floor(((stop - start) / (crew.length + 1) - ROLE_GAP) / ROLE_CHAR_PX)
+  const slot = (stop - start) / (crew.length + 1)
+  const chars = Math.floor((2 * slot - ROLE_GAP) / ROLE_CHAR_PX)
   const at = currentIndex(crew)
   const only = at < 0 ? crew.length - 1 : at
 
   return crew.flatMap((member, k) => {
     const x = stoneX(k, crew.length, start, stop)
-    if (chars >= MIN_ROLE_CHARS) return [{ k, x, text: clip(member.role, chars) }]
+    if (chars >= MIN_ROLE_CHARS) return [{ k, x, row: k % 2, text: clip(roleText(member.role), chars) }]
 
-    return k === only ? [{ k, x, text: member.role }] : []
+    return k === only ? [{ k, x, row: 0, text: roleText(member.role) }] : []
   })
 }
 

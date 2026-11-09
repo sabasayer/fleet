@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import {
   crewOf, crewRight, currentIndex, headRoom, initialView, LABEL_COLUMN, layoutFor, RIGHT_MARGIN, shipLeft, trackSegments, currentLabel, mixLayout, move, reconcile, scrollShift, shipX, stoneX, toFleet, zoomIn, zoomOut,
 } from '../web/layout.js'
-import { shipGrid } from '../web/art.js'
+import { onDeck, shipGrid, sizeClass } from '../web/art.js'
 
 const member = (role: string, state: string) => ({ role, state, stale: false })
 const ship = (name: string, mrs: { crew: ReturnType<typeof member>[] }[] = [{ crew: [] }]) => ({ ship: name, title: name, mrs, needsCaptain: null })
@@ -194,4 +194,21 @@ test('compact layout does not shift lanes; it reports the full height to scroll'
   assert.equal(out.lanes.f1.y, 64 + head + 2 * out.rowHeight + 8 + 8)
   const wide = layoutFor(view, many, { w: 1000, h: 400 })
   assert.ok(wide.lanes.f0.y < 64)
+})
+
+test('boat length stays capped while the crew grows', () => {
+  const widths = [1, 4, 5, 6, 10, 11, 18, 40].map(count => shipGrid(crewOfSize(count, 0), '#fff', 0, 'faces')[0].length)
+  assert.equal(widths[2], widths[1] + 0)
+  assert.equal(widths[3] < widths[7] + 1, true)
+  assert.equal(Math.max(...widths), widths[7])
+  assert.equal(widths[6], widths[7])
+  assert.deepEqual([4, 5, 6, 10, 11].map(c => sizeClass(c).name), ['small', 'small', 'medium', 'medium', 'large'])
+})
+
+test('the deck shows the current member and its neighbours', () => {
+  const crew = crewOfSize(18, 9)
+  const shown = onDeck(crew, 6)
+  assert.equal(shown.length, 6)
+  assert.ok(shown.includes(crew[9]))
+  assert.deepEqual(onDeck(crewOfSize(18, 18), 6), crewOfSize(18, 18).slice(12))
 })

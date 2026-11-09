@@ -38,6 +38,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 .open { cursor: default; margin-top: 6px; border-top: 1px solid var(--edge); }
 .open h4 { margin: 6px 0 2px; }
 .crew td { padding: 1px 8px 1px 0; vertical-align: top; }
+.crew td { white-space: nowrap; }
+.crew td.summary { white-space: normal; padding-bottom: 6px; }
 .open a { color: var(--accent); }
 .jump { margin-top: 8px; }
 .jump button { font: inherit; background: var(--hover); color: var(--ink); border: 2px solid var(--line); padding: 3px 10px; cursor: pointer; }
@@ -55,7 +57,8 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 .zone-step { background: var(--step); width: 8px !important; }
 .slot { margin-top: 6px; padding: 4px 6px; border: 1px dashed var(--line); color: var(--dim); font-size: 12px; }
 .hud { position: absolute; background: var(--hud); border: 2px solid var(--edge); padding: 10px 12px; }
-#crumbs { top: 12px; left: 12px; }
+#crumbs { top: 12px; left: 12px; white-space: nowrap; }
+.crumb-title { display: inline-block; max-width: 40ch; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 #crumbs a { color: var(--accent); cursor: pointer; text-decoration: underline; }
 #newship-open { position: absolute; left: 12px; bottom: 12px; font: inherit; background: var(--active); color: var(--ink); border: 2px solid var(--line); padding: 6px 12px; cursor: pointer; }
 #newship-open:hover { background: var(--active-hover); }

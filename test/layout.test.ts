@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import {
-  crewOf, crewRight, currentIndex, headRoom, initialView, LABEL_COLUMN, layoutFor, RIGHT_MARGIN, ROLE_CHAR_PX, roleLabels, shipLeft, mixLayout, move, reconcile, scrollShift, shipX, stoneX, toFleet, zoomIn, zoomOut,
+  crewOf, crewRight, currentIndex, headRoom, initialView, LABEL_COLUMN, layoutFor, RIGHT_MARGIN, shipLeft, trackSegments, currentLabel, mixLayout, move, reconcile, scrollShift, shipX, stoneX, toFleet, zoomIn, zoomOut,
 } from '../web/layout.js'
 import { shipGrid } from '../web/art.js'
 
@@ -107,15 +107,13 @@ for (const width of [1280, 1440, 1920]) {
     const right = width - RIGHT_MARGIN
     const stop = crewRight(left, right)
 
-    test(`role labels do not overlap and the ship keeps right of the label column: ${count} members at ${width}px`, () => {
+    test(`the ship keeps right of the label column and the track segments tile without overlap: ${count} members at ${width}px`, () => {
       for (let done = 0; done <= count; done++) {
         const crew = crewOfSize(count, done)
-        const labels = roleLabels(crew, left, stop)
-        assert.ok(labels.length > 0)
-        for (const row of [0, 1]) {
-          const spans = labels.filter(l => l.row === row).map(({ x, text }) => [x - (text.length * ROLE_CHAR_PX) / 2, x + (text.length * ROLE_CHAR_PX) / 2])
-          spans.slice(1).forEach(([from], i) => assert.ok(from >= spans[i][1], `row ${row}: labels ${i} and ${i + 1} overlap`))
-        }
+        const segments = trackSegments(crew.length, left, stop)
+        assert.equal(segments.length, count)
+        segments.slice(1).forEach(({ x, w }, i) => assert.ok(Math.abs(x - w / 2 - (segments[i].x + segments[i].w / 2)) < 0.001, `segments ${i} and ${i + 1} do not touch`))
+        assert.ok(segments[0].x - segments[0].w / 2 >= left && segments[count - 1].x + segments[count - 1].w / 2 <= stop)
         const faces = shipGrid(crew, '#fff', 0, 'faces')[0].length * 8
         assert.ok(shipLeft(shipX(crew, left, stop), faces, left, right) >= left)
       }
@@ -123,20 +121,15 @@ for (const width of [1280, 1440, 1920]) {
   }
 }
 
-test('role names shrink, then only the current one shows', () => {
-  const crew = crewOfSize(12, 3)
-  assert.deepEqual(roleLabels(crewOfSize(3, 1), 170, 794).map(l => l.text), ['red', 'green', 'r-spec'])
-  assert.ok(roleLabels(crew, 170, 794).every(l => l.text.length <= 12))
-  const tight = roleLabels(crew, 170, 300)
-  assert.deepEqual(tight.map(l => [l.k, l.text]), [[3, 'review-quality']])
+test('the current step label names the role and counts the done steps', () => {
+  const label = currentLabel(crewOfSize(12, 3), 170, 794)!
+  assert.equal(label.text, 'review-quality · 3/12')
+  assert.equal(label.x, stoneX(3, 12, 170, 794))
 })
 
-test('gate and review roles get distinct short names, on two rows', () => {
-  const roles = ['gate-spec', 'red', 'gate-tests', 'green', 'review-spec', 'review-standards', 'fixer', 'browser', 'gate-captain']
-  const crew = roles.map(role => member(role, 'queued'))
-  const labels = roleLabels(crew, 170, 794)
-  assert.equal(new Set(labels.map(l => l.text)).size, roles.length)
-  assert.deepEqual(labels.map(l => l.row), [0, 1, 0, 1, 0, 1, 0, 1, 0])
+test('no label when every step is done or there is no crew', () => {
+  assert.equal(currentLabel(crewOfSize(4, 4), 170, 794), null)
+  assert.equal(currentLabel([], 170, 794), null)
 })
 
 test('lane head leaves room before the first header label', () => {

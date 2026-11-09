@@ -1,5 +1,5 @@
 import { anchorGrid, beaconGrid, blit, boatGrid, flagColor, hash, memberColor, shipGrid, snap, WOOD } from './art.js'
-import { crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, headRoom, laneHeadText, laneLabels, LABEL_ROW, layoutFor, lerp, metricsFor, mixLayout, padHit, placeX, roleLabels, scoutRight, shapeKey, shipLeft, stoneX, TOP, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
+import { crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, headRoom, laneHeadText, laneLabels, LABEL_ROW, layoutFor, lerp, metricsFor, mixLayout, padHit, placeX, scoutRight, shapeKey, shipLeft, trackSegments, currentLabel, TOP, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
 import { theme } from './theme.js'
 import { lifeState, LIFE_COLOR, LIFE_SHORT, shipPhase, ZONES } from './life.js'
 
@@ -119,17 +119,13 @@ export function createSea(canvas, ui, scroller, world) {
 
         ctx.fillStyle = theme.stoneLine
         ctx.fillRect(Math.round(left * dpr), Math.round(lineY * dpr), Math.round((right + 40 - left) * dpr), dpr)
-        crew.forEach((member, k) => {
-          const stone = 4 + scale
-          const cx = stoneX(k, crew.length, start, stop)
-          ctx.fillStyle = memberColor(member)
-          ctx.fillRect(Math.round((cx - stone / 2) * dpr), Math.round((lineY - stone / 2) * dpr), Math.round(stone * dpr), Math.round(stone * dpr))
+        trackSegments(crew.length, start, stop).forEach(({ k, x, w }) => {
+          const height = 4 + scale
+          ctx.fillStyle = memberColor(crew[k])
+          ctx.fillRect(Math.round((x - w / 2 + 1) * dpr), Math.round((lineY - height / 2) * dpr), Math.max(1, Math.round((w - 2) * dpr)), Math.round(height * dpr))
         })
-        if (scale >= 3) {
-          roleLabels(crew, start, stop).forEach(({ k, x, row, text }) => {
-            html += label(x, lineY + 8 + row * LABEL_ROW, `<span style="color:${memberColor(crew[k])}">${escapeHtml(text)}</span>`, `transform:translateX(-50%);${opacity(alpha)}`)
-          })
-        }
+        const current = scale >= 3 ? currentLabel(crew, start, stop) : null
+        if (current) html += label(current.x, lineY + 8, `<span style="color:${memberColor(current.member)}">${escapeHtml(current.text)}</span>`, `transform:translateX(-50%);${opacity(alpha)}`)
 
         const cx = placeX(ship, crew, left, right, band)
         const sx = shipLeft(cx, grid[0].length * rowPx, left, right)

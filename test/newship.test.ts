@@ -45,7 +45,7 @@ function build(over: { schema?: () => Promise<unknown>; down?: boolean; workspac
     openGhostty: async () => void ghostty++,
     isDir: path => (over.dirs ?? ['/repo']).includes(path),
   }
-  const deps: NewShipDeps = { uuid: () => UUID, repoRoot: async path => path }
+  const deps: NewShipDeps = { uuid: () => UUID, repoRoot: async path => path, holdsRepos: () => false }
 
   return { jumpDeps, deps, calls, ghostty: () => ghostty }
 }
@@ -199,8 +199,29 @@ test('validation refuses bad input before herdr is touched', async () => {
 test('a folder that is not a git repo is refused', async () => {
   const t = build()
   const result: any = await startNewShip(form(), fleets, t.jumpDeps, { ...t.deps, repoRoot: async () => null })
-  assert.deepEqual([result.status, result.message], ['error', 'Repo folder is not a git repo.'])
+  assert.deepEqual([result.status, result.message], ['error', 'Repo folder is not a git repo and holds no git repos.'])
   assert.equal(t.calls.length, 0)
+})
+
+test('a plain folder that holds git repos starts the ship there, for a ship with several MRs', async () => {
+  const t = build({ dirs: ['/work'] })
+  const result: any = await startNewShip(form({ folder: '/work' }), fleets, t.jumpDeps, { ...t.deps, repoRoot: async () => null, holdsRepos: () => true })
+  assert.deepEqual([result.status, result.folder], ['started', '/work'])
+})
+
+test('a plain folder with no git repo inside is still refused', async () => {
+  const t = build({ dirs: ['/work'] })
+  const result: any = await startNewShip(form({ folder: '/work' }), fleets, t.jumpDeps, { ...t.deps, repoRoot: async () => null, holdsRepos: () => false })
+  assert.equal(result.status, 'error')
+})
+
+test('the real holdsRepos finds a git repo one level down', () => {
+  const tmp = mkdtempSync(join(tmpdir(), 'holds-'))
+  mkdirSync(join(tmp, 'a', '.git'), { recursive: true })
+  mkdirSync(join(tmp, 'empty'))
+  assert.equal(realNewShipDeps.holdsRepos(tmp), true)
+  assert.equal(realNewShipDeps.holdsRepos(join(tmp, 'empty')), false)
+  assert.equal(realNewShipDeps.holdsRepos(join(tmp, 'missing')), false)
 })
 
 test('a worktree path is replaced by the main checkout', async () => {

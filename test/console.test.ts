@@ -29,6 +29,8 @@ before(async () => {
   write(join(crew, 'gate-1-mr1', 'gate-spec.json'), status('gate-spec', 'blocked', { summary: 'approve the spec' }))
   write(join(crew, 'sail-2', 'ship.json'), ship('sail-2'))
   write(join(crew, 'sail-2-mr1', 'red.json'), status('red', 'running'))
+  write(join(crew, 'gate-2', 'ship.json'), ship('gate-2'))
+  write(join(crew, 'gate-2-mr1', 'gate-tests.json'), status('gate-tests', 'blocked', { summary: 'approve the tests' }))
   write(join(crew, 'review-3', 'ship.json'), ship('review-3', 'https://gitlab.com/g/p/-/merge_requests/9'))
   write(join(crew, 'review-3-mr1', 'red.json'), status('red', 'done'))
   for (const [name, state] of [['merged-4', 'merged'], ['done-5', 'done'], ['gone-6', 'abandoned']]) {
@@ -57,14 +59,14 @@ test('console.json is one fleet panel with gates first and closed ships left out
   assert.equal(feed.id, 'fleet')
   assert.equal(feed.updatedAt, '2026-11-05T09:00:00.000Z')
   assert.deepEqual(feed.app, { url: 'http://127.0.0.1:4932/', open: 'http://127.0.0.1:4932/?ship={key}' })
-  assert.deepEqual(feed.tile, { value: 1, label: 'gates wait on you', detail: '3 ships sailing', level: 'now' })
+  assert.deepEqual(feed.tile, { value: 2, label: 'gates wait on you', detail: '4 ships sailing', level: 'now' })
   assert.deepEqual(feed.groups.map((g: any) => g.title), ['Waiting on you', 'Sailing'])
 
   const [waiting, sailing] = feed.groups
-  assert.deepEqual(waiting.items, [{
+  assert.deepEqual(waiting.items[0], {
     key: 'gate-1', title: 'title gate-1', since: '2026-11-01T08:00:00Z', url: 'https://gitlab.com/g/p/-/merge_requests/7',
-    detail: 'gate-spec: approve the spec', level: 'now', icon: 'gate', badge: { text: 'you', tone: 'red' },
-  }])
+    detail: 'gate-spec: approve the spec', level: 'now', priority: 86, icon: 'gate', badge: { text: 'you', tone: 'red' },
+  })
   assert.deepEqual(sailing.items.map((i: any) => [i.key, i.level, i.icon, i.badge.text]), [['sail-2', 'soon', 'run', 'sailing'], ['review-3', 'fyi', 'run', 'in review']])
   assert.equal(sailing.items[0].url, undefined)
 })
@@ -75,4 +77,30 @@ test('console.json tile is calm when no gate waits', async () => {
 
   assert.deepEqual(feed.tile, { value: 0, label: 'gates wait on you', detail: '0 ships sailing', level: 'calm' })
   assert.deepEqual(feed.groups, [])
+})
+
+test('priority puts captain gates in 70-89 and older gates higher', async () => {
+  const feed = JSON.parse((await get('/console.json')).body)
+  const [older, newer] = feed.groups[0].items
+
+  assert.equal(older.key, 'gate-1')
+  assert.equal(newer.key, 'gate-2')
+  for (const gate of [older, newer]) assert.ok(gate.priority >= 70 && gate.priority <= 89, `gate ${gate.key} scored ${gate.priority}`)
+  assert.ok(older.priority > newer.priority)
+})
+
+test('priority puts a sailing ship with nothing waiting in 30-49', async () => {
+  const feed = JSON.parse((await get('/console.json')).body)
+  const sail = feed.groups[1].items.find((i: any) => i.key === 'sail-2')
+
+  assert.ok(sail.priority >= 30 && sail.priority <= 49, `sail-2 scored ${sail.priority}`)
+})
+
+test('priority keeps old items inside their band', async () => {
+  const { consoleFeed } = await import('../src/console.ts')
+  const old = (name: string, extra: object) => ({ ship: name, title: name, created: '2020-01-01T00:00:00Z', mrs: [], needsCaptain: null, life: { state: 'sailing' }, ...extra })
+  const gate = old('g', { needsCaptain: { role: 'gate-spec', reason: 'x', kind: 'blocked' } })
+  const feed = consoleFeed({ now: NOW, fleets: [{ ships: [gate, old('s', {})] }] } as any)
+
+  assert.deepEqual(feed.groups.map(g => g.items[0].priority), [89, 49])
 })

@@ -1,3 +1,4 @@
+import './embed.js'
 import { afterDock, focusFleet, initialView, move, reconcile, showScoutBand, toArmada, toFleet, toShip, zoomIn, zoomOut } from './layout.js'
 import { requestJump } from './jump.js'
 import { isTyping, keyAction, keysHtml, pressAction } from './keys.js'

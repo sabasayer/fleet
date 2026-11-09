@@ -126,8 +126,8 @@ export function createSea(canvas, ui, scroller, world) {
           ctx.fillRect(Math.round((cx - stone / 2) * dpr), Math.round((lineY - stone / 2) * dpr), Math.round(stone * dpr), Math.round(stone * dpr))
         })
         if (scale >= 3) {
-          roleLabels(crew, start, stop).forEach(({ k, x, text }) => {
-            html += label(x, lineY + 8, `<span style="color:${memberColor(crew[k])}">${escapeHtml(text)}</span>`, `transform:translateX(-50%);${opacity(alpha)}`)
+          roleLabels(crew, start, stop).forEach(({ k, x, row, text }) => {
+            html += label(x, lineY + 8 + row * LABEL_ROW, `<span style="color:${memberColor(crew[k])}">${escapeHtml(text)}</span>`, `transform:translateX(-50%);${opacity(alpha)}`)
           })
         }
 

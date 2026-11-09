@@ -76,10 +76,12 @@ function goal(ship) {
 
 function crewTable(crew) {
   if (crew.length === 0) return '<p class="dim">No crew yet.</p>'
-  const rows = crew.map(
-    m =>
-      `<tr><td>${escapeHtml(m.role)}</td><td style="color:${memberColor(m)}">● ${escapeHtml(m.stale ? `${m.state} (stale)` : m.state)}</td><td class="dim">${escapeHtml(m.summary ?? m.phase ?? '')}</td></tr>`,
-  )
+  const rows = crew.map(m => {
+    const summary = m.summary ?? m.phase ?? ''
+    const head = `<tr><td>${escapeHtml(m.role)}</td><td style="color:${memberColor(m)}">● ${escapeHtml(m.stale ? `${m.state} (stale)` : m.state)}</td></tr>`
+
+    return summary ? `${head}<tr><td colspan="2" class="dim summary">${escapeHtml(summary)}</td></tr>` : head
+  })
 
   return `<table class="crew">${rows.join('')}</table>`
 }

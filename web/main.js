@@ -61,7 +61,7 @@ function crumbHtml() {
   const fleet = focusFleet(view, fleets)
   const parts = [`<a data-armada>armada</a>`]
   if (view.level !== 'armada' && fleet) parts.push(`<a data-fleet="${escapeHtml(fleet.id)}">${escapeHtml(fleet.name)}</a>`)
-  if (view.level === 'ship') parts.push(escapeHtml(fleet.ships.find(s => s.ship === view.cursor)?.title ?? view.cursor))
+  if (view.level === 'ship') parts.push(`<span class="crumb-title">${escapeHtml(fleet.ships.find(s => s.ship === view.cursor)?.title ?? view.cursor)}</span>`)
 
   return `${parts.join(' › ')} <span class="dim keys">(↑↓ move · → in · ← out · o scouting · / search · ? keys)</span>`
 }

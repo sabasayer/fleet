@@ -67,10 +67,28 @@ export function flagColor(ship, fleetColor) {
   return fleetColor
 }
 
-export function shipGrid(crew, flag, frame, detail, life = 'sailing') {
+export const SIZE_CLASSES = [
+  { name: 'small', upTo: 5, slots: 4, masts: 1 },
+  { name: 'medium', upTo: 10, slots: 5, masts: 2 },
+  { name: 'large', upTo: Infinity, slots: 6, masts: 3 },
+]
+
+export const sizeClass = count => SIZE_CLASSES.find(size => count <= size.upTo)
+
+export function onDeck(crew, slots) {
+  if (crew.length <= slots) return crew
+  const at = crew.findIndex(member => member.state !== 'done')
+  const first = at < 0 ? crew.length - slots : Math.min(Math.max(at - 1, 0), crew.length - slots)
+
+  return crew.slice(first, first + slots)
+}
+
+export function shipGrid(allCrew, flag, frame, detail, life = 'sailing') {
   const sailing = life === 'sailing'
   const faces = detail === 'faces'
   const step = faces ? 6 : 4
+  const size = sizeClass(allCrew.length)
+  const crew = onDeck(allCrew, size.slots)
   const width = crew.length * step + 10
   const deckTop = faces ? 9 : 6
   const height = deckTop + 7
@@ -89,6 +107,11 @@ export function shipGrid(crew, flag, frame, detail, life = 'sailing') {
     put(x, deckTop, HULL)
   }
   for (let y = 0; y < deckTop + 2; y++) put(3, y, WOOD)
+  for (let k = 1; k < size.masts && 6 + 2 * k * step <= width - 4; k++) {
+    const mast = 6 + 2 * k * step - 1
+    for (let y = 1; y < deckTop + 2; y++) put(mast, y, WOOD)
+    if (sailing) for (let y = 2; y < deckTop - (faces ? 4 : 2); y++) for (let x = mast - 3; x < mast; x++) put(x, y, theme.sail)
+  }
   const flagRow = sailing ? 0 : 3
   put(4, flagRow, flag)
   put(5, flagRow, flag)

@@ -56,8 +56,12 @@ export async function defaultClient(deps: Pick<JumpDeps, 'sockets' | 'connect'>)
   return client
 }
 
-async function findPane(deps: JumpDeps, sessionId: string) {
+const inWorktree = (agent: any, worktrees: string[]) =>
+  agent?.agent === 'claude' && [agent.cwd, agent.foreground_cwd].some(path => typeof path === 'string' && worktrees.includes(path))
+
+async function findPane(deps: JumpDeps, sessionId: string, worktrees: string[]) {
   let defaultClient: HerdrClient | null = null
+  const byFolder: { pane: any; client: HerdrClient }[] = []
   for (const { path, isDefault } of deps.sockets()) {
     const client = deps.connect(path)
     let agents: any[]
@@ -69,7 +73,10 @@ async function findPane(deps: JumpDeps, sessionId: string) {
     if (isDefault) defaultClient = client
     const pane = agents.find(agent => agent?.agent_session?.value?.toLowerCase() === sessionId)
     if (pane) return { pane, client, defaultClient }
+    byFolder.push(...agents.filter(agent => inWorktree(agent, worktrees)).map(agent => ({ pane: agent, client })))
   }
+  // The stored session ID can be stale (resume and compact give a new one). One pane in the ship's folder is the ship.
+  if (byFolder.length === 1) return { ...byFolder[0], defaultClient }
 
   return { pane: null, client: null, defaultClient }
 }
@@ -118,7 +125,7 @@ export async function jump(ship: JumpShip, deps: JumpDeps): Promise<JumpResult> 
 
   let found: Awaited<ReturnType<typeof findPane>> | null = null
   if (herdr === 'ok') {
-    found = await findPane(deps, sessionId)
+    found = await findPane(deps, sessionId, ship.worktrees)
     if (found.pane) {
       try {
         await found.client!('agent.focus', { target: found.pane.terminal_id })

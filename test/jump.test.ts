@@ -20,7 +20,7 @@ const goodSchema = {
 type Calls = { socket: string; method: string; params: any }[]
 type Setup = {
   schema?: () => Promise<unknown>
-  panes?: Record<string, { session: string; terminal: string }[] | 'down'>
+  panes?: Record<string, { session: string; terminal: string; cwd?: string }[] | 'down'>
   live?: LiveSession[] | null
   workspaces?: { label: string; workspace_id: string }[]
   tabs?: { label: string; tab_id: string }[]
@@ -39,7 +39,7 @@ function build(setup: Setup = {}) {
       calls.push({ socket, method, params })
       if (panes[socket] === 'down') throw new Error('unreachable')
       if (method === 'agent.list') {
-        return { agents: (panes[socket] as any[]).map(p => ({ agent_session: { value: p.session }, terminal_id: p.terminal })) }
+        return { agents: (panes[socket] as any[]).map(p => ({ agent: 'claude', cwd: p.cwd, agent_session: { value: p.session }, terminal_id: p.terminal })) }
       }
       if (method === 'workspace.list') return { workspaces: setup.workspaces ?? [] }
       if (method === 'tab.list') return { tabs: setup.tabs ?? [] }
@@ -218,4 +218,18 @@ test('uses only an existing absolute folder and the newest MR first', async () =
 
 test('resume command quotes the folder', () => {
   assert.equal(resumeCommand("/a b/it's", ID), `cd '/a b/it'\\''s' && claude --resume ${ID}`)
+})
+
+test('a stale session ID still finds the one claude pane open in the ship worktree', async () => {
+  const t = build({ panes: { '/default': [{ session: 'other-id', terminal: 'term_x', cwd: '/work' }] } })
+  const result = await jump(ship, t.deps)
+  assert.equal(result.status, 'focused')
+  assert.equal(started(t.calls).length, 0)
+  assert.equal(t.calls.find(c => c.method === 'agent.focus')!.params.target, 'term_x')
+})
+
+test('two panes in the ship worktree are ambiguous, so the folder match is not used', async () => {
+  const t = build({ panes: { '/default': [{ session: 'a', terminal: 't1', cwd: '/work' }, { session: 'b', terminal: 't2', cwd: '/work' }] } })
+  const result = await jump(ship, t.deps)
+  assert.equal(result.status, 'resumed')
 })

@@ -50,7 +50,7 @@ export function newShipFormHtml({ fleets, form, busy, result }) {
     <label>Fleet <span class="dim">(pick one or type a new name)</span>
       <input name="fleet" list="newship-fleets" required maxlength="${LIMITS.fleet}" value="${escapeHtml(form.fleet)}"></label>
     ${datalistHtml('newship-fleets', fleets.map(f => f.name))}
-    <label>Repo folder <span class="dim">(pick one or paste an absolute path)</span>
+    <label>Repo folder <span class="dim">(pick one, or paste an absolute path. A folder that holds several repos works for a ship with several MRs)</span>
       <input name="folder" list="newship-repos" required maxlength="${LIMITS.folder}" value="${escapeHtml(form.folder)}"></label>
     ${datalistHtml('newship-repos', repoChoices(fleets, form.fleet))}
     <label>Task <span class="dim">(text or link, line breaks allowed)</span>

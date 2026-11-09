@@ -45,6 +45,11 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
 1. **Fetch** (before the chain).
    - Read the repo's `AGENTS.md` and the docs it points to. They hold the tag, deploy and dev-server rules.
    - Run `git fetch origin`. Make a worktree for the run, with a new branch from the fresh default branch. Use the project's setup script when it has one. It copies the env files and installs. Never work in the main checkout. Runs in parallel then do not clash. Move the session into the worktree when you can.
+   - The session folder is not a git repo, but holds repos? This is a ship with several MRs. The captain's task names the repos. Ask the captain for the list if it does not.
+     - Do the worktree step for each repo, one at a time. Use the same branch name in each repo, unless the repos need different names.
+     - Make the ship file with the first repo: `crew-ship create ...`. For every other repo run `crew-ship add-mr <ticket> --repo ... --remote ... --worktree ... --branch ...`. Each MR gets its own run folder.
+     - Start the dev server only in a repo that has one. A repo with no dev server skips the server, the `port` file and the captain test URL.
+     - Work on one MR at a time, as in "Next MR of the same ticket" below. Do not run two repos in parallel.
    - Start the dev server on a free port (see [e2e.md](e2e.md)). Restart a stale server. Write the port in the spec folder, in the file `port`.
    - Find the fleet name in the `/crew` text (`fleet: <name>`). If there is none, ask the captain. Suggest the repo name.
    - Linear is opt-in. Do this only when the `/crew` text has `linear: <issue URL or ID>`, `linear: new`, or a Linear issue URL (`linear.app/.../issue/<ID>`) with no `linear:` label. A bare issue URL counts as `linear: <that URL>`. A Linear project or document URL does not count. With none of these, skip this bullet.

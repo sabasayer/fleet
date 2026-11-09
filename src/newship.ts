@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { basename, dirname, isAbsolute } from 'node:path'
+import { existsSync, readdirSync } from 'node:fs'
+import { basename, dirname, isAbsolute, join } from 'node:path'
 import { promisify } from 'node:util'
 
 import { defaultClient, herdrVerdict, shellQuote, startInWorkspace, type JumpDeps } from './jump.ts'
@@ -15,6 +16,7 @@ export const LIMITS = { fleet: 60, task: 4000, folder: 1000 }
 
 export type NewShipDeps = {
   repoRoot: (path: string) => Promise<string | null>
+  holdsRepos: (path: string) => boolean
   uuid: () => string
 }
 export type NewShipResult =
@@ -25,6 +27,13 @@ export type NewShipResult =
 
 export const realNewShipDeps: NewShipDeps = {
   uuid: () => randomUUID(),
+  holdsRepos: path => {
+    try {
+      return readdirSync(path, { withFileTypes: true }).some(entry => entry.isDirectory() && existsSync(join(path, entry.name, '.git')))
+    } catch {
+      return false
+    }
+  },
   repoRoot: async path => {
     const git = async (...args: string[]) => (await run('git', ['-C', path, ...args], { timeout: 10000 })).stdout.trim()
     try {
@@ -93,8 +102,8 @@ export async function startNewShip(input: any, fleets: Pick<Fleet, 'id' | 'name'
   if (!folderText.ok) return { status: 'error', message: folderText.message }
   if (!isAbsolute(folderText.value)) return { status: 'error', message: 'Repo folder must be an absolute path.' }
   if (!jumpDeps.isDir(folderText.value)) return { status: 'error', message: 'Repo folder does not exist.' }
-  const folder = await deps.repoRoot(folderText.value)
-  if (!folder) return { status: 'error', message: 'Repo folder is not a git repo.' }
+  const folder = (await deps.repoRoot(folderText.value)) ?? (deps.holdsRepos(folderText.value) ? folderText.value : null)
+  if (!folder) return { status: 'error', message: 'Repo folder is not a git repo and holds no git repos.' }
 
   const known = fleets.find(f => f.id === fleetText.value) ?? fleets.find(f => f.name === fleetText.value)
   const fleet = known?.id ?? fleetText.value

@@ -79,6 +79,7 @@ export async function startInWorkspace(client: HerdrClient, ship: Pick<JumpShip,
   let workspace = workspaces.find((entry: any) => entry.label === ship.fleetName)
   let tabId: string | undefined
   let tabExists = false
+  let shellPaneId: string | undefined
 
   if (workspace) {
     const { tabs = [] } = await client('tab.list', { workspace_id: workspace.workspace_id })
@@ -89,6 +90,7 @@ export async function startInWorkspace(client: HerdrClient, ship: Pick<JumpShip,
     const created = await client('workspace.create', { label: ship.fleetName, cwd, focus: false })
     workspace = created.workspace
     tabId = created.tab?.tab_id
+    shellPaneId = created.root_pane?.pane_id
   }
 
   const started = await client('agent.start', {
@@ -100,6 +102,7 @@ export async function startInWorkspace(client: HerdrClient, ship: Pick<JumpShip,
     focus: true,
   })
   const agent = started.agent
+  if (shellPaneId) await client('pane.close', { pane_id: shellPaneId }).catch(() => undefined)
   if (!tabExists) await client('tab.rename', { tab_id: agent.tab_id, label: ship.name })
   await client('agent.focus', { target: agent.terminal_id })
 }

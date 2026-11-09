@@ -43,7 +43,7 @@ function build(setup: Setup = {}) {
       }
       if (method === 'workspace.list') return { workspaces: setup.workspaces ?? [] }
       if (method === 'tab.list') return { tabs: setup.tabs ?? [] }
-      if (method === 'workspace.create') return { workspace: { workspace_id: 'w9' }, tab: { tab_id: 'w9:t1' } }
+      if (method === 'workspace.create') return { workspace: { workspace_id: 'w9' }, tab: { tab_id: 'w9:t1' }, root_pane: { pane_id: 'w9:p1' } }
       if (method === 'agent.start') {
         if (setup.failStart) throw new Error('boom')
         return { agent: { terminal_id: 'term_new', tab_id: params.tab_id ?? 'w1:tNew' } }
@@ -121,7 +121,7 @@ test('gone: creates the fleet workspace, starts claude --resume with argv, focus
   const t = build()
   const result = await jump(ship, t.deps)
   assert.equal(result.status, 'resumed')
-  assert.deepEqual(t.methods(), ['agent.list', 'workspace.list', 'workspace.create', 'agent.start', 'tab.rename', 'agent.focus'])
+  assert.deepEqual(t.methods(), ['agent.list', 'workspace.list', 'workspace.create', 'agent.start', 'pane.close', 'tab.rename', 'agent.focus'])
   assert.deepEqual(t.calls.find(c => c.method === 'workspace.create')!.params, { label: 'Alpha', cwd: '/work', focus: false })
   assert.deepEqual(started(t.calls)[0].params, {
     name: 'abc-1',
@@ -133,6 +133,20 @@ test('gone: creates the fleet workspace, starts claude --resume with argv, focus
   })
   assert.deepEqual(t.calls.find(c => c.method === 'tab.rename')!.params, { tab_id: 'w9:t1', label: 'abc-1' })
   assert.equal(t.ghostty(), 1)
+})
+
+test('gone: a new workspace closes its default shell pane after the agent starts', async () => {
+  const t = build()
+  assert.equal((await jump(ship, t.deps)).status, 'resumed')
+  const methods = t.methods()
+  assert.deepEqual(t.calls.find(c => c.method === 'pane.close')!.params, { pane_id: 'w9:p1' })
+  assert.ok(methods.indexOf('pane.close') > methods.indexOf('agent.start'))
+})
+
+test('gone: an existing workspace closes no pane', async () => {
+  const t = build({ workspaces: [{ label: 'Alpha', workspace_id: 'w2' }] })
+  await jump(ship, t.deps)
+  assert.equal(t.methods().includes('pane.close'), false)
 })
 
 test('gone: reuses the fleet workspace and adds a tab named after the ship', async () => {

@@ -71,7 +71,7 @@ Nothing to fix? It leaves a one-line outcome and stops.
 
 The crew skill has a file `e2e.md`. It lists what every e2e run must do. Agents then find the repo's own e2e scripts that do it.
 
-The plugin has a `bin` folder with four commands. Claude Code puts it on the PATH of the Bash tool when the plugin is on. A session loads it at the start.
+The plugin has a `bin` folder with five commands. Claude Code puts it on the PATH of the Bash tool when the plugin is on. A session loads it at the start.
 
 - `crew-status <role> <state> "<summary>" --run <run folder> [--order N]` writes a status file. It refuses an empty summary for `blocked`, `done` and `failed`.
 - `crew-ship` writes the ship file `~/.crew/<ship>/ship.json` (fleet, title, task link, kind, outcome, session, MRs). The board skips it. See `skills/crew/status.md`.
@@ -79,6 +79,7 @@ The plugin has a `bin` folder with four commands. Claude Code puts it on the PAT
   `kind` is `"ship"` or `"scout"`. `outcome` is the one-line result, or `null`.
 - `crew-open diff <worktree> [<base>]` opens `hunk diff` in a new herdr tab. The default base is the merge-base of `HEAD` and `origin/HEAD` (else `origin/main`). `crew-open <file>` opens a `.md` file in `glow -p` and any other file in `hx`. The tab starts in the git root of the file. It needs herdr, Hunk, Helix and glow. Without herdr, or if herdr fails, it prints the command to run and exits with 0. A missing path exits with 2.
 - `crew-visual-diff <test-results folder>` prints the changed pixels and the changed area of each Playwright `*-actual.png` and `*-expected.png` pair. Agents read this text and do not open the images.
+- `crew-wait-pipeline <repo> [<branch>|--mr <number>] [--timeout-min N]` waits for the pipeline of an MR or the checks of a PR. It works for GitLab (`glab`) and GitHub (`gh`). It prints `success`, `failed`, `canceled` or `timeout` and the link. On failure it adds the failed jobs with their log tails. The exit code is 0 only for `success`.
 
 ## Web view (browser or phone)
 

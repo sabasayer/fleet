@@ -67,12 +67,30 @@ const bar = (crew, ship) =>
 
 const safeUrl = text => (/^https?:\/\//i.test(text ?? '') ? text : null)
 
-function goal(ship) {
-  const url = safeUrl(ship.task)
-  const link = url ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(ship.task)}</a>` : escapeHtml(ship.task)
+const LINK_KINDS = [
+  { match: /linear\.app/i, icon: 'L', name: 'Linear', ref: /\/issue\/([A-Za-z0-9]+-\d+)/, prefix: '' },
+  { match: /github\.com/i, icon: 'GH', name: 'GitHub', ref: /\/(?:issues|pull)\/(\d+)/, prefix: '#' },
+  { match: /gitlab\./i, icon: 'GL', name: 'GitLab', ref: /\/merge_requests\/(\d+)/, prefix: '!' },
+  { match: /notion\.(?:so|com)/i, icon: 'N', name: 'Notion', ref: /$^/, prefix: '' },
+]
 
-  return `<p>Goal: ${escapeHtml(ship.title)}</p>${ship.task ? `<p class="dim">Task: ${link}</p>` : ''}`
+export function linkChip(url) {
+  const safe = safeUrl(url)
+  if (!safe) return ''
+  const kind = LINK_KINDS.find(k => k.match.test(safe)) ?? { icon: '↗', name: new URL(safe).hostname, ref: /$^/, prefix: '' }
+  const found = safe.match(kind.ref)
+  const text = found ? `${kind.prefix}${found[1]}` : ''
+
+  return `<a class="ref" href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(`${kind.name}: ${safe}`)}"><span class="ref-icon">${kind.icon}</span>${escapeHtml(text)}</a>`
 }
+
+const linksHtml = ship => {
+  const chips = [ship.task, ...ship.mrs.map(mr => mr.url)].map(url => linkChip(url)).filter(Boolean)
+
+  return chips.length > 0 ? `<p class="links">${chips.join('')}</p>` : ''
+}
+
+const goal = ship => `<p>Goal: ${escapeHtml(ship.title)}</p>${linksHtml(ship)}`
 
 function crewTable(crew) {
   if (crew.length === 0) return '<p class="dim">No crew yet.</p>'
@@ -92,7 +110,7 @@ const mrStates = ship =>
 function openView(ship, jump, confirm) {
   return `<div class="open">
     ${goal(ship)}
-    <p class="dim">${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</p>
+    ${ship.mrs.length > 0 && ship.mrs.every(mr => safeUrl(mr.url)) ? '' : `<p class="dim">${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</p>`}
     ${mrStates(ship)}
     ${(ship.checks ?? []).map(c => `<p class="dim">MR ${c.n} ${escapeHtml(c.text)} · ${ago(c.at, Date.now())}</p>`).join('')}
     ${crewTable(crewOf(ship))}

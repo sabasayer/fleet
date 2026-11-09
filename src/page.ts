@@ -41,6 +41,9 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 .crew td { white-space: nowrap; }
 .crew td.summary { white-space: normal; padding-bottom: 6px; }
 .open a { color: var(--accent); }
+.links { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 4px 0; }
+.ref { display: inline-flex; align-items: center; gap: 4px; padding-right: 4px; border: 1px solid var(--line); text-decoration: none; font-size: 12px; }
+.ref-icon { background: var(--accent); color: var(--hud); font-size: 10px; font-weight: bold; padding: 1px 3px; }
 .jump { margin-top: 8px; }
 .jump button { font: inherit; background: var(--hover); color: var(--ink); border: 2px solid var(--line); padding: 3px 10px; cursor: pointer; }
 .jump button:disabled { opacity: 0.5; cursor: default; }

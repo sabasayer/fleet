@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { ago, listedShips, openShipName, waitingShips } from '../web/panel.js'
+import { ago, linkChip, listedShips, openShipName, waitingShips } from '../web/panel.js'
 
 const member = (updatedMs: number) => ({ role: 'red', state: 'done', stale: false, updatedMs })
 const ship = (name: string, updatedMs: number, needs: 'blocked' | 'failed' | null = null) => ({
@@ -68,4 +68,21 @@ test('filter button counts the active chip filter', () => {
   assert.equal(filterCount({ text: 'x', chip: 'all' }), 0)
   assert.equal(filterLabel({ text: '', chip: 'needs' }), 'filter (1)')
   assert.equal(filterLabel({ text: '', chip: 'all' }), 'filter')
+})
+
+test('link chips show an icon and a short reference, and keep the full link in the title', () => {
+  const linear = linkChip('https://linear.app/founda/issue/ENG-3197/404-page-shows-patient-id')
+  assert.match(linear, /<span class="ref-icon">L<\/span>ENG-3197</)
+  assert.match(linear, /title="Linear: https:\/\/linear\.app\/founda\/issue\/ENG-3197\/404-page-shows-patient-id"/)
+  assert.match(linkChip('https://github.com/sabasayer/fleet/pull/32'), /GH<\/span>#32</)
+  assert.match(linkChip('https://github.com/sabasayer/fleet/issues/12'), /GH<\/span>#12</)
+  assert.match(linkChip('https://gitlab.com/founda/application/xds-nuxt-base/-/merge_requests/383'), /GL<\/span>!383</)
+  assert.match(linkChip('https://app.notion.com/p/410c271b'), /N<\/span><\/a>/)
+  assert.match(linkChip('https://example.org/x'), /↗<\/span><\/a>/)
+})
+
+test('link chips refuse anything that is not an http link', () => {
+  assert.equal(linkChip('javascript:alert(1)'), '')
+  assert.equal(linkChip(null), '')
+  assert.equal(linkChip(''), '')
 })

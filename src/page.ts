@@ -37,9 +37,19 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 .bar span { width: 14px; height: 6px; }
 .open { cursor: default; margin-top: 6px; border-top: 1px solid var(--edge); }
 .open h4 { margin: 6px 0 2px; }
-.crew td { padding: 1px 8px 1px 0; vertical-align: top; }
-.crew td { white-space: nowrap; }
-.crew td.summary { white-space: normal; padding-bottom: 6px; }
+.steps { margin-top: 8px; }
+.steps-head { margin: 0 0 4px; font-weight: bold; }
+.steps-done summary { cursor: pointer; color: var(--dim); padding: 2px 0; }
+.phase { margin-top: 8px; }
+.phase h4 { margin: 0 0 2px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); border-bottom: 1px solid var(--edge); }
+.step { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: 6px; align-items: baseline; padding: 2px 0 2px 4px; border-left: 3px solid transparent; }
+.step-dot { width: 8px; height: 8px; background: var(--step); align-self: center; }
+.step-state { color: var(--step); font-size: 12px; }
+.step-note { grid-column: 2 / 4; color: var(--dim); font-size: 12px; }
+.step.wait { opacity: 0.6; }
+.step.live { border-left-color: var(--step); background: var(--field); font-weight: bold; }
+.step.live .step-note { font-weight: normal; }
+.steps-done .step-note { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .open a { color: var(--accent); }
 .links { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 4px 0; }
 .ref { display: inline-flex; align-items: center; gap: 4px; padding-right: 4px; border: 1px solid var(--line); text-decoration: none; font-size: 12px; }

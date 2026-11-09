@@ -1,6 +1,7 @@
 import { memberColor, STATE } from './art.js'
 import { theme } from './theme.js'
 import { jumpHtml } from './jump.js'
+import { stepperHtml } from './steps.js'
 import { startingHtml } from './newship.js'
 import { crewOf, currentIndex, focusFleet } from './layout.js'
 import { buttonsHtml, harbourOf, lifeState, LIFE_COLOR, LIFE_TAG, onSea, seaFleets, shipPhase, ZONE_NAME, ZONES } from './life.js'
@@ -92,18 +93,6 @@ const linksHtml = ship => {
 
 const goal = ship => `<p>Goal: ${escapeHtml(ship.title)}</p>${linksHtml(ship)}`
 
-function crewTable(crew) {
-  if (crew.length === 0) return '<p class="dim">No crew yet.</p>'
-  const rows = crew.map(m => {
-    const summary = m.summary ?? m.phase ?? ''
-    const head = `<tr><td>${escapeHtml(m.role)}</td><td style="color:${memberColor(m)}">● ${escapeHtml(m.stale ? `${m.state} (stale)` : m.state)}</td></tr>`
-
-    return summary ? `${head}<tr><td colspan="2" class="dim summary">${escapeHtml(summary)}</td></tr>` : head
-  })
-
-  return `<table class="crew">${rows.join('')}</table>`
-}
-
 const mrStates = ship =>
   ship.mrs.length > 1 && ship.life ? `<p class="dim">${ship.life.mrs.map(m => `MR ${m.n}: ${ZONE_NAME[m.state] ?? m.state}`).join(' · ')}</p>` : ''
 
@@ -113,9 +102,9 @@ function openView(ship, jump, confirm) {
     ${ship.mrs.length > 0 && ship.mrs.every(mr => safeUrl(mr.url)) ? '' : `<p class="dim">${ship.mrs.length} ${ship.mrs.length === 1 ? 'MR' : 'MRs'}</p>`}
     ${mrStates(ship)}
     ${(ship.checks ?? []).map(c => `<p class="dim">MR ${c.n} ${escapeHtml(c.text)} · ${ago(c.at, Date.now())}</p>`).join('')}
-    ${crewTable(crewOf(ship))}
     <div class="buttons" data-slot="state-buttons">${buttonsHtml(ship, escapeHtml, confirm)}</div>
     ${jumpHtml(ship, jump)}
+    ${stepperHtml(crewOf(ship))}
   </div>`
 }
 

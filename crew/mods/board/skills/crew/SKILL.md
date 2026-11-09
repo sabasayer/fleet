@@ -78,9 +78,8 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
    Done when: the pipeline is green and the MR link is in the ship file.
 
 **Watch the pipeline.** Run the command as a background Bash call. Do not poll by hand.
-- GitLab: `~/.claude/scripts/wait-pipeline <worktree> --mr <iid>`. It prints `success`, `failed`, `canceled` or `timeout`, then the pipeline link. On failure it lists the failed jobs with their log tails. A failure only in allow-failure jobs counts as success.
-- GitHub: `gh pr checks <number> --watch`.
-- The script is missing? Tell the captain. Do not guess that the pipeline passed.
+- Run `crew-wait-pipeline <worktree> --mr <number>`. It works for GitLab and GitHub. It prints `success`, `failed`, `canceled` or `timeout`, then the pipeline link. On failure it lists the failed jobs with their log tails. A failure only in allow-failure jobs counts as success. A GitHub repo with no checks prints `success` and a note.
+- The command is missing? Tell the captain. Do not guess that the pipeline passed.
 - `failed` or `canceled`: send the failed job log to one fixer ([briefs/fixer.md](briefs/fixer.md)). Never push a blind retry. After two failed fixes, stop and ask the captain.
 - Do not say the pipeline is green without this output.
 

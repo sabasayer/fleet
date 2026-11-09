@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Usage: crew-wait-pipeline <repo-path> [<branch>|--mr <iid>] [--timeout-min 45]
+#   Waits quietly for the latest pipeline of a branch or MR (GitLab) or the checks of a PR (GitHub). Prints one line:
+#     success|failed|canceled|timeout <pipeline-url>
+#   On failure, lists failed jobs that are not allow_failure, with the last 30 log lines.
+#   Failures only in allow_failure jobs count as success, with a note line.
+#   Exit code: 0 on success, 1 otherwise. Default branch: the current branch of <repo-path>.
+set -u
+case "${1:-}" in -h|--help|"") sed -n 2,7p "$0" | sed 's/^# \{0,1\}//'; exit 0;; esac
+repo=$1; shift; branch=""; mr=""; timeout_min=45
+while [ $# -gt 0 ]; do
+  case $1 in
+    --mr) mr=$2; shift 2;;
+    --timeout-min) timeout_min=$2; shift 2;;
+    *) branch=$1; shift;;
+  esac
+done
+cd "$repo" || exit 1
+if git remote get-url origin 2>/dev/null | grep -qi 'github\.com'; then
+  target=${mr:-${branch:-$(git rev-parse --abbrev-ref HEAD)}}
+  url=$(gh pr view "$target" --json url -q .url 2>/dev/null)
+  out=$(perl -e 'alarm shift; exec @ARGV' $((timeout_min*60)) gh pr checks "$target" --watch --interval 30 2>&1); rc=$?
+  case $rc in
+    0) echo "success ${url:-none}"; exit 0;;
+    142) echo "timeout ${url:-none}"; exit 1;;
+    *) if printf '%s' "$out" | grep -qi 'no checks reported'; then echo "success ${url:-none}"; echo "note: no checks reported"; exit 0; fi;;&
+    *) echo "failed ${url:-none}"; printf '%s\n' "$out" | tail -n 30; exit 1;;
+  esac
+fi
+[ -n "$mr" ] || [ -n "$branch" ] || branch=$(git rev-parse --abbrev-ref HEAD)
+api() { glab api "$@" 2>/dev/null; }
+P='projects/:id'
+js() { node -e "$1"; }
+deadline=$(( $(date +%s) + timeout_min*60 ))
+pid=""
+while :; do
+  if [ -n "$mr" ]; then
+    out=$(api "$P/merge_requests/$mr/pipelines?per_page=1")
+  else
+    ref=$(printf %s "$branch" | node -e 'process.stdout.write(encodeURIComponent(require("fs").readFileSync(0,"utf8")))')
+    out=$(api "$P/pipelines?ref=$ref&order_by=id&sort=desc&per_page=1")
+  fi
+  line=$(printf %s "${out:-[]}" | js 'let d=[];try{d=JSON.parse(require("fs").readFileSync(0,"utf8"))}catch{};const p=d[0];console.log(p?[p.id,p.status,p.web_url].join(" "):"")')
+  if [ -n "$line" ]; then
+    set -- $line; pid=$1; status=$2; url=$3
+    case $status in success|failed|canceled|skipped) break;; esac
+  fi
+  [ "$(date +%s)" -ge "$deadline" ] && { echo "timeout ${url:-none}"; exit 1; }
+  sleep 60
+done
+jobs=$(api "$P/pipelines/$pid/jobs?per_page=100&include_retried=false")
+report=$(printf %s "$jobs" | js 'const j=JSON.parse(require("fs").readFileSync(0,"utf8"));const f=j.filter(x=>x.status==="failed");console.log(JSON.stringify({hard:f.filter(x=>!x.allow_failure).map(x=>[x.id,x.name,x.web_url]),soft:f.filter(x=>x.allow_failure).map(x=>x.name)}))')
+hard=$(printf %s "$report" | js 'const r=JSON.parse(require("fs").readFileSync(0,"utf8"));console.log(r.hard.map(h=>h.join("\t")).join("\n"))')
+soft=$(printf %s "$report" | js 'console.log(JSON.parse(require("fs").readFileSync(0,"utf8")).soft.join(", "))')
+if [ "$status" = failed ] && [ -z "$hard" ]; then status=success; fi
+echo "$status $url"
+[ -n "$soft" ] && echo "note: allow_failure jobs failed: $soft"
+if [ "$status" = failed ]; then
+  printf '%s\n' "$hard" | while IFS=$'\t' read -r id name jurl; do
+    [ -n "$id" ] || continue
+    echo "--- failed job: $name $jurl"
+    api "$P/jobs/$id/trace" | tail -n 30
+  done
+fi
+[ "$status" = success ] && exit 0 || exit 1

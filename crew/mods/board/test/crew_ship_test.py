@@ -151,6 +151,12 @@ class CrewShip(unittest.TestCase):
         self.assertEqual(create(self.root).returncode, 0)
         self.assertEqual(ship(self.root)["session"]["id"], "first")
 
+    def test_a_main_session_that_is_flagged_child_still_refreshes_the_session(self):
+        self.assertEqual(run(self.root, "crew-ship", ["scout", "s-1", "--title", "t", "--fleet", "f"], CLAUDE_CODE_SESSION_ID="a").returncode, 0)
+        env = {"CLAUDE_CODE_SESSION_ID": "after-clear", "CLAUDE_CODE_CHILD_SESSION": "1", "CLAUDE_CODE_SESSION_ATTENDED": "1"}
+        self.assertEqual(run(self.root, "crew-ship", ["add-mr", "s-1", *MR], **env).returncode, 0)
+        self.assertEqual(ship(self.root, "s-1")["session"]["id"], "after-clear")
+
     def test_create_and_scout_write_the_session_also_in_a_sub_agent(self):
         env = {"CLAUDE_CODE_SESSION_ID": "child", "CLAUDE_CODE_CHILD_SESSION": "1"}
         self.assertEqual(run(self.root, "crew-ship", ["create", "abc-1", "--title", "t", "--fleet", "f", *MR], **env).returncode, 0)

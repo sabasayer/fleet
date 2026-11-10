@@ -135,7 +135,9 @@ else:
         message = f"MR {a.n} url set"
 
 session = os.environ.get("CLAUDE_CODE_SESSION_ID")
-if session and (a.cmd in ("create", "scout") or not os.environ.get("CLAUDE_CODE_CHILD_SESSION")):
+# Some Claude Code builds set CHILD_SESSION in the main session too. ATTENDED marks the session a person works in.
+owns_session = not os.environ.get("CLAUDE_CODE_CHILD_SESSION") or os.environ.get("CLAUDE_CODE_SESSION_ATTENDED") == "1"
+if session and (a.cmd in ("create", "scout") or owns_session):
     data["session"] = {"id": session, "updated": now}
 
 os.makedirs(folder, exist_ok=True)

@@ -75,7 +75,8 @@ os.replace(tmp, path)
 
 session = os.environ.get("CLAUDE_CODE_SESSION_ID")
 ship_path = os.path.join(os.path.dirname(os.path.abspath(run)), re.sub(r"-mr\d+$", "", os.path.basename(os.path.abspath(run))), "ship.json")
-if session and not os.environ.get("CLAUDE_CODE_CHILD_SESSION") and os.path.exists(ship_path):
+owns_session = not os.environ.get("CLAUDE_CODE_CHILD_SESSION") or os.environ.get("CLAUDE_CODE_SESSION_ATTENDED") == "1"
+if session and owns_session and os.path.exists(ship_path):
     try:
         with open(ship_path) as f:
             ship = json.load(f)

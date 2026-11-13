@@ -298,3 +298,26 @@ test('a quiet start does not focus the tab and does not raise Ghostty', async ()
   assert.equal(only(t.calls, 'agent.focus').length, 0)
   assert.equal(t.ghostty(), 0)
 })
+
+test('auto plan adds the auto: plan line to the crew prompt', async () => {
+  const t = build()
+  await startNewShip(form({ start: 'auto' }), fleets, t.jumpDeps, t.deps)
+  assert.equal(only(t.calls, 'agent.start')[0].params.argv[5], '/crew Fix the login bug\nauto: plan\nfleet: portal')
+})
+
+test('admiral starts an admiral- session with the /admiral prompt and is reported as an admiral start', async () => {
+  const t = build()
+  const result: any = await startNewShip(form({ start: 'admiral' }), fleets, t.jumpDeps, t.deps)
+  assert.equal(result.start, 'admiral')
+  const start = only(t.calls, 'agent.start')[0].params
+  assert.equal(start.name, 'admiral-fix-the-login-bug-abcd')
+  assert.equal(start.argv[5], '/admiral Fix the login bug fleet: portal')
+})
+
+test('start wins over the old scout flag, and an unknown start is a crew start', async () => {
+  for (const [input, prompt] of [[{ start: 'crew', scout: true }, '/crew'], [{ start: 'nope' }, '/crew'], [{ scout: true }, '/scout']] as const) {
+    const t = build()
+    await startNewShip(form(input), fleets, t.jumpDeps, t.deps)
+    assert.ok(only(t.calls, 'agent.start')[0].params.argv[5].startsWith(prompt), JSON.stringify(input))
+  }
+})

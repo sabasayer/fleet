@@ -5,7 +5,7 @@ import { isTyping, keyAction, keysHtml, pressAction } from './keys.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets, shipPhase } from './life.js'
 import { chipsHtml, filterCount, filterLabel, isActive, movePick, pickedName, searchKey, shownFleets } from './search.js'
-import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml } from './newship.js'
+import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml, startHint } from './newship.js'
 import { allShips, openShipName, panelHtml, resultShips } from './panel.js'
 import { createSea } from './sea.js'
 import { applyTheme, cssVars, DARK, LIGHT } from './theme.js'
@@ -203,7 +203,7 @@ function openNewShip() {
   const fleet = focusFleet(view, fleets)
   const fleetName = fleet?.name ?? ''
   const autoFolder = preselectedRepo(allFleets, fleetName)
-  newShip = { autoFolder, form: { fleet: fleetName, folder: autoFolder, task: '', scout: false, copied: false }, busy: false, result: null }
+  newShip = { autoFolder, form: { fleet: fleetName, folder: autoFolder, task: '', start: 'crew', copied: false }, busy: false, result: null }
   renderModal()
   modal.querySelector('input[name="fleet"]')?.focus()
 }
@@ -235,6 +235,7 @@ document.getElementById('newship-open').addEventListener('click', openNewShip)
 modal.addEventListener('input', event => {
   if (!newShip || !event.target.name) return
   newShip.form[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value
+  if (event.target.name === 'start') return void (modal.querySelector('#newship-hint').textContent = startHint(newShip.form.start))
   if (event.target.name !== 'fleet') return
   modal.querySelector('#newship-repos').innerHTML = optionsHtml(repoChoices(allFleets, newShip.form.fleet))
   if (newShip.form.folder !== '' && newShip.form.folder !== newShip.autoFolder) return

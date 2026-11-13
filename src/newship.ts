@@ -20,8 +20,8 @@ export type NewShipDeps = {
   uuid: () => string
 }
 export type NewShipResult =
-  | { status: 'started'; message: string; ship: string; sessionId: string; fleet: string; folder: string }
-  | { status: 'fallback'; message: string; command: string; ship: string; sessionId: string; fleet: string; folder: string }
+  | { status: 'started'; message: string; ship: string; sessionId: string; fleet: string; folder: string; start: StartAs }
+  | { status: 'fallback'; message: string; command: string; ship: string; sessionId: string; fleet: string; folder: string; start: StartAs }
   | { status: 'unsupported'; message: string; command: string | null }
   | { status: 'error'; message: string }
 
@@ -87,6 +87,24 @@ export const crewPrompt = (task: string, fleet: string) => `/crew ${withFleet(ta
 
 export const scoutPrompt = (task: string, fleet: string) => `/scout ${withFleet(task, fleet)}`
 
+export type StartAs = 'crew' | 'auto' | 'scout' | 'admiral'
+const START_AS: StartAs[] = ['crew', 'auto', 'scout', 'admiral']
+
+export function startAsOf(input: any): StartAs {
+  if (START_AS.includes(input?.start)) return input.start
+  return input?.scout === true ? 'scout' : 'crew'
+}
+
+const PREFIX: Record<StartAs, string> = { crew: '', auto: '', scout: 'scout-', admiral: 'admiral-' }
+
+export function promptFor(start: StartAs, task: string, fleet: string) {
+  if (start === 'scout') return scoutPrompt(task, fleet)
+  if (start === 'admiral') return `/admiral ${withFleet(task, fleet)}`
+  if (start === 'auto') return crewPrompt(`${task}\nauto: plan`, fleet)
+
+  return crewPrompt(task, fleet)
+}
+
 export const startArgv = (uuid: string, ship: string, prompt: string) => ['claude', '--session-id', uuid, '-n', ship, prompt]
 
 export const startCommand = (folder: string, argv: string[]) => `cd ${shellQuote(folder)} && ${argv.map((arg, i) => (i === 0 ? arg : shellQuote(arg))).join(' ')}`
@@ -109,14 +127,14 @@ export async function startNewShip(input: any, fleets: Pick<Fleet, 'id' | 'name'
   const fleet = known?.id ?? fleetText.value
   const fleetName = known?.name ?? fleetText.value
   const sessionId = deps.uuid()
-  const scout = input?.scout === true
+  const start = startAsOf(input)
   const quiet = input?.quiet === true
-  const ship = shipName(taskText.value, sessionId, scout ? 'scout-' : '')
-  const prompt = scout ? scoutPrompt(taskText.value, fleet) : crewPrompt(taskText.value, fleet)
+  const ship = shipName(taskText.value, sessionId, PREFIX[start])
+  const prompt = promptFor(start, taskText.value, fleet)
   const argv = startArgv(sessionId, ship, prompt)
   const command = startCommand(folder, argv)
   const moved = folder === folderText.value ? '' : ` Used the main checkout ${folder}.`
-  const common = { ship, sessionId, fleet, folder }
+  const common = { ship, sessionId, fleet, folder, start }
 
   const { herdr, message: unsupportedMessage } = await herdrVerdict(jumpDeps)
   if (herdr === 'unsupported') return { status: 'unsupported', message: unsupportedMessage, command }

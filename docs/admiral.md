@@ -15,7 +15,7 @@ Build in this order. Each level works without the next one.
 
 ## Level 1: launcher
 
-- `/admiral` is a skill. It starts ships and exits. It does not stay to watch them.
+- `/admiral` is a skill. It starts ships and exits. It does not stay to watch them. The new-ship form starts it too: "Start as: Admiral" opens it in its own tab, in the folder that holds the repos.
 - It starts each ship with `POST /api/ships/new`, the same call as the new-ship form. Fleet stays the only place that starts ships.
 - `quiet: true` on that call: no Ghostty raise and no tab focus. A batch would steal focus once per ship.
 - The shared brief is one file in `~/.crew/<convoy>/brief.md`. Each ship's task text names its repo and points to that file.

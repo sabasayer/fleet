@@ -38,7 +38,7 @@ const life = async () => (await (await fetch(`http://127.0.0.1:${server.port}/ap
 test('state shows in_review for a ship with finished crew and an MR link', async () => {
   const l = await life()
   assert.equal(l.state, 'in_review')
-  assert.deepEqual(l.actions, ['mark_merged', 'pause', 'mark_failed'])
+  assert.deepEqual(l.actions, ['mark_merged', 'pause', 'mark_failed', 'remove'])
 })
 
 test('actions need the token', async () => {

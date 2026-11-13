@@ -70,7 +70,7 @@ test('a turned-back scout is done whatever the MR list says', () => {
 test('a ship that is not a turned-back scout keeps todays stage', () => {
   assert.equal(shipStage([], stored(), false), 'sailing')
   assert.equal(shipStage([mr(1)], stored(), false), 'in_review')
-  assert.deepEqual(lifeOf([mr(1)], stored(), false).actions, ['mark_merged', 'pause', 'mark_failed'])
+  assert.deepEqual(lifeOf([mr(1)], stored(), false).actions, ['mark_merged', 'pause', 'mark_failed', 'remove'])
 })
 
 test('readShip passes the turned-back fact on, so the scout docks', () => {
@@ -91,7 +91,7 @@ test('a scout that gained MR 1 stays a normal ship', () => {
   const ship = shipOf(env, 'SCOUT-3')
   assert.equal(ship.kind, 'scout')
   assert.equal(ship.life.stage, 'sailing')
-  assert.deepEqual(ship.life.actions, ['mark_in_review', 'pause', 'mark_failed'])
+  assert.deepEqual(ship.life.actions, ['mark_in_review', 'pause', 'mark_failed', 'remove'])
 })
 
 test('a tick docks a turned-back scout with the time it ran', async () => {

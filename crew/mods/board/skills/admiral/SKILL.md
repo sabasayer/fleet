@@ -16,7 +16,7 @@ Never start ships as sub-agents. A sub-agent has no session the captain can open
 
 ## 1. Check fleet
 
-Run `curl -s -o /dev/null -w '%{http_code}' localhost:4932/`. Not `200`? Stop and tell the captain fleet is not running.
+Run `for i in $(seq 12); do c=$(curl -s -o /dev/null -w '%{http_code}' localhost:4932/); [ "$c" = 200 ] && break; sleep 5; done; echo $c`. A restart of fleet takes up to about a minute, so this waits that long. Still not `200`? Stop and tell the captain fleet is not running.
 
 Done when: fleet answers 200.
 

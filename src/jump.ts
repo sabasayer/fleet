@@ -81,7 +81,7 @@ async function findPane(deps: JumpDeps, sessionId: string, worktrees: string[]) 
   return { pane: null, client: null, defaultClient }
 }
 
-export async function startInWorkspace(client: HerdrClient, ship: Pick<JumpShip, 'name' | 'fleetName'>, cwd: string, argv: string[]) {
+export async function startInWorkspace(client: HerdrClient, ship: Pick<JumpShip, 'name' | 'fleetName'>, cwd: string, argv: string[], focus = true) {
   const { workspaces = [] } = await client('workspace.list')
   let workspace = workspaces.find((entry: any) => entry.label === ship.fleetName)
   let tabId: string | undefined
@@ -106,12 +106,12 @@ export async function startInWorkspace(client: HerdrClient, ship: Pick<JumpShip,
     cwd,
     workspace_id: workspace.workspace_id,
     ...(tabId ? { tab_id: tabId } : {}),
-    focus: true,
+    focus,
   })
   const agent = started.agent
   if (shellPaneId) await client('pane.close', { pane_id: shellPaneId }).catch(() => undefined)
   if (!tabExists) await client('tab.rename', { tab_id: agent.tab_id, label: ship.name })
-  await client('agent.focus', { target: agent.terminal_id })
+  if (focus) await client('agent.focus', { target: agent.terminal_id })
 }
 
 export async function jump(ship: JumpShip, deps: JumpDeps): Promise<JumpResult> {

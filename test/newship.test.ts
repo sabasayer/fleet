@@ -289,3 +289,12 @@ test('the scout prefix is inside the name cap, not on top of it', () => {
   assert.equal(scout, `scout-${'a'.repeat(34)}-abcd`)
   assert.equal(shipName('日本語', UUID, 'scout-'), 'scout-new-abcd1234')
 })
+
+test('a quiet start does not focus the tab and does not raise Ghostty', async () => {
+  const t = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
+  const result: any = await startNewShip(form({ quiet: true }), fleets, t.jumpDeps, t.deps)
+  assert.equal(result.status, 'started')
+  assert.equal(only(t.calls, 'agent.start')[0].params.focus, false)
+  assert.equal(only(t.calls, 'agent.focus').length, 0)
+  assert.equal(t.ghostty(), 0)
+})

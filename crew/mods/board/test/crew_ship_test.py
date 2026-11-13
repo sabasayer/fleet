@@ -107,6 +107,15 @@ class CrewShip(unittest.TestCase):
         self.assertEqual(os.listdir(self.root), [])
         self.assertEqual(scout(self.root).returncode, 0)
 
+    def test_create_keeps_a_convoy_name_and_refuses_a_bad_one(self):
+        self.assertEqual(create(self.root, "--convoy", "translations-1").returncode, 0)
+        self.assertEqual(ship(self.root)["convoy"], "translations-1")
+        self.assertNotEqual(run(self.root, "crew-ship", ["create", "abc-2", "--title", "t", "--fleet", "f", "--convoy", "../x", *MR]).returncode, 0)
+
+    def test_create_without_a_convoy_writes_no_convoy_field(self):
+        self.assertEqual(create(self.root).returncode, 0)
+        self.assertNotIn("convoy", ship(self.root))
+
     def test_create_writes_kind_ship_and_no_outcome(self):
         self.assertEqual(create(self.root).returncode, 0)
         data = ship(self.root)

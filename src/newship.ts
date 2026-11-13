@@ -110,6 +110,7 @@ export async function startNewShip(input: any, fleets: Pick<Fleet, 'id' | 'name'
   const fleetName = known?.name ?? fleetText.value
   const sessionId = deps.uuid()
   const scout = input?.scout === true
+  const quiet = input?.quiet === true
   const ship = shipName(taskText.value, sessionId, scout ? 'scout-' : '')
   const prompt = scout ? scoutPrompt(taskText.value, fleet) : crewPrompt(taskText.value, fleet)
   const argv = startArgv(sessionId, ship, prompt)
@@ -123,8 +124,8 @@ export async function startNewShip(input: any, fleets: Pick<Fleet, 'id' | 'name'
   if (!client) return { status: 'fallback', message: 'herdr did not answer. Run this command in a terminal.', command, ...common }
 
   try {
-    await startInWorkspace(client, { name: ship, fleetName }, folder, argv)
-    await jumpDeps.openGhostty()
+    await startInWorkspace(client, { name: ship, fleetName }, folder, argv, !quiet)
+    if (!quiet) await jumpDeps.openGhostty()
   } catch (error) {
     return { status: 'error', message: `Could not start the ship in herdr: ${message(error)}` }
   }

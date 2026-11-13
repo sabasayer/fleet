@@ -148,3 +148,9 @@ test('the server refuses an action on a turned-back scout', async () => {
     server.close()
   }
 })
+
+test('readShip reads the convoy name, and an old file has none', () => {
+  const { env } = setup({ 'C-1': { convoy: 'translations' }, 'OLD-2': {} })
+  assert.equal(shipOf(env, 'C-1').convoy, 'translations')
+  assert.equal(shipOf(env, 'OLD-2').convoy, null)
+})

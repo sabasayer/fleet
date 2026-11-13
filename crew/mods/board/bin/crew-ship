@@ -27,6 +27,7 @@ c.add_argument("ship")
 c.add_argument("--title", required=True)
 c.add_argument("--fleet", required=True)
 c.add_argument("--task", help="link to the task, if there is one")
+c.add_argument("--convoy", help="name of the convoy this ship sails in")
 mr_args(c)
 s = sub.add_parser("scout", help="make the ship file of a scout, with no MR")
 s.add_argument("ship")
@@ -61,6 +62,13 @@ def link(name, value):
     value = clean(name, value)
     if not re.fullmatch(r"https?://\S+", value):
         fail(f"{name} must be a link that starts with http:// or https://.")
+    return value
+
+
+def convoy_name(value):
+    value = clean("--convoy", value)
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", value):
+        fail(f"bad convoy name: {value}")
     return value
 
 
@@ -99,6 +107,7 @@ if a.cmd in ("create", "scout"):
         "ship": a.ship,
         "title": clean("--title", a.title),
         "task": link("--task", a.task) if a.task else None,
+        **({"convoy": convoy_name(a.convoy)} if getattr(a, "convoy", None) else {}),
         "fleet": clean("--fleet", a.fleet),
         "kind": "scout" if is_scout else "ship",
         "outcome": None,

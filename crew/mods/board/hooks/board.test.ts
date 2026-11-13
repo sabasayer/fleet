@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { age, alerts, bar, inFocus, isStale, isStatusFile, oldRuns, parseAgent, resolveRoot, sortChain } from './board.ts'
+import { age, alerts, bar, convoyOf, inFocus, matchesFocus, shipFolderOf, isStale, isStatusFile, oldRuns, parseAgent, resolveRoot, sortChain } from './board.ts'
 
 const at = (role: string, extra = {}) =>
   parseAgent(`${role}.json`, JSON.stringify({ role, state: 'running', updated: '2026-10-16T14:00:00Z', ...extra }), 0)
@@ -68,4 +68,29 @@ test('a ticket name shows all its MR run folders', () => {
 
 test('ship.json is not a status file', () => {
   expect(['ship.json', 'red.json', 'notes.txt'].filter(isStatusFile)).toEqual(['red.json'])
+})
+
+test('a convoy name shows every ship of the convoy, and only those', () => {
+  expect(matchesFocus({ name: 'fix-a-mr1', convoy: 'Translations-1113' }, 'translations-1113')).toBe(true)
+  expect(matchesFocus({ name: 'fix-b-mr2', convoy: 'translations-1113' }, 'translations-1113')).toBe(true)
+  expect(matchesFocus({ name: 'other-mr1', convoy: 'docs-1113' }, 'translations-1113')).toBe(false)
+  expect(matchesFocus({ name: 'other-mr1' }, 'translations-1113')).toBe(false)
+})
+
+test('several names split by spaces or commas show each of them', () => {
+  expect(matchesFocus({ name: 'abc-1-mr1' }, 'abc-1, xyz-2')).toBe(true)
+  expect(matchesFocus({ name: 'xyz-2-mr3' }, 'abc-1 xyz-2')).toBe(true)
+  expect(matchesFocus({ name: 'abc-10-mr1' }, 'abc-1,xyz-2')).toBe(false)
+})
+
+test('the ship folder of a run folder drops the -mrN suffix', () => {
+  expect(shipFolderOf('fix-a-mr12')).toBe('fix-a')
+  expect(shipFolderOf('fix-a')).toBe('fix-a')
+})
+
+test('convoyOf reads the convoy from ship.json text and ignores bad input', () => {
+  expect(convoyOf('{"convoy":"t-1"}')).toBe('t-1')
+  expect(convoyOf('{"ship":"x"}')).toBeUndefined()
+  expect(convoyOf('')).toBeUndefined()
+  expect(convoyOf('{"convoy":5}')).toBeUndefined()
 })

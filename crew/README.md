@@ -70,7 +70,7 @@ It never edits a repo file. Found work? It hands over to `/crew`, which reads th
 Nothing to fix? It leaves a one-line outcome and stops.
 
 `/crew-board:admiral` starts one crew ship per repo for the same task. Each ship is a real session in its own herdr tab, started through fleet, so the captain can jump to it.
-It writes a shared brief to `~/.crew/<convoy>/brief.md` and asks once before it starts. Then it exits. See `docs/admiral.md` in fleet.
+It writes a shared brief to `~/.crew/<convoy>/brief.md` and asks once before it starts. Then it exits. `/crew-board <convoy>` shows every ship of that convoy. `/crew-board a b` shows several tickets. See `docs/admiral.md` in fleet.
 `crew-ship create --convoy <name>` stores the convoy name. `auto: plan` in the `/crew` text lets the first mate pass `gate-spec` and `gate-tests` itself, with a line in `decisions.jsonl`.
 
 The crew skill has a file `e2e.md`. It lists what every e2e run must do. Agents then find the repo's own e2e scripts that do it.

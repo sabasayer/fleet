@@ -9,7 +9,7 @@ export type Agent = {
   updatedMs: number
   broken?: boolean
 }
-export type Ticket = { name: string; agents: Agent[]; newestMs: number }
+export type Ticket = { name: string; agents: Agent[]; newestMs: number; convoy?: string }
 export type Board = { tickets: Ticket[]; now: number }
 
 declare module 'claude-code' {

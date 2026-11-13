@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { Agent, Board, Ticket } from '../types'
-import { LEGACY_ROOT, age, alerts, bar, inFocus, isStale, isStatusFile, oldRuns, parseAgent, resolveRoot, sortChain } from './board.ts'
+import { LEGACY_ROOT, age, alerts, bar, convoyOf, isStale, isStatusFile, matchesFocus, oldRuns, parseAgent, resolveRoot, shipFolderOf, sortChain } from './board.ts'
 import { drawShip, halfBlocks, hatSvg, miniHatGrid, shipSvg, shipWidth, water } from './ship.ts'
 
 const PANE = 'crew-board'
@@ -35,7 +35,9 @@ async function scanRoot($: EngineInterface, root: string): Promise<Ticket[]> {
         files.map(async f => parseAgent(f.name, await $.fs.read(`${dir}/${f.name}`).catch(() => '{'), f.mtimeMs)),
       )
 
-      return { name: folder.name, agents: sortChain(agents), newestMs: Math.max(folder.mtimeMs, ...agents.map(a => a.updatedMs)) }
+      const convoy = convoyOf(await $.fs.read(`${root}/${shipFolderOf(folder.name)}/ship.json`).catch(() => ''))
+
+      return { name: folder.name, agents: sortChain(agents), newestMs: Math.max(folder.mtimeMs, ...agents.map(a => a.updatedMs)), convoy }
     }),
   )
 
@@ -131,11 +133,11 @@ export const register: Register = (on, options) => {
     await $.command.register({
       name: 'crew-board',
       description: 'Show the live board of /crew agents. Add a ticket name to show only that ticket. Use "style" to switch between full and simple, or "style full" or "style simple" to pick one. Use "serve" to start a web view for a browser or phone, "serve local" for this computer only, "serve stop" to stop it. Use "clean" to list runs older than 30 days',
-      argumentHint: '[ticket | style [full|simple] | serve [local|stop] | clean [yes]]',
+      argumentHint: '[ticket | convoy | names... | style [full|simple] | serve [local|stop] | clean [yes]]',
     })
     await $.tool.register({
       name: TOOL,
-      description: `Open the crew board pane for one ticket. Call it once when a /crew run starts. The ticket is the folder name under ${root}.`,
+      description: `Open the crew board pane for one ticket. Call it once when a /crew run starts. The ticket is the folder name under ${root}. A convoy name shows every ship of that convoy. Several names, split by spaces or commas, show all of them.`,
       inputSchema: { type: 'object', properties: { ticket: { type: 'string' } }, required: ['ticket'] },
       isDeferred: false,
     })
@@ -215,7 +217,7 @@ export const register: Register = (on, options) => {
     const useSvg = e.surface !== 'terminal' && 'Svg' in ui
     const all = await read($, board)
     const only = (await read($, focus)).toLowerCase()
-    const tickets = only ? all.tickets.filter(t => inFocus(t.name, only)) : all.tickets
+    const tickets = only ? all.tickets.filter(t => matchesFocus(t, only)) : all.tickets
     const now = all.now
     const step = await read($, frame)
     const tick = Math.floor(now / POLL_MS)

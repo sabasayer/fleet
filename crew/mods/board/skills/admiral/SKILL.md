@@ -71,4 +71,6 @@ Done when: every repo has a reply.
 
 ## 6. Report
 
+Call `mcp__crew-board__crew_board_open` with the convoy name, so this tab shows every ship of the convoy. Skip it if the tool is not there.
+
 One line per ship: ship name, repo, `started` or the failure message. For a failure, add the exact `curl` line to run again. Then: "Open fleet to jump to any ship. Gates show there." Nothing else.

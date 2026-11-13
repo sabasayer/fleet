@@ -80,6 +80,25 @@ export const inFocus = (folder: string, only: string) => {
   return name === only || name.startsWith(`${only}-mr`)
 }
 
+export const shipFolderOf = (folder: string) => folder.replace(/-mr\d+$/, '')
+
+export const convoyOf = (shipJson: string) => {
+  try {
+    const convoy = JSON.parse(shipJson)?.convoy
+
+    return typeof convoy === 'string' && convoy ? convoy : undefined
+  } catch {
+    return undefined
+  }
+}
+
+export const matchesFocus = (ticket: Pick<Ticket, 'name' | 'convoy'>, only: string) =>
+  only
+    .toLowerCase()
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .some(name => inFocus(ticket.name, name) || ticket.convoy?.toLowerCase() === name)
+
 export const oldRuns = (tickets: Ticket[], now: number) => tickets.filter(t => now - t.newestMs > OLD_MS)
 
 export type Alert = { ticket: string; role: string; kind: 'blocked' | 'failed' | 'stale'; text: string }

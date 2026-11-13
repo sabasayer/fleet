@@ -32,11 +32,24 @@ A session that looks into a bug report before any crew run. A scout has a ship f
 _Avoid_: Spike, triage, investigation ship
 
 **Captain**:
-The human who owns every fleet and approves every gate.
+The human who owns every fleet. The captain approves gates, or lets the admiral answer some of them.
 _Avoid_: User, admiral
 
+**Admiral** (planned, not built):
+A Claude session that acts for the captain across many ships. It starts ships, answers some gates by a policy, follows a ship after merge, and reports to the captain. It runs in its own terminal tab, so the captain can go to it and talk to it. See [docs/admiral.md](docs/admiral.md).
+_Avoid_: Captain (the captain is the human), manager, orchestrator
+
+**Vice-admiral** (idea only):
+An admiral for one fleet, with more knowledge of that project. Add it only when one admiral cannot hold all fleets.
+
 **First mate**:
-The Claude session that runs one ship's chain and talks to the captain.
+The Claude session that runs one ship's chain and talks to the captain, or to the admiral for gates the admiral may answer.
+
+**Decision**:
+One answer at a gate: who gave it (captain, admiral or first mate), the verdict, the reason, and links to the evidence. Each ship keeps its decisions in `decisions.jsonl`.
+
+**Shadow verdict**:
+The admiral's own answer at a gate that the captain still answers. It counts toward the record that lets the captain hand that gate to the admiral for one kind of task.
 
 **Scout**:
 A ship with no merge request yet, whose crew is one session looking into a bug report or a bug's cause. It gets its first merge request when it finds work to do, or it goes to the harbour with a one-line outcome. The crew that finds the work keeps the same terminal tab, with a fresh context.

@@ -1,6 +1,6 @@
 import { ACTION_KEY } from './life.js'
 
-export const CONFIRM_ACTIONS = ['mark_failed', 'bug_found']
+export const CONFIRM_ACTIONS = ['mark_failed', 'bug_found', 'remove']
 
 export const KEY_LIST = [
   ['j', 'Jump back'],
@@ -8,7 +8,8 @@ export const KEY_LIST = [
   ['p', 'Pause or resume'],
   ['f', 'Mark failed (press twice)'],
   ['b', 'Bug found → back to sea (press twice)'],
-  ['u', 'Undock'],
+  ['u', 'Undock (also brings a removed ship back)'],
+  ['x', 'Remove → harbour, from any state (press twice)'],
   ['n', 'New ship'],
   ['/', 'Search ships (Esc clears)'],
   ['o', 'Show or hide the scouting band'],

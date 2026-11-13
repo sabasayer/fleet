@@ -6,7 +6,7 @@ export type Stage = (typeof STAGES)[number]
 export type AfterState = 'in_review' | 'merged' | 'released' | 'testing' | 'done' | 'abandoned'
 export type MrState = Stage | 'abandoned'
 export type LifeState = MrState | 'paused' | 'failed'
-export const ACTIONS = ['mark_in_review', 'mark_merged', 'mark_released', 'start_testing', 'done', 'bug_found', 'pause', 'resume', 'mark_failed', 'undock'] as const
+export const ACTIONS = ['mark_in_review', 'mark_merged', 'mark_released', 'start_testing', 'done', 'bug_found', 'pause', 'resume', 'mark_failed', 'undock', 'remove'] as const
 export type Action = (typeof ACTIONS)[number]
 
 export type StoredMr = { state: AfterState; sha: string | null; changed: string }
@@ -18,6 +18,7 @@ export type Stored = {
   docked: string | null
   backToSea: number | null
   found: Record<string, string>
+  removed: string | null
 }
 export type MrInput = { n: number; url: string | null; crew: { state: string }[] }
 export type Life = {
@@ -36,7 +37,7 @@ const SHIP_NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/
 export const isShipName = (name: unknown): name is string => typeof name === 'string' && SHIP_NAME.test(name)
 export const isAction = (name: unknown): name is Action => ACTIONS.includes(name as Action)
 
-export const emptyStored = (): Stored => ({ version: 1, mrs: {}, paused: false, failed: false, docked: null, backToSea: null, found: {} })
+export const emptyStored = (): Stored => ({ version: 1, mrs: {}, paused: false, failed: false, docked: null, backToSea: null, found: {}, removed: null })
 
 export function normalizeStored(raw: any): Stored {
   const out = emptyStored()
@@ -53,6 +54,7 @@ export function normalizeStored(raw: any): Stored {
   out.failed = raw.failed === true
   out.docked = typeof raw.docked === 'string' ? raw.docked : null
   out.backToSea = Number.isInteger(raw.backToSea) ? raw.backToSea : null
+  out.removed = typeof raw.removed === 'string' ? raw.removed : null
 
   return out
 }
@@ -66,7 +68,7 @@ export function mrState(mr: MrInput, stored: Stored): MrState {
 }
 
 export function shipStage(mrs: MrInput[], stored: Stored, turnedBack = false): MrState {
-  if (turnedBack) return 'done'
+  if (turnedBack || stored.removed) return 'done'
   if (mrs.length === 0) return 'sailing'
   const states = mrs.map(mr => mrState(mr, stored))
   const live = states.filter((s): s is Stage => s !== 'abandoned')
@@ -80,9 +82,9 @@ const flagActions = (state: LifeState): Action[] => (state === 'failed' ? ['resu
 
 export function actionsFor(state: LifeState, turnedBack = false, hasLinkedSailingMr = false): Action[] {
   if (turnedBack) return []
-  if (state === 'abandoned') return []
+  if (state === 'abandoned') return ['remove']
   if (state === 'done') return ['undock']
-  if (state === 'paused' || state === 'failed') return flagActions(state)
+  if (state === 'paused' || state === 'failed') return [...flagActions(state), 'remove']
   const step: Partial<Record<Stage, Action[]>> = {
     sailing: hasLinkedSailingMr ? ['mark_in_review'] : [],
     in_review: ['mark_merged'],
@@ -91,7 +93,7 @@ export function actionsFor(state: LifeState, turnedBack = false, hasLinkedSailin
     testing: ['done', 'bug_found'],
   }
 
-  return [...(step[state] ?? []), ...flagActions(state)]
+  return [...(step[state] ?? []), ...flagActions(state), 'remove']
 }
 
 const ms = (iso: string | null) => {
@@ -104,7 +106,7 @@ const hasLinkedSailingMr = (mrs: MrInput[], stored: Stored) => mrs.some(mr => Bo
 
 export function lifeOf(mrs: MrInput[], stored: Stored, turnedBack = false): Life {
   const stage = shipStage(mrs, stored, turnedBack)
-  const state: LifeState = stored.failed ? 'failed' : stored.paused ? 'paused' : stage
+  const state: LifeState = stored.removed ? 'done' : stored.failed ? 'failed' : stored.paused ? 'paused' : stage
   const rows = mrs.map(mr => ({
     n: mr.n,
     state: mrState(mr, stored),
@@ -113,7 +115,7 @@ export function lifeOf(mrs: MrInput[], stored: Stored, turnedBack = false): Life
   }))
   const changes = rows.map(r => r.changed).filter((t): t is number => t !== null)
   const latest = changes.length > 0 ? Math.max(...changes) : null
-  const endedAt = stage === 'done' ? (ms(stored.docked) ?? latest) : stage === 'abandoned' ? latest : null
+  const endedAt = stage === 'done' ? (ms(stored.removed) ?? ms(stored.docked) ?? latest) : stage === 'abandoned' ? latest : null
 
   return { stage, state, paused: stored.paused, failed: stored.failed, endedAt, mrs: rows, actions: actionsFor(state, turnedBack, hasLinkedSailingMr(mrs, stored)) }
 }
@@ -138,6 +140,11 @@ export function applyAction(mrs: MrInput[], stored: Stored, action: Action, now:
     move('done', 'testing')
     next.docked = null
     next.backToSea = null
+    next.removed = null
+  } else if (action === 'remove') {
+    next.removed = now
+    next.paused = false
+    next.failed = false
   } else if (action === 'bug_found') next.backToSea = mrs.length
   else if (action === 'pause') next.paused = true
   else if (action === 'mark_failed') {

@@ -40,7 +40,7 @@ const lifeOf = async (name: string) =>
   (await (await fetch(`http://127.0.0.1:${server.port}/api/state`)).json()).fleets.flatMap((f: any) => f.ships).find((s: any) => s.ship === name).life
 
 test('a sailing ship with a link offers the action and moves to in_review', async () => {
-  assert.deepEqual((await lifeOf('LINK-1')).actions, ['mark_in_review', 'pause', 'mark_failed'])
+  assert.deepEqual((await lifeOf('LINK-1')).actions, ['mark_in_review', 'pause', 'mark_failed', 'remove'])
   const res = await post('LINK-1')
   assert.equal(res.status, 200)
   assert.equal((await res.json()).life.stage, 'in_review')

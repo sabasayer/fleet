@@ -30,6 +30,7 @@ export const ACTION_LABEL = {
   resume: 'resume',
   mark_failed: 'mark failed',
   undock: 'undock',
+  remove: 'remove → harbour',
 }
 
 export const ACTION_KEY = {
@@ -43,6 +44,7 @@ export const ACTION_KEY = {
   resume: 'p',
   mark_failed: 'f',
   undock: 'u',
+  remove: 'x',
 }
 
 export function shipPhase(ship) {

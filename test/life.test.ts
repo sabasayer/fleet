@@ -58,7 +58,7 @@ test('a new MR on a done ship sends it back to sailing', () => {
 test('abandoned MRs do not hold the ship back, and all abandoned means abandoned', () => {
   assert.equal(shipStage([mr(1), mr(2)], stored({ 1: at('abandoned'), 2: at('merged') })), 'merged')
   assert.equal(shipStage([mr(1)], stored({ 1: at('abandoned') })), 'abandoned')
-  assert.deepEqual(lifeOf([mr(1)], stored({ 1: at('abandoned') })).actions, [])
+  assert.deepEqual(lifeOf([mr(1)], stored({ 1: at('abandoned') })).actions, ['remove'])
 })
 
 test('paused and failed flags show as the ship state, the stage stays', () => {
@@ -75,14 +75,14 @@ test('a failed crew member does not fail the ship', () => {
 
 test('buttons show only where they apply', () => {
   const actions = (s: Stored, mrs = [mr(1)]) => lifeOf(mrs, s).actions
-  assert.deepEqual(actions(stored()), ['mark_merged', 'pause', 'mark_failed'])
-  assert.deepEqual(actions(stored({ 1: at('merged') })), ['mark_released', 'pause', 'mark_failed'])
-  assert.deepEqual(actions(stored({ 1: at('released') })), ['start_testing', 'pause', 'mark_failed'])
-  assert.deepEqual(actions(stored({ 1: at('testing') })), ['done', 'bug_found', 'pause', 'mark_failed'])
+  assert.deepEqual(actions(stored()), ['mark_merged', 'pause', 'mark_failed', 'remove'])
+  assert.deepEqual(actions(stored({ 1: at('merged') })), ['mark_released', 'pause', 'mark_failed', 'remove'])
+  assert.deepEqual(actions(stored({ 1: at('released') })), ['start_testing', 'pause', 'mark_failed', 'remove'])
+  assert.deepEqual(actions(stored({ 1: at('testing') })), ['done', 'bug_found', 'pause', 'mark_failed', 'remove'])
   assert.deepEqual(actions(stored({ 1: at('done') })), ['undock'])
-  assert.deepEqual(actions(stored({}, { paused: true })), ['resume', 'mark_failed'])
-  assert.deepEqual(actions(stored({}, { failed: true })), ['resume'])
-  assert.deepEqual(actions(stored(), [mr(1, [{ state: 'running' }])]), ['mark_in_review', 'pause', 'mark_failed'])
+  assert.deepEqual(actions(stored({}, { paused: true })), ['resume', 'mark_failed', 'remove'])
+  assert.deepEqual(actions(stored({}, { failed: true })), ['resume', 'remove'])
+  assert.deepEqual(actions(stored(), [mr(1, [{ state: 'running' }])]), ['mark_in_review', 'pause', 'mark_failed', 'remove'])
 })
 
 test('walking a ship from in_review to done and back out', () => {
@@ -135,19 +135,19 @@ test('ship names reject path tricks', () => {
 
 test('a sailing ship with a linked MR offers mark_in_review before the flag actions', () => {
   const sailing = [mr(1, [{ state: 'running' }])]
-  assert.deepEqual(lifeOf(sailing, stored()).actions, ['mark_in_review', 'pause', 'mark_failed'])
+  assert.deepEqual(lifeOf(sailing, stored()).actions, ['mark_in_review', 'pause', 'mark_failed', 'remove'])
 })
 
 test('a sailing ship with no link does not offer mark_in_review', () => {
-  assert.deepEqual(lifeOf([mr(1, [{ state: 'running' }], null)], stored()).actions, ['pause', 'mark_failed'])
-  assert.deepEqual(lifeOf([], stored()).actions, ['pause', 'mark_failed'])
+  assert.deepEqual(lifeOf([mr(1, [{ state: 'running' }], null)], stored()).actions, ['pause', 'mark_failed', 'remove'])
+  assert.deepEqual(lifeOf([], stored()).actions, ['pause', 'mark_failed', 'remove'])
 })
 
 test('mark_in_review moves the ship to in_review and mark_merged then applies', () => {
   const sailing = [mr(1, [{ state: 'running' }])]
   const next = applyAction(sailing, stored(), 'mark_in_review', NOW)
   assert.equal(lifeOf(sailing, next).stage, 'in_review')
-  assert.deepEqual(lifeOf(sailing, next).actions, ['mark_merged', 'pause', 'mark_failed'])
+  assert.deepEqual(lifeOf(sailing, next).actions, ['mark_merged', 'pause', 'mark_failed', 'remove'])
   assert.equal(next.mrs['1'].changed, NOW)
 })
 
@@ -173,4 +173,21 @@ test('mark_in_review is refused when no MR has a link', () => {
 test('the watcher can still mark an in_review MR as merged', () => {
   const kept = stored({ 1: at('in_review') })
   assert.equal(observeMr(kept, 1, 'merged', 'abc', NOW)?.mrs['1'].state, 'merged')
+})
+
+test('remove sends a ship from any state to the harbour, and undock brings it back', () => {
+  const mrs = [mr(1)]
+  for (const start of [stored(), stored({ 1: at('merged') }), stored({}, { paused: true }), stored({}, { failed: true }), stored({ 1: at('abandoned') })]) {
+    const removed = applyAction(mrs, start, 'remove', NOW)
+    const life = lifeOf(mrs, removed)
+    assert.deepEqual([life.stage, life.state, life.actions], ['done', 'done', ['undock']])
+    assert.equal(life.endedAt, Date.parse(NOW))
+    const back = lifeOf(mrs, applyAction(mrs, removed, 'undock', NOW))
+    assert.equal(back.stage, lifeOf(mrs, { ...start, paused: false, failed: false }).stage)
+  }
+})
+
+test('a sailing scout with no MR can be removed', () => {
+  assert.ok(lifeOf([], stored()).actions.includes('remove'))
+  assert.equal(lifeOf([], applyAction([], stored(), 'remove', NOW)).stage, 'done')
 })

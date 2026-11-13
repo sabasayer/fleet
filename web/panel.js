@@ -91,7 +91,7 @@ const linksHtml = ship => {
   return chips.length > 0 ? `<p class="links">${chips.join('')}</p>` : ''
 }
 
-const goal = ship => `<p>Goal: ${escapeHtml(ship.title)}</p>${linksHtml(ship)}`
+const goal = ship => `<p>Goal: ${escapeHtml(ship.title)}</p>${ship.convoy ? `<p class="dim">Convoy: ${escapeHtml(ship.convoy)}</p>` : ''}${linksHtml(ship)}`
 
 const mrStates = ship =>
   ship.mrs.length > 1 && ship.life ? `<p class="dim">${ship.life.mrs.map(m => `MR ${m.n}: ${ZONE_NAME[m.state] ?? m.state}`).join(' · ')}</p>` : ''

@@ -1,6 +1,6 @@
 # Admiral
 
-Status: design agreed, not built. Level 1 is next.
+Status: level 1 (launcher) built. Levels 2-4 are design only.
 
 The admiral is a Claude session that does the captain's work across many ships. The captain decides how much it may do. Every ship it starts is a normal ship: its own session and its own terminal tab, so the captain can go to any of them.
 

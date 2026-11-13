@@ -69,6 +69,10 @@ A scout is a ship with no merge request yet. It finds the cause and writes `~/.c
 It never edits a repo file. Found work? It hands over to `/crew`, which reads that file.
 Nothing to fix? It leaves a one-line outcome and stops.
 
+`/crew-board:admiral` starts one crew ship per repo for the same task. Each ship is a real session in its own herdr tab, started through fleet, so the captain can jump to it.
+It writes a shared brief to `~/.crew/<convoy>/brief.md` and asks once before it starts. Then it exits. See `docs/admiral.md` in fleet.
+`crew-ship create --convoy <name>` stores the convoy name. `auto: plan` in the `/crew` text lets the first mate pass `gate-spec` and `gate-tests` itself, with a line in `decisions.jsonl`.
+
 The crew skill has a file `e2e.md`. It lists what every e2e run must do. Agents then find the repo's own e2e scripts that do it.
 
 The plugin has a `bin` folder with five commands. Claude Code puts it on the PATH of the Bash tool when the plugin is on. A session loads it at the start.

@@ -59,7 +59,13 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
      - Use the issue URL as `--task <link>` for `crew-ship`. A task already in `ship.json` wins. In that case, ignore `linear:`.
      - Lean mode does not support `linear:`. Tell the captain, and go on without it.
    - `~/.crew/<ticket>/ship.json` already there? A scout ran first. The ticket name is the scout's ship name. Read `~/.crew/<ticket>/scout.md`. Run `crew-ship add-mr <ticket> --repo ... --remote ... --worktree ... --branch ...` in place of `crew-ship create`. Put the findings in the Spec. A task in `ship.json`? Reuse it. Do not make a new one.
-   - No ship file yet? Create it: `crew-ship create <ship> --title "<title>" --fleet <fleet> [--task <link>] --repo <main checkout> --remote <host/project path> --worktree <worktree> --branch <branch>`.
+   - No ship file yet? Create it: `crew-ship create <ship> --title "<title>" --fleet <fleet> [--task <link>] [--convoy <name>] --repo <main checkout> --remote <host/project path> --worktree <worktree> --branch <branch>`.
+   - `convoy: <name>` in the `/crew` text: the admiral started this ship with others. Pass `--convoy <name>` to `crew-ship create`. The text also names a shared brief, `~/.crew/<convoy>/brief.md`. Read it: it is the source for the Spec.
+   - `auto: plan` in the `/crew` text: the plan is already clear. Then `gate-spec` and `gate-tests` do not wait for the captain:
+     - Write the Spec from the brief, with no grilling session. Still add its three sections.
+     - At each of the two gates, check the work as the captain would: the Spec covers the brief, and each test fails if the code does nothing. Pass the gate yourself, or send the work back.
+     - Add one line per gate to `~/.crew/<ticket>/decisions.jsonl`: `{"who":"first-mate","gate":"gate-spec","verdict":"yes","reason":"auto: plan; <one line>","evidence":["<spec path>"],"at":"<ISO time>"}`.
+     - `gate-captain` and every later step still wait for the captain.
 
    Done when: the worktree is clean, `git log origin/<default>..HEAD` is empty, the server answers HTTP 200 on that port, the port file exists, and `ship.json` exists.
 2. **Spec** (10, `gate-spec`). Tell the captain to start a grilling session to make the spec. You cannot start it. Write the spec to the spec folder. Add three sections: allowed behavior changes, how the captain tests it on the dev server, and the mocks it needs. Give the captain `! crew-open <spec path>` to read the spec in a new herdr tab. Done when: the captain approves the spec.

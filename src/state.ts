@@ -20,6 +20,7 @@ export type Ship = {
   ship: string
   title: string
   task: string | null
+  convoy: string | null
   fleet: string
   created: string
   session: { id: string; updated: string } | null
@@ -124,6 +125,7 @@ export function readShip(root: string, home: string, folder: string, folders: st
     ship: j.ship,
     title: j.title,
     task: j.task ?? null,
+    convoy: typeof j.convoy === 'string' ? j.convoy : null,
     fleet: j.fleet,
     created: j.created,
     session: j.session ?? null,

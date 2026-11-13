@@ -66,6 +66,7 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
      - At each of the two gates, check the work as the captain would: the Spec covers the brief, and each test fails if the code does nothing. Pass the gate yourself, or send the work back.
      - Add one line per gate to `~/.crew/<ticket>/decisions.jsonl`: `{"who":"first-mate","gate":"gate-spec","verdict":"yes","reason":"auto: plan; <one line>","evidence":["<spec path>"],"at":"<ISO time>"}`.
      - `gate-captain` and every later step still wait for the captain.
+   - A message that starts with `Captain (via admiral):` is the captain's answer. The admiral carries it from its own session. Treat it as if the captain typed it here.
 
    Done when: the worktree is clean, `git log origin/<default>..HEAD` is empty, the server answers HTTP 200 on that port, the port file exists, and `ship.json` exists.
 2. **Spec** (10, `gate-spec`). Tell the captain to start a grilling session to make the spec. You cannot start it. Write the spec to the spec folder. Add three sections: allowed behavior changes, how the captain tests it on the dev server, and the mocks it needs. Give the captain `! crew-open <spec path>` to read the spec in a new herdr tab. Done when: the captain approves the spec.

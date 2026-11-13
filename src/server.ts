@@ -3,6 +3,7 @@ import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'nod
 import { join } from 'node:path'
 import { createServer, type IncomingMessage, type Server } from 'node:http'
 
+import { readShip, sendToShip } from './relay.ts'
 import { realNewShipDeps, startNewShip, type NewShipDeps } from './newship.ts'
 import { jump, realJumpDeps, type JumpDeps, type JumpResult } from './jump.ts'
 import { applyAction, isAction, isShipName, readStored, writeStored } from './life.ts'
@@ -166,6 +167,31 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
                 send(200, 'application/json', JSON.stringify(result))
               },
               () => send(500, 'application/json', JSON.stringify({ status: 'error', message: 'start failed' })),
+            )
+          },
+          () => send(400, 'text/plain', 'bad request'),
+        )
+
+        return
+      }
+      const relay = /^\/api\/ships\/([^/]+)\/(send|read)$/.exec(url.pathname)
+      if (relay) {
+        const name = safeDecode(relay[1])
+        const ship = readState(env).fleets.flatMap(fleet => fleet.ships).find(s => s.ship === name)
+        if (!ship) return send(404, 'text/plain', 'not found')
+        const target = { sessionId: ship.session?.id ?? null, worktrees: ship.mrs.map(mr => mr.worktree) }
+        readBody(req, MAX_NEW_SHIP_BODY).then(
+          body => {
+            let input: any
+            try {
+              input = JSON.parse(body || '{}')
+            } catch {
+              return send(400, 'text/plain', 'bad json')
+            }
+            const result = relay[2] === 'send' ? sendToShip(target, input?.text, jumpDeps) : readShip(target, input?.lines, jumpDeps)
+            result.then(
+              r => send(200, 'application/json', JSON.stringify(r)),
+              () => send(500, 'application/json', JSON.stringify({ status: 'error', message: 'relay failed' })),
             )
           },
           () => send(400, 'text/plain', 'bad request'),

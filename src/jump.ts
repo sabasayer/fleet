@@ -59,7 +59,7 @@ export async function defaultClient(deps: Pick<JumpDeps, 'sockets' | 'connect'>)
 const inWorktree = (agent: any, worktrees: string[]) =>
   agent?.agent === 'claude' && [agent.cwd, agent.foreground_cwd].some(path => typeof path === 'string' && worktrees.includes(path))
 
-async function findPane(deps: JumpDeps, sessionId: string, worktrees: string[]) {
+export async function findPane(deps: JumpDeps, sessionId: string, worktrees: string[]) {
   let defaultClient: HerdrClient | null = null
   const byFolder: { pane: any; client: HerdrClient }[] = []
   for (const { path, isDefault } of deps.sockets()) {

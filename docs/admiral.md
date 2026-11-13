@@ -1,6 +1,6 @@
 # Admiral
 
-Status: level 1 (launcher) built. Levels 2-4 are design only.
+Status: levels 1 (launcher) and 2 (watch and relay) built. Levels 3-4 are design only.
 
 The admiral is a Claude session that does the captain's work across many ships. The captain decides how much it may do. Every ship it starts is a normal ship: its own session and its own terminal tab, so the captain can go to any of them.
 
@@ -40,7 +40,9 @@ It may do anything local that can be undone.
 
 ## How it stays alive (level 2 and later)
 
-A `/loop` session in its own terminal tab. It wakes every 20 to 30 minutes. It reads and answers other sessions with herdr's `agent.read`, `agent.send` and `events.wait`.
+The admiral session stays open in its own tab. It runs `crew-admiral-wait <convoy>` in the background. That script uses no tokens while it waits, and exits when a ship of the convoy is blocked or failed, or when all are done. The admiral handles it and starts the script again.
+
+It reads and answers a ship through fleet: `POST /api/ships/<ship>/read` and `/api/ships/<ship>/send`. Fleet finds the ship's live pane, as jump back does, and uses herdr's `pane.read` and `pane.send_input`. It never starts a session. Answers go to the ship as `Captain (via admiral): ...`.
 
 ## Gates
 

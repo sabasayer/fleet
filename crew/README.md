@@ -84,6 +84,7 @@ The plugin has a `bin` folder with five commands. Claude Code puts it on the PAT
 - `crew-open diff <worktree> [<base>]` opens `hunk diff` in a new herdr tab. The default base is the merge-base of `HEAD` and `origin/HEAD` (else `origin/main`). `crew-open <file>` opens a `.md` file in `glow -p` and any other file in `hx`. The tab starts in the git root of the file. It needs herdr, Hunk, Helix and glow. Without herdr, or if herdr fails, it prints the command to run and exits with 0. A missing path exits with 2.
 - `crew-visual-diff <test-results folder>` prints the changed pixels and the changed area of each Playwright `*-actual.png` and `*-expected.png` pair. Agents read this text and do not open the images.
 - `crew-wait-pipeline <repo> [<branch>|--mr <number>] [--timeout-min N]` waits for the pipeline of an MR or the checks of a PR. It works for GitLab (`glab`) and GitHub (`gh`). It prints `success`, `failed`, `canceled` or `timeout` and the link. On failure it adds the failed jobs with their log tails. The exit code is 0 only for `success`.
+- `crew-admiral-wait <convoy> [--interval S] [--timeout S]` waits until a ship of the convoy has a `blocked` or `failed` member, or every run is done. It prints one JSON line. Each event comes only once: it keeps the seen ones in `~/.crew/<convoy>/admiral-seen.json`. The admiral runs it in the background.
 
 ## Web view (browser or phone)
 

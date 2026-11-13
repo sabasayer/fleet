@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Wait until a ship of a convoy needs the admiral, then print what happened as JSON."""
+import argparse
+import json
+import os
+import re
+import sys
+import time
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument("convoy")
+p.add_argument("--root", default=os.environ.get("CREW_BOARD_ROOT") or "~/.crew")
+p.add_argument("--interval", type=float, default=30, help="seconds between checks")
+p.add_argument("--timeout", type=float, default=3 * 3600, help="seconds before it prints a timeout and exits")
+a = p.parse_args()
+
+root = os.path.expanduser(a.root)
+seen_path = os.path.join(root, a.convoy, "admiral-seen.json")
+
+
+def load(path):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def ships():
+    names = []
+    for name in sorted(os.listdir(root)) if os.path.isdir(root) else []:
+        data = load(os.path.join(root, name, "ship.json"))
+        if isinstance(data, dict) and data.get("convoy") == a.convoy:
+            names.append(name)
+    return names
+
+
+def runs(ship):
+    pattern = re.compile(rf"^{re.escape(ship)}-mr\d+$")
+    return sorted(n for n in os.listdir(root) if pattern.match(n) and os.path.isdir(os.path.join(root, n)))
+
+
+def members(run):
+    folder = os.path.join(root, run)
+    for name in sorted(os.listdir(folder)):
+        if name.endswith(".json") and name != "ship.json":
+            data = load(os.path.join(folder, name))
+            if isinstance(data, dict) and "state" in data:
+                yield name, data
+
+
+def check(seen):
+    events, open_runs, names = [], 0, ships()
+    for ship in names:
+        for run in runs(ship):
+            states = []
+            for name, m in members(run):
+                states.append(m["state"])
+                if m["state"] in ("blocked", "failed"):
+                    key = f"{run}/{name}:{m['state']}:{m.get('updated', '')}"
+                    if key not in seen:
+                        events.append({"key": key, "ship": ship, "run": run, "role": m.get("role", name[:-5]), "state": m["state"], "summary": m.get("summary", ""), "phase": m.get("phase", "")})
+            if any(s != "done" for s in states):
+                open_runs += 1
+    return names, events, open_runs
+
+
+seen = set(load(seen_path) or [])
+deadline = time.time() + a.timeout
+while True:
+    names, events, open_runs = check(seen)
+    if not names:
+        print(json.dumps({"error": f"no ship has convoy {a.convoy} in {root}"}))
+        sys.exit(2)
+    if events:
+        os.makedirs(os.path.dirname(seen_path), exist_ok=True)
+        with open(seen_path, "w") as f:
+            json.dump(sorted(seen | {e["key"] for e in events}), f, indent=1)
+        print(json.dumps({"events": events}))
+        sys.exit(0)
+    if open_runs == 0:
+        print(json.dumps({"done": True, "ships": names}))
+        sys.exit(0)
+    if time.time() >= deadline:
+        print(json.dumps({"timeout": True, "open": open_runs}))
+        sys.exit(0)
+    time.sleep(a.interval)

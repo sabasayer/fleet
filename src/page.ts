@@ -81,7 +81,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 .modal-box label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
 .modal-box label.check { flex-direction: row; align-items: center; gap: 6px; }
 .modal-box label.check input { width: auto; }
-.modal-box input, .modal-box textarea { font: inherit; background: var(--field); color: var(--ink); border: 2px solid var(--line); padding: 5px 6px; }
+.modal-box input, .modal-box textarea, .modal-box select { font: inherit; background: var(--field); color: var(--ink); border: 2px solid var(--line); padding: 5px 6px; }
 .modal-box button { font: inherit; font-size: 12px; background: var(--active); color: var(--ink); border: 2px solid var(--line); padding: 3px 10px; cursor: pointer; }
 .modal-box button:disabled { opacity: 0.5; cursor: default; }
 .dim { color: var(--dim); }
@@ -128,7 +128,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
   #search-text { min-height: 40px; font-size: 16px; }
   .row { min-height: 40px; padding: 8px 4px; }
   .jump button, .buttons button, .modal-box button, #newship-open { min-height: 40px; min-width: 40px; }
-  .modal-box input, .modal-box textarea { min-height: 40px; font-size: 16px; }
+  .modal-box input, .modal-box textarea, .modal-box select { min-height: 40px; font-size: 16px; }
   .modal-box label.check { min-height: 40px; }
   .modal-box label.check input { width: 24px; height: 24px; min-height: 0; }
   .modal-box { max-height: 92dvh; }

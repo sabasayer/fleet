@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { newShipFormHtml, preselectedRepo, repoChoices, requestNewShip, startingHtml, WAIT_MS } from '../web/newship.js'
+import { startHint, newShipFormHtml, preselectedRepo, repoChoices, requestNewShip, startingHtml, WAIT_MS } from '../web/newship.js'
 import { panelHtml } from '../web/panel.js'
 
 const ID = '11111111-2222-3333-4444-555555555555'
@@ -92,31 +92,27 @@ test('the request sends the token and the four fields only', async () => {
   assert.equal(ok.status, 'started')
   assert.equal(seen[0], '/api/ships/new')
   assert.equal(seen[1].headers['x-fleet-token'], 'tok')
-  assert.deepEqual(JSON.parse(seen[1].body), { fleet: 'f', folder: '/r', task: 't', scout: false })
+  assert.deepEqual(JSON.parse(seen[1].body), { fleet: 'f', folder: '/r', task: 't', start: 'crew' })
   assert.equal((await requestNewShip({}, 't', (async () => ({ status: 403 })) as any)).status, 'error')
   assert.equal((await requestNewShip({}, 't', (async () => { throw new Error('x') }) as any)).status, 'error')
 })
 
-test('the form has a Scout first checkbox after the task field', () => {
-  const html = newShipFormHtml({ fleets, form: { fleet: '', folder: '', task: '', scout: false }, busy: false, result: null })
-  assert.match(html, /type="checkbox"/)
-  assert.match(html, /name="scout"/)
-  assert.match(html, /Scout first/)
-  assert.ok(html.indexOf('name="task"') < html.indexOf('name="scout"'))
+test('the form has a Start as choice after the task field, with four options', () => {
+  const html = newShipFormHtml({ fleets, form: { fleet: '', folder: '', task: '', start: 'crew' }, busy: false, result: null })
+  assert.match(html, /<select name="start">/)
+  for (const text of ['Crew', 'Crew, auto plan', 'Scout first', 'Admiral: one ship per repo']) assert.ok(html.includes(`>${text}</option>`), text)
+  assert.ok(html.indexOf('name="task"') < html.indexOf('name="start"'))
+  assert.ok(html.includes(startHint('crew')))
 })
 
-test('a ticked box is kept when the form is drawn again', () => {
-  const html = newShipFormHtml({ fleets, form: { fleet: '', folder: '', task: '', scout: true }, busy: false, result: null })
-  assert.match(html, /name="scout"[^>]*checked|checked[^>]*name="scout"/)
+test('the chosen start is kept, with its hint, when the form is drawn again', () => {
+  const html = newShipFormHtml({ fleets, form: { fleet: '', folder: '', task: '', start: 'auto' }, busy: false, result: null })
+  assert.match(html, /value="auto" selected/)
+  assert.ok(html.includes('captain test still waits'))
 })
 
-test('the request sends scout true only when the box is ticked', async () => {
-  const body = async (form: object) => {
-    let seen: any
-    await requestNewShip(form, 'tok', (async (_url: string, init: any) => ((seen = init), { status: 200, json: async () => ({ status: 'started' }) })) as any)
-
-    return JSON.parse(seen.body)
-  }
-  assert.deepEqual(await body({ fleet: 'f', folder: '/r', task: 't', scout: true }), { fleet: 'f', folder: '/r', task: 't', scout: true })
-  assert.equal((await body({ fleet: 'f', folder: '/r', task: 't', scout: false })).scout, false)
+test('the request sends the chosen start', async () => {
+  let seen: any
+  await requestNewShip({ fleet: 'f', folder: '/r', task: 't', start: 'admiral' }, 'tok', (async (_url: string, init: any) => ((seen = init), { status: 200, json: async () => ({ status: 'started' }) })) as any)
+  assert.equal(JSON.parse(seen.body).start, 'admiral')
 })

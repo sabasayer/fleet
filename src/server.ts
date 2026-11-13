@@ -162,7 +162,7 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
             }
             startNewShip(input, readState(env).fleets, jumpDeps, newShipDeps).then(
               result => {
-                if (result.status === 'started') starting.push({ ship: result.ship, fleet: result.fleet, sessionId: result.sessionId, startedAt: clock() })
+                if (result.status === 'started' && result.start !== 'admiral') starting.push({ ship: result.ship, fleet: result.fleet, sessionId: result.sessionId, startedAt: clock() })
                 send(200, 'application/json', JSON.stringify(result))
               },
               () => send(500, 'application/json', JSON.stringify({ status: 'error', message: 'start failed' })),

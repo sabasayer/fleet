@@ -1,6 +1,22 @@
 import { serverError } from './actions.js'
 const escapeHtml = text => String(text).replace(/[&<>"']/g, ch => `&#${ch.charCodeAt(0)};`)
 
+export const START_AS = [
+  ['crew', 'Crew'],
+  ['auto', 'Crew, auto plan'],
+  ['scout', 'Scout first'],
+  ['admiral', 'Admiral: one ship per repo'],
+]
+
+export const START_HINT = {
+  crew: 'Every gate waits for you.',
+  auto: 'No spec or tests gate: write a task clear enough to be the plan. The captain test still waits for you.',
+  scout: 'Look into it before any crew run.',
+  admiral: 'Pick the folder that holds the repos. Name the repos or a rule in the task. The admiral asks you once, then starts one ship per repo.',
+}
+
+export const startHint = start => START_HINT[start] ?? START_HINT.crew
+
 export const LIMITS = { fleet: 60, task: 4000, folder: 1000 }
 export const WAIT_MS = 3 * 60 * 1000
 
@@ -55,7 +71,8 @@ export function newShipFormHtml({ fleets, form, busy, result }) {
     ${datalistHtml('newship-repos', repoChoices(fleets, form.fleet))}
     <label>Task <span class="dim">(text or link, line breaks allowed)</span>
       <textarea name="task" required maxlength="${LIMITS.task}" rows="6">${escapeHtml(form.task)}</textarea></label>
-    <label class="check"><input type="checkbox" name="scout"${form.scout ? ' checked' : ''}> Scout first <span class="dim">(look into it before any crew run)</span></label>
+    <label>Start as <select name="start">${START_AS.map(([value, text]) => `<option value="${value}"${form.start === value ? ' selected' : ''}>${text}</option>`).join('')}</select></label>
+    <p class="dim" id="newship-hint">${escapeHtml(startHint(form.start))}</p>
     <div class="buttons"><button type="submit"${busy ? ' disabled' : ''}>${busy ? 'Starting…' : 'Start ship'}</button><button type="button" data-newship-close>Close</button></div>
     ${message}${command}
   </form>`
@@ -77,7 +94,7 @@ export async function requestNewShip(form, token, doFetch = fetch) {
     const res = await doFetch('/api/ships/new', {
       method: 'POST',
       headers: { 'x-fleet-token': token, 'content-type': 'application/json' },
-      body: JSON.stringify({ fleet: form.fleet, folder: form.folder, task: form.task, scout: form.scout === true }),
+      body: JSON.stringify({ fleet: form.fleet, folder: form.folder, task: form.task, start: form.start ?? 'crew' }),
     })
     if (res.status === 200) return await res.json()
 

@@ -8,6 +8,7 @@
   "engines": { "node": ">=22.18" },
   "scripts": {
     "start": "node bin/crew-fleet.ts",
+    "dev": "node --watch-path=bin --watch-path=src --watch-path=web --watch bin/crew-fleet.ts",
     "demo": "rm -rf .demo-home && cp -R fixtures/demo-home .demo-home && CREW_BOARD_ROOT=fixtures/demo CREW_FLEET_HOME=.demo-home node bin/crew-fleet.ts",
     "test": "node --test 'test/**/*.test.ts'"
   },

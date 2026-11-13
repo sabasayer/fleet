@@ -24,7 +24,7 @@ Zoom in with → and out with ←. There are three levels.
 npm start -- --port 4932
 ```
 
-Needs Node 22.18 or newer. No install step. `npm run demo` starts it with fake data. `npm test` runs the tests.
+Needs Node 22.18 or newer. No install step. `npm run dev` restarts it when the code changes, for example after a `git pull`. `npm run demo` starts it with fake data. `npm test` runs the tests.
 
 Fleet reads ships from `~/.crew` and keeps its own files in `~/.fleet`. Set `CREW_BOARD_ROOT` or `CREW_FLEET_HOME` to use other folders.
 

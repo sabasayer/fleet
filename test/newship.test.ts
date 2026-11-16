@@ -13,7 +13,7 @@ const goodSchema = {
   protocol: 16,
   schemas: {
     request: {
-      oneOf: ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.rename'].map(method => ({
+      oneOf: ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.create', 'tab.rename'].map(method => ({
         properties: { method: { const: method } },
       })),
     },
@@ -34,6 +34,7 @@ function build(over: { schema?: () => Promise<unknown>; down?: boolean; workspac
       if (method === 'agent.list') return { agents: [] }
       if (method === 'workspace.list') return { workspaces: over.workspaces ?? [] }
       if (method === 'tab.list') return { tabs: [] }
+      if (method === 'tab.create') return { tab: { tab_id: 'w1:tNew' }, root_pane: { pane_id: 'w1:pNew' } }
       if (method === 'workspace.create') return { workspace: { workspace_id: 'w9' }, tab: { tab_id: 'w9:t1' } }
       if (method === 'agent.start') {
         if (over.failStart) throw new Error('boom')

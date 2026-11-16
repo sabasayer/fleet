@@ -7,7 +7,7 @@ import { readShip, sendToShip } from '../src/relay.ts'
 const ID = '0f8fad5b-d9cb-469f-a165-70867728950e'
 const goodSchema = {
   protocol: 16,
-  schemas: { request: { oneOf: ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.rename'].map(method => ({ properties: { method: { const: method } } })) } },
+  schemas: { request: { oneOf: ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.create', 'tab.rename'].map(method => ({ properties: { method: { const: method } } })) } },
 }
 
 function build(agents: object[]) {

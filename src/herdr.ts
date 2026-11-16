@@ -14,7 +14,7 @@ export class HerdrError extends Error {
   }
 }
 
-export const REQUIRED_METHODS = ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.rename']
+export const REQUIRED_METHODS = ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.create', 'tab.rename']
 export const MIN_PROTOCOL = 16
 
 export const herdrDir = (env = process.env) => env.HERDR_CONFIG_DIR || join(homedir(), '.config', 'herdr')

@@ -69,7 +69,7 @@ const schema = (protocol: number, methods: string[]) => ({
   protocol,
   schemas: { request: { oneOf: methods.map(method => ({ properties: { method: { const: method } } })) } },
 })
-const all = ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.rename']
+const all = ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.create', 'tab.rename']
 
 test('schema check accepts a supported version', () => {
   assert.deepEqual(checkSchema(schema(16, all)), { ok: true })

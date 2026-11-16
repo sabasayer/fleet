@@ -1,6 +1,6 @@
 # Admiral
 
-Status: levels 1 (launcher) and 2 (watch and relay) built. Levels 3-4 are design only.
+Status: levels 1 (launcher) and 2 (watch and relay) built. Steering from fleet and levels 3-4 are design only.
 
 The admiral is a Claude session that does the captain's work across many ships. The captain decides how much it may do. Every ship it starts is a normal ship: its own session and its own terminal tab, so the captain can go to any of them.
 
@@ -43,6 +43,28 @@ It may do anything local that can be undone.
 The admiral session stays open in its own tab. It runs `crew-admiral-wait <convoy>` in the background. That script uses no tokens while it waits, and exits when a ship of the convoy is blocked or failed, or when all are done. The admiral handles it and starts the script again.
 
 It reads and answers a ship through fleet: `POST /api/ships/<ship>/read` and `/api/ships/<ship>/send`. Fleet finds the ship's live pane, as jump back does, and uses herdr's `pane.read` and `pane.send_input`. It never starts a session. Answers go to the ship as `Captain (via admiral): ...`.
+
+## Steering from fleet (after level 2)
+
+Today the captain must go to the admiral's tab to see its questions and answer them. Fleet does not know about the admiral: the new-ship route does not track it as a ship. This feature lets the captain see and answer the admiral from fleet. The terminal tab still works the same way.
+
+What the captain gets:
+- A sign on the admiral when it waits for the captain. The admiral shows in the needs-captain panel, above the ships.
+- The details of what it asks: one item per question, with the ship, the gate, the question, and the admiral's view and evidence.
+- An answer box per item, and one box for free text, so the captain can also steer it ("stop the xds-demo ship", "skip the review on docs-only ships").
+
+How it works:
+- The admiral writes its open questions to `~/.crew/<convoy>/admiral.json`, at the same time as its numbered report in the tab. Fields: `session` (the admiral's Claude session ID), `state` (`watching`, `waiting`, `done`), `asked` (time), and `items`. Each item has `n`, `ship`, `gate`, `question`, `view`, and `evidence` (links or paths).
+- When the admiral handles an answer, it removes that item. When nothing is open, `state` goes back to `watching`.
+- Fleet reads these files the same way it reads ship files: it polls them and never writes them.
+- The captain's answer goes to the admiral's pane through the level 2 relay (`pane.send_input`), as `Captain (via fleet): <n>. <answer>`. Fleet finds the pane by the session ID in the file. Fleet never starts a session for this.
+- The admiral treats an answer from fleet the same as one typed in its tab. The hard limits do not change.
+- A convoy shows as one group in fleet. Its ships and the admiral are in that group.
+
+Open questions:
+- The admiral may wait inside `crew-admiral-wait`, not at its prompt. Text sent then goes to the queue. Does Claude Code read it on its next turn, or does the admiral need its own wake-up?
+- Does fleet show the admiral's last few lines of output, like a ship's pane read, or only the items?
+- Does fleet raise an alert when the admiral waits, or is the panel enough? Fleet has no notifications of its own today.
 
 ## Gates
 

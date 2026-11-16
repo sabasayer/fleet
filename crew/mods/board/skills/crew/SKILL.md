@@ -52,13 +52,13 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
      - Work on one MR at a time, as in "Next MR of the same ticket" below. Do not run two repos in parallel.
    - Start the dev server on a free port (see [e2e.md](e2e.md)). Restart a stale server. Write the port in the spec folder, in the file `port`.
    - Find the fleet name in the `/crew` text (`fleet: <name>`). If there is none, ask the captain. Suggest the repo name.
-   - Linear is opt-in. Do this only when the `/crew` text has `linear: <issue URL or ID>`, `linear: new`, or a Linear issue URL (`linear.app/.../issue/<ID>`) with no `linear:` label. A bare issue URL counts as `linear: <that URL>`. A Linear project or document URL does not count. With none of these, skip this bullet.
+   - Linear is opt-in. Do this only when the `/crew` text has `linear: <issue URL or ID>`, `linear: new`, or a Linear issue URL (`linear.app/.../issue/<ID>`) with no `linear:` label. A bare issue URL counts as `linear: <that URL>`. A Linear issue URL in the `task` of an existing `ship.json` (a scout ran first) also counts, as `linear: <that URL>`. A Linear project or document URL does not count. With none of these, skip this bullet.
      - `linear: <issue URL or ID>` or a bare issue URL: fetch the issue with Linear MCP `get_issue`.
      - `linear: new`: run Steps 1 and 2 of `/linear-setup`. Skip its Step 3, because crew makes the branch in a worktree.
      - Use the issue's `gitBranchName` as the worktree branch, in place of a branch name you make up.
-     - Use the issue URL as `--task <link>` for `crew-ship`. A task already in `ship.json` wins. In that case, ignore `linear:`.
+     - Use the issue URL as `--task <link>` for `crew-ship create` or `crew-ship add-mr`. A task already in `ship.json` wins. In that case, use that task in place of the `linear:` text.
      - Lean mode does not support `linear:`. Tell the captain, and go on without it.
-   - `~/.crew/<ticket>/ship.json` already there? A scout ran first. The ticket name is the scout's ship name. Read `~/.crew/<ticket>/scout.md`. Run `crew-ship add-mr <ticket> --repo ... --remote ... --worktree ... --branch ...` in place of `crew-ship create`. Put the findings in the Spec. A task in `ship.json`? Reuse it. Do not make a new one.
+   - `~/.crew/<ticket>/ship.json` already there? A scout ran first. The ticket name is the scout's ship name. Read `~/.crew/<ticket>/scout.md`. Run `crew-ship add-mr <ticket> [--task <link>] --repo ... --remote ... --worktree ... --branch ...` in place of `crew-ship create`. Put the findings in the Spec. A task in `ship.json`? Reuse it. Do not make a new one.
    - No ship file yet? Create it: `crew-ship create <ship> --title "<title>" --fleet <fleet> [--task <link>] [--convoy <name>] --repo <main checkout> --remote <host/project path> --worktree <worktree> --branch <branch>`.
    - `convoy: <name>` in the `/crew` text: the admiral started this ship with others. Pass `--convoy <name>` to `crew-ship create`. The text also names a shared brief, `~/.crew/<convoy>/brief.md`. Read it: it is the source for the Spec.
    - `auto: plan` in the `/crew` text: the plan is already clear. Then `gate-spec` and `gate-tests` do not wait for the captain:

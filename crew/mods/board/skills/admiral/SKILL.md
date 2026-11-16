@@ -33,6 +33,7 @@ Done when: each item is an absolute path of a git repo.
 
 - Pick a convoy name: a short slug of the task plus the date, for example `translations-1113`. It must match `[A-Za-z0-9][A-Za-z0-9._-]*`.
 - Write `~/.crew/<convoy>/brief.md`: the task in the captain's words, what "done" means, and the repo list. If the captain named a spec or an `impl-details` output, copy its path in.
+- Add a `## Ship rules` part with the answers from step 4: the reviewers, the Linear issue, and the captain's rules for this work. Read each repo's `AGENTS.md` or `CLAUDE.md` for rules on branch names, for example `eng-<number>-<words>`, and list them there too. Every ship reads the brief, so no ship asks these at its gate again.
 - `auto: plan` is allowed only when the brief points to such a spec. Otherwise, drop it and tell the captain why.
 
 Done when: the brief exists.
@@ -40,6 +41,15 @@ Done when: the brief exists.
 ## 4. Ask once
 
 Show the convoy name, the brief path, `auto: plan` on or off, and one line per repo. Ask: "Start these N ships?" More than 4 ships: also say that N crew runs at once use the usage limit fast.
+
+In the same message, ask what every ship needs before it can push. Suggest an answer for each:
+- Who reviews the MRs? The same people for all, or per repo.
+- Linear: one shared issue (its ID or URL), `linear: new` for each ship, or none. Say when a repo's branch rule needs an issue number.
+- Any rule for this work, for example "do not repeat what the base layer documents, link to it".
+
+Write the answers to the brief's `## Ship rules` part. An answer of "none" is fine. With `linear:`, add that line to each task text in step 5.
+
+Write the captain's words for the run size as they are meant. "Keep it lean" or "keep it short" means few steps: write "docs only, few steps" or similar in the task text. Never write the word "lean" in a task text, unless the captain asks for crew's lean mode by name. Crew reads "lean" as lean mode, which commits on the default branch.
 
 `--yes` skips this question, but not the warning for more than 4 ships.
 
@@ -59,12 +69,13 @@ The JSON is `{"fleet": "<fleet>", "folder": "<repo path>", "quiet": true, "task"
 
 ```
 <task, one line> in <repo name>
+ship: <convoy>-<repo name>
 brief: ~/.crew/<convoy>/brief.md
 convoy: <convoy>
 auto: plan            (only when on)
 ```
 
-Fleet adds the `fleet:` line itself.
+Fleet adds the `fleet:` line itself. The `ship:` line fixes the ship name, so two ships of a convoy never share one. Use this name for the fleet API in step 7.
 
 A reply with a `status` other than `started` is a failure. Go on with the next repo. Do not retry.
 
@@ -79,9 +90,12 @@ One line per ship: ship name, repo, `started` or the failure message. For a fail
 ## 7. Watch
 
 Run `crew-admiral-wait <convoy>` in the background. It uses no tokens while it waits. It exits and prints one JSON line when something needs you:
-- `{"events": [...]}`: members that are `blocked` or `failed`. Each event has `ship`, `run`, `role`, `state`, `summary`. Each event comes only once.
+- `{"events": [...]}`: members that are `blocked` or `failed`. Each event has `ship`, `run`, `role`, `state`, `summary` and `stale`. Each event comes only once. `stale: true` means a gate you already saw is still `blocked` after 15 minutes. It comes again every 15 minutes while the gate stays blocked.
 - `{"done": true}`: every run of the convoy is done. Report and stop watching.
 - `{"timeout": true}`: nothing happened for 3 hours. Start it again.
+- `{"error": ...}`: no ship of the convoy showed within 5 minutes. Tell the captain. The waiter already waits for the ships to write their files, so do not poll by hand.
+
+Run one waiter at a time. A new waiter stops the old one of the same convoy, so just start a new one. Never use `pkill` or `kill`.
 
 Handle all events of one wake-up together. Then start the waiter again. Between wake-ups, answer the captain when the captain writes to you.
 
@@ -97,6 +111,7 @@ Fleet API for a ship (token: `$(cat ~/.fleet/token)`, header `x-fleet-token`, co
 | `gate-captain` | First write a **shadow verdict** (below). Then ask the captain. Show your verdict and its evidence. |
 | Any other `blocked` member | It asks a question. Read the pane. Ask the captain. Add your suggested answer. |
 | `failed` | Tell the captain what failed, from the summary and the pane. Do not fix it. Ask what to do. |
+| `stale: true` | Read the pane. Does the ship wait for your word? Send what the captain already decided, or ask the captain now. Does it wait for the captain? Remind the captain in one line. Never leave a ship waiting for a word you did not plan to send. |
 
 Never answer for the captain. Every answer you send comes from the captain. Send it as `Captain (via admiral): <the captain's words>`. When the captain answers in short form ("yes 1, no 2: fix the label"), expand it to a clear answer for each ship.
 
@@ -108,6 +123,7 @@ Your own answer, before the captain's. It builds the record that lets the captai
 1. Read `~/.crew/<ship>/spec/` for the captain test steps and the `port` file.
 2. A browser tool is here and the dev server answers? Do the captain test steps yourself. Save what you saw.
 3. No browser tool or no dev server? Use the run's own evidence: `/prove` results, `browser.json` summary and screenshots, review results. Say that your check was weaker.
+   - A docs change has no browser check. Check each claim against the code: a setting is "missing" only when the config or code reads it. A name only in `.env.example`, a comment or an old doc is not evidence. Say for each finding where the code reads it.
 4. Read the diff: `git -C <worktree> diff origin/<default>...HEAD`.
 5. Run the `review-workspace` skill in its local branch mode on the worktree and branch, with `--no-ui`. It is a review that took no part in building the change. Put its findings in your report. If the captain wants to read them in the UI, run it again without `--no-ui`.
 

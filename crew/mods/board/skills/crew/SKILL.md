@@ -58,7 +58,9 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
      - Use the issue's `gitBranchName` as the worktree branch, in place of a branch name you make up.
      - Use the issue URL as `--task <link>` for `crew-ship create` or `crew-ship add-mr`. A task already in `ship.json` wins. In that case, use that task in place of the `linear:` text.
      - Lean mode does not support `linear:`. Tell the captain, and go on without it.
-   - `~/.crew/<ticket>/ship.json` already there? A scout ran first. The ticket name is the scout's ship name. Read `~/.crew/<ticket>/scout.md`. Run `crew-ship add-mr <ticket> [--task <link>] --repo ... --remote ... --worktree ... --branch ...` in place of `crew-ship create`. Put the findings in the Spec. A task in `ship.json`? Reuse it. Do not make a new one.
+   - `ship: <name>` in the `/crew` text: use that name as the ticket name. The admiral sets it, so ships of one convoy never share a name. Without it, never use a convoy name as the ticket name.
+   - `~/.crew/<ticket>/ship.json` already there with `"kind": "scout"`? A scout ran first. The ticket name is the scout's ship name. Read `~/.crew/<ticket>/scout.md`. Run `crew-ship add-mr <ticket> [--task <link>] --repo ... --remote ... --worktree ... --branch ...` in place of `crew-ship create`. Put the findings in the Spec. A task in `ship.json`? Reuse it. Do not make a new one.
+   - There with any other `kind`? That name belongs to another ship. Never add an MR to it. Add a short suffix to the ticket name, for example `-2`, and create a new ship file.
    - No ship file yet? Create it: `crew-ship create <ship> --title "<title>" --fleet <fleet> [--task <link>] [--convoy <name>] --repo <main checkout> --remote <host/project path> --worktree <worktree> --branch <branch>`.
    - `convoy: <name>` in the `/crew` text: the admiral started this ship with others. Pass `--convoy <name>` to `crew-ship create`. The text also names a shared brief, `~/.crew/<convoy>/brief.md`. Read it: it is the source for the Spec.
    - `auto: plan` in the `/crew` text: the plan is already clear. Then `gate-spec` and `gate-tests` do not wait for the captain:
@@ -79,10 +81,10 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
 9. **Ship.**
    - The `ship-merge-request` skill exists? Use it for the commit, push, MR and pipeline. Tell it the crew rules below.
    - No such skill? Use the project's ship flow. Then watch the pipeline (see "Watch the pipeline").
-   - Crew rules: stage files by name. Never run `git add docs/` or `git add -A`. Commit only when each commit is green alone, or else squash. Ask who reviews. Do not assign anyone yourself.
+   - Crew rules: stage files by name. Never run `git add docs/` or `git add -A`. Commit only when each commit is green alone, or else squash. Ask who reviews, unless the brief names the reviewers. Do not assign anyone else yourself.
    - When the MR is open, run `crew-ship url <ticket> <N> <MR link>`.
 
-   Done when: the pipeline is green and the MR link is in the ship file.
+   Done when: the pipeline is green, the MR link is in the ship file, and no member of the run still shows `running`. Set the state of any member that does.
 
 **Watch the pipeline.** Run the command as a background Bash call. Do not poll by hand.
 - Run `crew-wait-pipeline <worktree> --mr <number>`. It works for GitLab and GitHub. It prints `success`, `failed`, `canceled` or `timeout`, then the pipeline link. On failure it lists the failed jobs with their log tails. A failure only in allow-failure jobs counts as success. A GitHub repo with no checks prints `success` and a note.
@@ -98,12 +100,12 @@ The captain plays or tests after every ticket. Speed matters more than review. A
 
 Phases, with orders:
 
-1. **Fetch** (before the chain). Read the repo's `AGENTS.md` or `CLAUDE.md`. Check the tree is clean. Work in the main checkout on the default branch, unless the project docs say to branch. Keep one dev server running for the whole project. Reuse it between runs. Then make the ship file, so the run shows in fleet. Find the fleet name in the `/crew` text (`fleet: <name>`). If there is none, ask the captain. Suggest the repo name. `~/.crew/<ticket>/ship.json` already there? A scout ran first. Run `crew-ship add-mr <ticket> --repo ... --remote ... --worktree ... --branch ...`. No ship file yet? Run `crew-ship create <ship> --title "<title>" --fleet <fleet> [--task <link>] --repo <main checkout> --remote <host/project path> --worktree <main checkout> --branch <default branch>`. The worktree is the main checkout, because lean works there. The branch is the default branch. A lean run has no MR, so skip `crew-ship url`. Done when: the tree is clean, the server answers HTTP 200, and `ship.json` exists.
+1. **Fetch** (before the chain). Read the repo's `AGENTS.md` or `CLAUDE.md`. Check the tree is clean. Work in the main checkout on the default branch, unless the project docs say to branch. Keep one dev server running for the whole project. Reuse it between runs. Then make the ship file, so the run shows in fleet. Find the fleet name in the `/crew` text (`fleet: <name>`). If there is none, ask the captain. Suggest the repo name. `ship: <name>` in the `/crew` text? Use it as the ticket name. `~/.crew/<ticket>/ship.json` already there with `"kind": "scout"`? A scout ran first. Run `crew-ship add-mr <ticket> --repo ... --remote ... --worktree ... --branch ...`. There with any other `kind`? That name belongs to another ship: add a short suffix, for example `-2`. No ship file yet? Run `crew-ship create <ship> --title "<title>" --fleet <fleet> [--task <link>] --repo <main checkout> --remote <host/project path> --worktree <main checkout> --branch <default branch>`. The worktree is the main checkout, because lean works there. The branch is the default branch. A lean run has no MR, so skip `crew-ship url`. Done when: the tree is clean, the server answers HTTP 200, and `ship.json` exists.
 2. **Ticket** (no gate). Write the ticket from the captain's grilling round. Sections: Goal, Scope, Acceptance. Put it where the project keeps tickets, else in the spec folder. Done when: every decision in the ticket came from the captain or the project docs.
 3. **Build** (10, `build`). First queue the board. Run `crew-status` with `queued` for `build` (10), `prove` (20) and `gate-captain` (30), all in one command ([status.md](status.md)). Then call `mcp__crew-board__crew_board_open` with the ticket name. Skip this if the tool is not there. Spawn one agent in the background with [briefs/build.md](briefs/build.md). It writes the tests and the code, and commits. It does not push. Done when: it reports and its commit is on the branch.
 4. **Prove** (20, `prove`). Run the project's checks yourself, all of them. Check the tree is clean. Read the agent's diff summary. Did the build make a new e2e screenshot? Look at it. If the project has a bot playtest or another report script, run it and read it. Done when: every check passes and you pushed.
 5. **Captain test** (30, `gate-captain`). Set `gate-captain` to `blocked`, with a summary of what the captain must do. Set it to `done` after the yes. Give the captain the dev server URL, what changed, and what to watch for. Add `! crew-open diff <worktree>` so the captain can read the diff. Add numbers from the report, if there is one. Done when: the captain gives feedback or says okay.
-6. **Ship.** Push right after Prove. If the project uses merge requests, ship as in phase 9 and watch the pipeline.
+6. **Ship.** Push right after Prove. If the project uses merge requests, ship as in phase 9 and watch the pipeline. Done when: no member of the run still shows `running`.
 
 After the captain test:
 

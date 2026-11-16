@@ -28,7 +28,8 @@ const jumpDeps: JumpDeps = {
   schema: async () => schema,
   sockets: () => [{ path: '/default', isDefault: true }],
   connect: () => async method => {
-    if (method === 'agent.list') return { agents: [] }
+    if (method === 'agent.list') return { agents: [{ agent: 'claude', agent_session: { value: SESSION }, pane_id: 'p1', terminal_id: 't1' }] }
+    if (method === 'pane.read') return { read: { text: 'first mate waits' } }
     if (method === 'workspace.list') return { workspaces: [] }
     if (method === 'tab.list') return { tabs: [] }
     if (method === 'tab.create') return { tab: { tab_id: 'w1:tNew' }, root_pane: { pane_id: 'w1:pNew' } }
@@ -67,6 +68,14 @@ test('a started ship shows in state.starting and survives later reads', async ()
   const expected = [{ ship: result.ship, fleet: 'alpha', sessionId: SESSION, startedAt: time }]
   assert.deepEqual((await state()).starting, expected)
   assert.deepEqual((await state()).starting, expected)
+})
+
+test('the relay finds a ship by the name fleet returned, before crew writes its ship file', async () => {
+  const result = await start()
+  const read = async () =>
+    (await fetch(`http://127.0.0.1:${server.port}/api/ships/${result.ship}/read`, { method: 'POST', headers: { 'x-fleet-token': server.token }, body: '{}' })).json()
+  assert.deepEqual(await read(), { status: 'read', text: 'first mate waits' })
+  assert.equal((await fetch(`http://127.0.0.1:${server.port}/api/ships/never-started/read`, { method: 'POST', headers: { 'x-fleet-token': server.token }, body: '{}' })).status, 404)
 })
 
 test('the entry goes away once a ship with that session ID shows, whatever its name', async () => {

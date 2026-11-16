@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import tempfile
+import time
 import unittest
 
 BIN = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bin", "crew-admiral-wait")
@@ -24,7 +25,7 @@ class AdmiralWaitTest(unittest.TestCase):
         write(f"{self.root}/{run}/{role}.json", {"role": role, "state": state, "summary": f"{role} {state}", "updated": updated})
 
     def wait(self, *extra):
-        out = subprocess.run([BIN, "c1", "--root", self.root, "--interval", "0.05", "--timeout", "0.3", *extra], capture_output=True, text=True)
+        out = subprocess.run([BIN, "c1", "--root", self.root, "--interval", "0.05", "--timeout", "0.3", "--stale", "1e9", *extra], capture_output=True, text=True)
         return out.returncode, json.loads(out.stdout)
 
     def test_a_blocked_gate_is_reported_once(self):
@@ -42,6 +43,14 @@ class AdmiralWaitTest(unittest.TestCase):
         self.member("a-mr1", "gate-tests", "blocked", updated="2026-11-13T11:00:00Z")
         self.assertEqual(len(self.wait()[1]["events"]), 1)
 
+    def test_a_gate_still_blocked_after_the_stale_time_is_reported_again_once(self):
+        self.member("a-mr1", "gate-captain", "blocked", updated="2026-11-13T10:00:00Z")
+        self.assertEqual(self.wait()[1]["events"][0]["stale"], False)
+        self.assertEqual(self.wait()[1], {"timeout": True, "open": 1})
+        events = self.wait("--stale", "60")[1]["events"]
+        self.assertEqual([(e["run"], e["role"], e["stale"]) for e in events], [("a-mr1", "gate-captain", True)])
+        self.assertEqual(self.wait("--stale", "60")[1], {"timeout": True, "open": 1})
+
     def test_a_failed_member_is_reported_and_other_convoys_are_ignored(self):
         self.member("x-mr1", "green", "failed")
         self.member("b-mr2", "green", "failed")
@@ -54,8 +63,25 @@ class AdmiralWaitTest(unittest.TestCase):
         self.assertEqual(self.wait()[1], {"done": True, "ships": ["a", "b"]})
 
     def test_an_unknown_convoy_is_an_error(self):
-        out = subprocess.run([BIN, "nope", "--root", self.root, "--timeout", "0"], capture_output=True, text=True)
+        out = subprocess.run([BIN, "nope", "--root", self.root, "--timeout", "0", "--appear", "0"], capture_output=True, text=True)
         self.assertEqual(out.returncode, 2)
+
+    def test_it_waits_for_the_first_ship_of_a_new_convoy(self):
+        later = subprocess.Popen([BIN, "c2", "--root", self.root, "--interval", "0.05", "--timeout", "5", "--appear", "5"], stdout=subprocess.PIPE, text=True)
+        time.sleep(0.3)
+        write(f"{self.root}/n/ship.json", {"ship": "n", "convoy": "c2"})
+        self.member("n-mr1", "gate-captain", "blocked")
+        out, _ = later.communicate(timeout=5)
+        self.assertEqual(later.returncode, 0)
+        self.assertEqual(json.loads(out)["events"][0]["ship"], "n")
+
+    def test_a_new_waiter_stops_the_old_one_of_the_same_convoy(self):
+        self.member("a-mr1", "build", "running")
+        old = subprocess.Popen([BIN, "c1", "--root", self.root, "--interval", "0.05", "--timeout", "30"], stdout=subprocess.PIPE, text=True)
+        time.sleep(0.3)
+        self.wait()
+        self.assertEqual(old.wait(timeout=5), -15)
+        old.stdout.close()
 
 
 if __name__ == "__main__":

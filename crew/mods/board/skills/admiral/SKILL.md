@@ -59,12 +59,13 @@ The JSON is `{"fleet": "<fleet>", "folder": "<repo path>", "quiet": true, "task"
 
 ```
 <task, one line> in <repo name>
+ship: <convoy>-<repo name>
 brief: ~/.crew/<convoy>/brief.md
 convoy: <convoy>
 auto: plan            (only when on)
 ```
 
-Fleet adds the `fleet:` line itself.
+Fleet adds the `fleet:` line itself. The `ship:` line fixes the ship name, so two ships of a convoy never share one. Use this name for the fleet API in step 7.
 
 A reply with a `status` other than `started` is a failure. Go on with the next repo. Do not retry.
 
@@ -79,7 +80,7 @@ One line per ship: ship name, repo, `started` or the failure message. For a fail
 ## 7. Watch
 
 Run `crew-admiral-wait <convoy>` in the background. It uses no tokens while it waits. It exits and prints one JSON line when something needs you:
-- `{"events": [...]}`: members that are `blocked` or `failed`. Each event has `ship`, `run`, `role`, `state`, `summary`. Each event comes only once.
+- `{"events": [...]}`: members that are `blocked` or `failed`. Each event has `ship`, `run`, `role`, `state`, `summary` and `stale`. Each event comes only once. `stale: true` means a gate you already saw is still `blocked` after 15 minutes. It comes again every 15 minutes while the gate stays blocked.
 - `{"done": true}`: every run of the convoy is done. Report and stop watching.
 - `{"timeout": true}`: nothing happened for 3 hours. Start it again.
 
@@ -97,6 +98,7 @@ Fleet API for a ship (token: `$(cat ~/.fleet/token)`, header `x-fleet-token`, co
 | `gate-captain` | First write a **shadow verdict** (below). Then ask the captain. Show your verdict and its evidence. |
 | Any other `blocked` member | It asks a question. Read the pane. Ask the captain. Add your suggested answer. |
 | `failed` | Tell the captain what failed, from the summary and the pane. Do not fix it. Ask what to do. |
+| `stale: true` | Read the pane. Does the ship wait for your word? Send what the captain already decided, or ask the captain now. Does it wait for the captain? Remind the captain in one line. Never leave a ship waiting for a word you did not plan to send. |
 
 Never answer for the captain. Every answer you send comes from the captain. Send it as `Captain (via admiral): <the captain's words>`. When the captain answers in short form ("yes 1, no 2: fix the label"), expand it to a clear answer for each ship.
 

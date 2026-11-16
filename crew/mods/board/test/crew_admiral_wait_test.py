@@ -24,7 +24,7 @@ class AdmiralWaitTest(unittest.TestCase):
         write(f"{self.root}/{run}/{role}.json", {"role": role, "state": state, "summary": f"{role} {state}", "updated": updated})
 
     def wait(self, *extra):
-        out = subprocess.run([BIN, "c1", "--root", self.root, "--interval", "0.05", "--timeout", "0.3", *extra], capture_output=True, text=True)
+        out = subprocess.run([BIN, "c1", "--root", self.root, "--interval", "0.05", "--timeout", "0.3", "--stale", "1e9", *extra], capture_output=True, text=True)
         return out.returncode, json.loads(out.stdout)
 
     def test_a_blocked_gate_is_reported_once(self):
@@ -41,6 +41,14 @@ class AdmiralWaitTest(unittest.TestCase):
         self.wait()
         self.member("a-mr1", "gate-tests", "blocked", updated="2026-11-13T11:00:00Z")
         self.assertEqual(len(self.wait()[1]["events"]), 1)
+
+    def test_a_gate_still_blocked_after_the_stale_time_is_reported_again_once(self):
+        self.member("a-mr1", "gate-captain", "blocked", updated="2026-11-13T10:00:00Z")
+        self.assertEqual(self.wait()[1]["events"][0]["stale"], False)
+        self.assertEqual(self.wait()[1], {"timeout": True, "open": 1})
+        events = self.wait("--stale", "60")[1]["events"]
+        self.assertEqual([(e["run"], e["role"], e["stale"]) for e in events], [("a-mr1", "gate-captain", True)])
+        self.assertEqual(self.wait("--stale", "60")[1], {"timeout": True, "open": 1})
 
     def test_a_failed_member_is_reported_and_other_convoys_are_ignored(self):
         self.member("x-mr1", "green", "failed")

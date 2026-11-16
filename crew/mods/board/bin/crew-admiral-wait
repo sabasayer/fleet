@@ -6,12 +6,14 @@ import os
 import re
 import sys
 import time
+from datetime import datetime, timezone
 
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument("convoy")
 p.add_argument("--root", default=os.environ.get("CREW_BOARD_ROOT") or "~/.crew")
 p.add_argument("--interval", type=float, default=30, help="seconds between checks")
 p.add_argument("--timeout", type=float, default=3 * 3600, help="seconds before it prints a timeout and exits")
+p.add_argument("--stale", type=float, default=15 * 60, help="seconds a gate may stay blocked before it is reported again")
 a = p.parse_args()
 
 root = os.path.expanduser(a.root)
@@ -49,6 +51,14 @@ def members(run):
                 yield name, data
 
 
+def age(updated):
+    try:
+        then = datetime.strptime(updated, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return None
+    return time.time() - then.timestamp()
+
+
 def check(seen):
     events, open_runs, names = [], 0, ships()
     for ship in names:
@@ -58,8 +68,16 @@ def check(seen):
                 states.append(m["state"])
                 if m["state"] in ("blocked", "failed"):
                     key = f"{run}/{name}:{m['state']}:{m.get('updated', '')}"
-                    if key not in seen:
-                        events.append({"key": key, "ship": ship, "run": run, "role": m.get("role", name[:-5]), "state": m["state"], "summary": m.get("summary", ""), "phase": m.get("phase", "")})
+                    stale = False
+                    if key in seen:
+                        waited = age(m.get("updated")) if m["state"] == "blocked" else None
+                        if waited is None or waited < a.stale:
+                            continue
+                        key = f"{key}:stale:{int(waited // a.stale)}"
+                        stale = True
+                        if key in seen:
+                            continue
+                    events.append({"key": key, "ship": ship, "run": run, "role": m.get("role", name[:-5]), "state": m["state"], "summary": m.get("summary", ""), "phase": m.get("phase", ""), "stale": stale})
             if any(s != "done" for s in states):
                 open_runs += 1
     return names, events, open_runs

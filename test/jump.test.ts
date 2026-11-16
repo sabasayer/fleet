@@ -10,7 +10,7 @@ const goodSchema = {
   protocol: 16,
   schemas: {
     request: {
-      oneOf: ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.rename'].map(method => ({
+      oneOf: ['agent.list', 'agent.focus', 'agent.start', 'workspace.list', 'workspace.create', 'tab.list', 'tab.create', 'tab.rename'].map(method => ({
         properties: { method: { const: method } },
       })),
     },
@@ -43,6 +43,7 @@ function build(setup: Setup = {}) {
       }
       if (method === 'workspace.list') return { workspaces: setup.workspaces ?? [] }
       if (method === 'tab.list') return { tabs: setup.tabs ?? [] }
+      if (method === 'tab.create') return { tab: { tab_id: 'w1:tNew' }, root_pane: { pane_id: 'w1:pNew' } }
       if (method === 'workspace.create') return { workspace: { workspace_id: 'w9' }, tab: { tab_id: 'w9:t1' }, root_pane: { pane_id: 'w9:p1' } }
       if (method === 'agent.start') {
         if (setup.failStart) throw new Error('boom')
@@ -143,19 +144,21 @@ test('gone: a new workspace closes its default shell pane after the agent starts
   assert.ok(methods.indexOf('pane.close') > methods.indexOf('agent.start'))
 })
 
-test('gone: an existing workspace closes no pane', async () => {
-  const t = build({ workspaces: [{ label: 'Alpha', workspace_id: 'w2' }] })
+test('gone: an existing ship tab closes no pane', async () => {
+  const t = build({ workspaces: [{ label: 'Alpha', workspace_id: 'w2' }], tabs: [{ label: 'abc-1', tab_id: 'w2:t5' }] })
   await jump(ship, t.deps)
   assert.equal(t.methods().includes('pane.close'), false)
 })
 
-test('gone: reuses the fleet workspace and adds a tab named after the ship', async () => {
-  const t = build({ workspaces: [{ label: 'Alpha', workspace_id: 'w2' }] })
+test('gone: reuses the fleet workspace and starts in a new tab, never a split of another tab', async () => {
+  const t = build({ workspaces: [{ label: 'Alpha', workspace_id: 'w2' }], tabs: [{ label: 'other-ship', tab_id: 'w2:t3' }] })
   assert.equal((await jump(ship, t.deps)).status, 'resumed')
   assert.equal(t.methods().includes('workspace.create'), false)
+  assert.deepEqual(t.calls.find(c => c.method === 'tab.create')!.params, { workspace_id: 'w2', cwd: '/work', label: 'abc-1', focus: false })
   assert.equal(started(t.calls)[0].params.workspace_id, 'w2')
-  assert.equal('tab_id' in started(t.calls)[0].params, false)
-  assert.deepEqual(t.calls.find(c => c.method === 'tab.rename')!.params, { tab_id: 'w1:tNew', label: 'abc-1' })
+  assert.equal(started(t.calls)[0].params.tab_id, 'w1:tNew')
+  assert.deepEqual(t.calls.find(c => c.method === 'pane.close')!.params, { pane_id: 'w1:pNew' })
+  assert.equal(t.methods().includes('tab.rename'), false)
 })
 
 test('gone: reuses the ship tab when it exists, without renaming', async () => {

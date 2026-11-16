@@ -91,8 +91,16 @@ export async function startInWorkspace(client: HerdrClient, ship: Pick<JumpShip,
   if (workspace) {
     const { tabs = [] } = await client('tab.list', { workspace_id: workspace.workspace_id })
     const tab = tabs.find((entry: any) => entry.label === ship.name)
-    tabId = tab?.tab_id
-    tabExists = Boolean(tab)
+    if (tab) {
+      tabId = tab.tab_id
+      tabExists = true
+    } else {
+      // Without a tab_id, herdr's agent.start splits the active tab instead of opening a new one.
+      const created = await client('tab.create', { workspace_id: workspace.workspace_id, cwd, label: ship.name, focus: false })
+      tabId = created.tab?.tab_id
+      shellPaneId = created.root_pane?.pane_id
+      tabExists = true
+    }
   } else {
     const created = await client('workspace.create', { label: ship.fleetName, cwd, focus: false })
     workspace = created.workspace

@@ -70,6 +70,7 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
   let own = new Set<string>()
   const jumping = new Map<string, Promise<JumpResult>>()
   let starting: Starting[] = []
+  const launched = new Map<string, string>()
 
   const sameOrigin = (req: IncomingMessage) => {
     const origin = req.headers.origin
@@ -163,6 +164,7 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
             }
             startNewShip(input, readState(env).fleets, jumpDeps, newShipDeps).then(
               result => {
+                if (result.status === 'started') launched.set(result.ship, result.sessionId.toLowerCase())
                 if (result.status === 'started' && result.start !== 'admiral') starting.push({ ship: result.ship, fleet: result.fleet, sessionId: result.sessionId, startedAt: clock() })
                 send(200, 'application/json', JSON.stringify(result))
               },
@@ -177,9 +179,12 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
       const relay = /^\/api\/ships\/([^/]+)\/(send|read)$/.exec(url.pathname)
       if (relay) {
         const name = safeDecode(relay[1])
-        const ship = readState(env).fleets.flatMap(fleet => fleet.ships).find(s => s.ship === name)
-        if (!ship) return send(404, 'text/plain', 'not found')
-        const target = { sessionId: ship.session?.id ?? null, worktrees: ship.mrs.map(mr => mr.worktree) }
+        const ships = readState(env).fleets.flatMap(fleet => fleet.ships)
+        const launchedId = launched.get(name)
+        const ship = ships.find(s => s.ship === name) ?? (launchedId ? ships.find(s => s.session?.id?.toLowerCase() === launchedId) : undefined)
+        const sessionId = ship?.session?.id ?? launchedId ?? null
+        if (!sessionId && !ship) return send(404, 'text/plain', 'not found')
+        const target = { sessionId, worktrees: ship?.mrs.map(mr => mr.worktree) ?? [] }
         readBody(req, MAX_NEW_SHIP_BODY).then(
           body => {
             let input: any

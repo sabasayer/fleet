@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import re
+import signal
 import sys
 import time
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ p.add_argument("convoy")
 p.add_argument("--root", default=os.environ.get("CREW_BOARD_ROOT") or "~/.crew")
 p.add_argument("--interval", type=float, default=30, help="seconds between checks")
 p.add_argument("--timeout", type=float, default=3 * 3600, help="seconds before it prints a timeout and exits")
+p.add_argument("--appear", type=float, default=5 * 60, help="seconds to wait for the first ship of the convoy")
 p.add_argument("--stale", type=float, default=15 * 60, help="seconds a gate may stay blocked before it is reported again")
 a = p.parse_args()
 
@@ -83,11 +85,28 @@ def check(seen):
     return names, events, open_runs
 
 
+def replace_old_waiter():
+    pid_path = os.path.join(root, a.convoy, "admiral-wait.pid")
+    try:
+        with open(pid_path) as f:
+            os.kill(int(f.read().strip()), signal.SIGTERM)
+    except (OSError, ValueError):
+        pass
+    os.makedirs(os.path.dirname(pid_path), exist_ok=True)
+    with open(pid_path, "w") as f:
+        f.write(str(os.getpid()))
+
+
+replace_old_waiter()
 seen = set(load(seen_path) or [])
-deadline = time.time() + a.timeout
+started = time.time()
+deadline = started + a.timeout
 while True:
     names, events, open_runs = check(seen)
     if not names:
+        if time.time() - started < a.appear:
+            time.sleep(a.interval)
+            continue
         print(json.dumps({"error": f"no ship has convoy {a.convoy} in {root}"}))
         sys.exit(2)
     if events:

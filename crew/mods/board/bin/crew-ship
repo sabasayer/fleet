@@ -36,6 +36,7 @@ s.add_argument("--fleet", required=True)
 s.add_argument("--task", help="link to the task, if there is one")
 m = sub.add_parser("add-mr", help="add the next MR")
 m.add_argument("ship")
+m.add_argument("--task", help="link to the task; used only when the ship has none yet")
 mr_args(m)
 u = sub.add_parser("url", help="set the link of an MR")
 u.add_argument("ship")
@@ -130,6 +131,8 @@ else:
         n = max((x["n"] for x in data["mrs"]), default=0) + 1
         data["mrs"].append(mr_entry(n))
         data["outcome"] = None
+        if a.task and not data.get("task"):
+            data["task"] = link("--task", a.task)
         message = f"MR {n} added"
     elif a.cmd == "outcome":
         if data["kind"] != "scout":

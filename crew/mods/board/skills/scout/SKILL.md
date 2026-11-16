@@ -24,7 +24,7 @@ Find the fleet name in the `/scout` text (`fleet: <name>`). If there is none, as
 4. Find the cause. Read the code, the logs and the bug report. You may start the dev server to reproduce the bug. Reproducing is the job.
 5. Write `~/.crew/<ship>/scout.md`: what you found, where it is, and what to do next. If `CREW_BOARD_ROOT` is set, use that folder in place of `~/.crew`.
 6. Then one of three ends:
-   - **Work found.** Tell the captain the ship name. Then tell them to run `/clear`, then `/crew <ship> fleet: <fleet>` in the same tab. The first mate reads `scout.md`.
+   - **Work found.** Tell the captain the ship name. Then tell them to run `/clear`, then `/crew <ship> fleet: <fleet>` in the same tab. The first mate reads `scout.md`. With no task link, add `linear: new` to that line, so crew makes a Linear issue and takes its branch name. Tell the captain to remove it when they want no issue. With a Linear task link, crew uses that issue. Add nothing.
    - **Nothing to fix.** Run `crew-ship outcome <ship> "<one line>"`, for example `"not a bug: config issue on acc"`. Tell the captain and stop.
    - **No cause found.** Run `crew-ship outcome <ship> "<one line>"`, for example `"not reproduced: no cause found yet"`. Tell the captain and stop. `crew-ship add-mr` clears the outcome if someone comes back to it.
 

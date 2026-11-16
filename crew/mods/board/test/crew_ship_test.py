@@ -137,6 +137,13 @@ class CrewShip(unittest.TestCase):
         self.assertEqual(data["kind"], "scout")
         self.assertEqual(data["outcome"], None)
 
+    def test_add_mr_sets_the_task_only_when_the_ship_has_none(self):
+        self.assertEqual(scout(self.root).returncode, 0)
+        self.assertEqual(run(self.root, "crew-ship", ["add-mr", "s-1", "--task", "https://linear.app/x/issue/A-1", *MR]).returncode, 0)
+        self.assertEqual(ship(self.root, "s-1")["task"], "https://linear.app/x/issue/A-1")
+        self.assertEqual(run(self.root, "crew-ship", ["add-mr", "s-1", "--task", "https://linear.app/x/issue/A-2", *MR]).returncode, 0)
+        self.assertEqual(ship(self.root, "s-1")["task"], "https://linear.app/x/issue/A-1")
+
     def test_outcome_sets_the_line_and_refuses_an_empty_one(self):
         self.assertNotEqual(run(self.root, "crew-ship", ["outcome", "s-1", "gone"]).returncode, 0)
         self.assertEqual(os.listdir(self.root), [])

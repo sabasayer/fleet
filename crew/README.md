@@ -86,6 +86,18 @@ The plugin has a `bin` folder with five commands. Claude Code puts it on the PAT
 - `crew-wait-pipeline <repo> [<branch>|--mr <number>] [--timeout-min N]` waits for the pipeline of an MR or the checks of a PR. It works for GitLab (`glab`) and GitHub (`gh`). It prints `success`, `failed`, `canceled` or `timeout` and the link. On failure it adds the failed jobs with their log tails. The exit code is 0 only for `success`.
 - `crew-admiral-wait <convoy> [--interval S] [--timeout S]` waits until a ship of the convoy has a `blocked` or `failed` member, or every run is done. It prints one JSON line. Each event comes only once: it keeps the seen ones in `~/.crew/<convoy>/admiral-seen.json`. The admiral runs it in the background.
 
+## Linear rules (option)
+
+`~/.crew/config.json` can make Linear required for some repos. Crew matches the repo remote by prefix. The longest match wins.
+
+```json
+{ "linear": [{ "remote": "gitlab.com/acme/", "required": true, "team": "ENG", "project": "Platform" }] }
+```
+
+- `required`: every branch needs a Linear issue, and the issue must be in a project. With no issue in the task, crew makes one.
+- `team` and `project` are optional. When one is missing, crew asks the captain.
+- Check a repo with `crew-config linear <remote>`.
+
 ## Web view (browser or phone)
 
 `/crew-board serve` starts a small web server and prints the links:

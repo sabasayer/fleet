@@ -1,5 +1,5 @@
 import { anchorGrid, beaconGrid, blit, boatGrid, flagColor, hash, memberColor, shipGrid, snap, WOOD } from './art.js'
-import { crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, headRoom, laneHeadText, laneLabels, LABEL_ROW, layoutFor, lerp, metricsFor, mixLayout, padHit, placeX, scoutRight, shapeKey, shipLeft, trackSegments, currentLabel, TOP, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
+import { CONVOY_HEAD, crewLeft, crewOf, crewRight, detailFor, easeOut, floatTop, headRoom, laneHeadText, laneLabels, LABEL_ROW, layoutFor, lerp, metricsFor, mixLayout, padHit, placeX, scoutRight, shapeKey, shipLeft, trackSegments, currentLabel, TOP, TWEEN_MS, waterLineY, zoneEdge } from './layout.js'
 import { theme } from './theme.js'
 import { lifeState, LIFE_COLOR, LIFE_SHORT, shipPhase, ZONES } from './life.js'
 
@@ -20,6 +20,30 @@ function calmLane(ctx, dpr, frame, x, y, w, h, shade) {
 const needsBadge = ship => (ship.needsCaptain ? `<span class="${ship.needsCaptain.kind === 'failed' ? 'fail' : 'needs'}">!</span>` : '')
 
 const label = (x, y, html, extra = '') => `<div class="label" style="left:${x}px;top:${y}px;${extra}">${html}</div>`
+
+function convoyGroups(fleet, layout) {
+  const groups = new Map()
+  for (const ship of fleet.ships) {
+    const place = layout.ships[ship.ship]
+    if (!ship.convoy || !place || place.a < 0.02) continue
+    const group = groups.get(ship.convoy) ?? { convoy: ship.convoy, top: Infinity, bottom: -Infinity, a: 0, waiting: 0 }
+    group.top = Math.min(group.top, place.y)
+    group.bottom = Math.max(group.bottom, place.y)
+    group.a = Math.max(group.a, place.a)
+    if (ship.needsCaptain) group.waiting++
+    groups.set(ship.convoy, group)
+  }
+
+  return [...groups.values()]
+}
+
+function admiralNote(convoy, admiralJump) {
+  const result = admiralJump?.convoy === convoy ? admiralJump.result : null
+  if (admiralJump?.convoy === convoy && admiralJump.busy) return ' <span class="dim">jumping…</span>'
+  if (!result || result.status === 'focused' || result.status === 'resumed') return ''
+
+  return ` <span class="jump-msg ${result.status === 'fallback' ? 'warn' : 'bad'}">${escapeHtml(result.command ? `${result.message} ${result.command}` : result.message)}</span>`
+}
 
 export function createSea(canvas, ui, scroller, world) {
   const ctx = canvas.getContext('2d')
@@ -42,7 +66,7 @@ export function createSea(canvas, ui, scroller, world) {
     return { layout: tween.cur, animating: t < 1 }
   }
 
-  function draw({ fleets, view, frame, band = false }) {
+  function draw({ fleets, view, frame, band = false, admiralJump = null }) {
     const dpr = window.devicePixelRatio || 1
     const size = { w: scroller.clientWidth, h: scroller.clientHeight, band }
     const metrics = metricsFor(size)
@@ -147,6 +171,30 @@ export function createSea(canvas, ui, scroller, world) {
         const id = armada ? '' : `<div class="dim ship-id">${escapeHtml(ship.ship)}</div>`
         html += label(left - 6, rowY + 2, `${id}<div class="clamp" style="-webkit-line-clamp:${armada && !metrics.compact ? 1 : 2}">${needsBadge(ship)} ${escapeHtml(ship.title)}${armada && tag ? ` ${tag}` : ''}</div>${armada ? '' : tag}`, `text-align:right;transform:translateX(-100%);max-width:${metrics.labelColumn - 10}px;${opacity(alpha)}`)
       })
+
+      if (view.level !== 'ship') {
+        convoyGroups(fleet, layout).forEach(group => {
+          const alpha = group.a * laneAlpha
+          const top = group.top - CONVOY_HEAD + 2
+          const bottom = group.bottom + layout.rowHeight - 4
+          ctx.globalAlpha = alpha
+          ctx.strokeStyle = fleet.color
+          ctx.lineWidth = 2 * dpr
+          ctx.setLineDash([6 * dpr, 4 * dpr])
+          ctx.strokeRect(Math.round(8 * dpr), Math.round(top * dpr), Math.round((right + 48) * dpr), Math.round((bottom - top) * dpr))
+          ctx.setLineDash([])
+          const admiral = fleet.admirals?.find(a => a.convoy === group.convoy)
+          const flagScale = 1.5
+          const flag = shipGrid([], fleet.color, frame, 'deck', 'sailing')
+          const flagX = 16
+          blit(ctx, flag, flagX, top - 9, flagScale, dpr)
+          const textX = flagX + flag[0].length * snap(flagScale, dpr) + 6
+          const name = `<b>${admiral ? 'ADMIRAL' : 'CONVOY'}</b> · ${escapeHtml(group.convoy)}`
+          const waiting = group.waiting ? ` <span class="needs">${group.waiting} need you</span>` : ''
+          const attrs = admiral ? ` data-admiral="${escapeHtml(group.convoy)}" title="Jump to the admiral"` : ''
+          html += `<div class="convoy-head${admiral ? ' jumpable' : ''}"${attrs} style="left:${textX}px;top:${top - 9}px;color:color-mix(in srgb, ${escapeHtml(fleet.color)} var(--head-mix), #000);${opacity(alpha)}">${name}${waiting}${admiral ? admiralNote(group.convoy, admiralJump) : ''}</div>`
+        })
+      }
     })
     ctx.globalAlpha = 1
 

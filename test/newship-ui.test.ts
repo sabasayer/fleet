@@ -86,13 +86,13 @@ test('the panel shows the starting note even with no ships yet', () => {
   assert.equal(panelHtml({ fleets: [], view: { level: 'armada' }, now: 2000, jump: null }), '')
 })
 
-test('the request sends the token and the four fields only', async () => {
+test('the request sends the token and the form fields only', async () => {
   let seen: any
   const ok = await requestNewShip({ fleet: 'f', folder: '/r', task: 't', copied: true }, 'tok', (async (url: string, init: any) => ((seen = [url, init]), { status: 200, json: async () => ({ status: 'started' }) })) as any)
   assert.equal(ok.status, 'started')
   assert.equal(seen[0], '/api/ships/new')
   assert.equal(seen[1].headers['x-fleet-token'], 'tok')
-  assert.deepEqual(JSON.parse(seen[1].body), { fleet: 'f', folder: '/r', task: 't', start: 'crew' })
+  assert.deepEqual(JSON.parse(seen[1].body), { fleet: 'f', folder: '/r', task: 't', start: 'crew', skipPermissions: false })
   assert.equal((await requestNewShip({}, 't', (async () => ({ status: 403 })) as any)).status, 'error')
   assert.equal((await requestNewShip({}, 't', (async () => { throw new Error('x') }) as any)).status, 'error')
 })
@@ -115,4 +115,13 @@ test('the request sends the chosen start', async () => {
   let seen: any
   await requestNewShip({ fleet: 'f', folder: '/r', task: 't', start: 'admiral' }, 'tok', (async (_url: string, init: any) => ((seen = init), { status: 200, json: async () => ({ status: 'started' }) })) as any)
   assert.equal(JSON.parse(seen.body).start, 'admiral')
+})
+
+test('the form has a skip permissions box, kept when drawn again, and the request sends it', async () => {
+  const fleets = [{ id: 'f', name: 'F', ships: [], repos: [] }]
+  const html = newShipFormHtml({ fleets, form: { fleet: 'F', folder: '/r', task: 't', start: 'crew', skipPermissions: true }, busy: false, result: null })
+  assert.match(html, /<input type="checkbox" name="skipPermissions" checked>/)
+  let body: any
+  await requestNewShip({ fleet: 'f', folder: '/r', task: 't', skipPermissions: true }, 'tok', (async (_: string, init: any) => ((body = JSON.parse(init.body)), { status: 200, json: async () => ({}) })) as any)
+  assert.equal(body.skipPermissions, true)
 })

@@ -79,6 +79,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 #modal { position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: center; justify-content: center; z-index: 10; }
 .modal-box { width: min(520px, 92vw); max-height: 92vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 .modal-box label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.modal-box label.check { display: block; }
 .modal-box label.check { flex-direction: row; align-items: center; gap: 6px; }
 .modal-box label.check input { width: auto; }
 .modal-box input, .modal-box textarea, .modal-box select { font: inherit; background: var(--field); color: var(--ink); border: 2px solid var(--line); padding: 5px 6px; }
@@ -88,6 +89,9 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 .needs { color: var(--needs-ink); background: var(--gold); padding: 0 5px; font-weight: bold; }
 .fail { color: var(--fail-ink); background: var(--state-failed); padding: 0 5px; font-weight: bold; }
 .label { position: absolute; font-size: 12px; white-space: nowrap; text-shadow: var(--label-shadow); }
+.convoy-head { position: absolute; font-size: 12px; white-space: nowrap; padding: 0 4px; background: var(--bg, transparent); text-shadow: var(--label-shadow); }
+.convoy-head.jumpable { pointer-events: auto; cursor: pointer; }
+.convoy-head.jumpable:hover b { text-decoration: underline; }
 .lane-head { position: absolute; left: 12px; display: flex; gap: 6px; white-space: nowrap; pointer-events: auto; cursor: pointer; font-weight: bold; letter-spacing: 1px; }
 .lane-head.compact { min-height: 40px; align-items: center; }
 .lane-head > * { flex: 0 0 auto; }

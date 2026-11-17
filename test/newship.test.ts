@@ -53,6 +53,18 @@ function build(over: { schema?: () => Promise<unknown>; down?: boolean; workspac
 const form = (over: object = {}) => ({ fleet: 'portal', folder: '/repo', task: 'Fix the login bug', ...over })
 const only = (calls: Calls, method: string) => calls.filter(c => c.method === method)
 
+test('skip permissions adds the flag to the argv and tells the admiral', async () => {
+  const t = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
+  await startNewShip(form({ skipPermissions: true }), fleets, t.jumpDeps, t.deps)
+  assert.deepEqual(only(t.calls, 'agent.start')[0].params.argv.slice(0, 3), ['claude', '--dangerously-skip-permissions', '--session-id'])
+  const admiral = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
+  await startNewShip(form({ start: 'admiral', skipPermissions: true }), fleets, admiral.jumpDeps, admiral.deps)
+  assert.equal(only(admiral.calls, 'agent.start')[0].params.argv.at(-1), '/admiral Fix the login bug\npermissions: skip\nfleet: portal')
+  const plain = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
+  await startNewShip(form({ skipPermissions: 'yes' }), fleets, plain.jumpDeps, plain.deps)
+  assert.equal(only(plain.calls, 'agent.start')[0].params.argv.includes('--dangerously-skip-permissions'), false)
+})
+
 test('starts the ship in the fleet workspace with the argv array, focuses and raises Ghostty', async () => {
   const t = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
   const result: any = await startNewShip(form(), fleets, t.jumpDeps, t.deps)

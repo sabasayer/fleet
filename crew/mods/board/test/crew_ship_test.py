@@ -199,6 +199,20 @@ class CrewShip(unittest.TestCase):
         r = run(self.root, "crew-ship", ["url", "abc-1", "2", "https://x.com/mr/2"])
         self.assertEqual(r.returncode, 0, r.stderr)
 
+    def test_admiral_writes_the_session_and_keeps_created_on_a_refresh(self):
+        args = ["admiral", "c-1", "--fleet", "Work", "--folder", "/work"]
+        self.assertEqual(run(self.root, "crew-ship", args, CLAUDE_CODE_SESSION_ID="s-one").returncode, 0)
+        first = json.load(open(f"{self.root}/c-1/admiral.json"))
+        self.assertEqual([first["convoy"], first["fleet"], first["folder"], first["session"]["id"]], ["c-1", "Work", "/work", "s-one"])
+        self.assertEqual(run(self.root, "crew-ship", args, CLAUDE_CODE_SESSION_ID="s-two").returncode, 0)
+        second = json.load(open(f"{self.root}/c-1/admiral.json"))
+        self.assertEqual([second["session"]["id"], second["created"]], ["s-two", first["created"]])
+        self.assertFalse(os.path.exists(f"{self.root}/c-1/ship.json"))
+
+    def test_admiral_needs_a_session_and_an_absolute_folder(self):
+        self.assertNotEqual(run(self.root, "crew-ship", ["admiral", "c-1", "--fleet", "W", "--folder", "/w"], CLAUDE_CODE_SESSION_ID="").returncode, 0)
+        self.assertNotEqual(run(self.root, "crew-ship", ["admiral", "c-1", "--fleet", "W", "--folder", "rel"], CLAUDE_CODE_SESSION_ID="s").returncode, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

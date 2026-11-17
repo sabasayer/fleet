@@ -97,15 +97,23 @@ export function startAsOf(input: any): StartAs {
 
 const PREFIX: Record<StartAs, string> = { crew: '', auto: '', scout: 'scout-', admiral: 'admiral-' }
 
-export function promptFor(start: StartAs, task: string, fleet: string) {
+export function promptFor(start: StartAs, task: string, fleet: string, skipPermissions = false) {
   if (start === 'scout') return scoutPrompt(task, fleet)
-  if (start === 'admiral') return `/admiral ${withFleet(task, fleet)}`
+  if (start === 'admiral') return `/admiral ${withFleet(skipPermissions ? `${task}\npermissions: skip` : task, fleet)}`
   if (start === 'auto') return crewPrompt(`${task}\nauto: plan`, fleet)
 
   return crewPrompt(task, fleet)
 }
 
-export const startArgv = (uuid: string, ship: string, prompt: string) => ['claude', '--session-id', uuid, '-n', ship, prompt]
+export const startArgv = (uuid: string, ship: string, prompt: string, skipPermissions = false) => [
+  'claude',
+  ...(skipPermissions ? ['--dangerously-skip-permissions'] : []),
+  '--session-id',
+  uuid,
+  '-n',
+  ship,
+  prompt,
+]
 
 export const startCommand = (folder: string, argv: string[]) => `cd ${shellQuote(folder)} && ${argv.map((arg, i) => (i === 0 ? arg : shellQuote(arg))).join(' ')}`
 
@@ -129,9 +137,10 @@ export async function startNewShip(input: any, fleets: Pick<Fleet, 'id' | 'name'
   const sessionId = deps.uuid()
   const start = startAsOf(input)
   const quiet = input?.quiet === true
+  const skipPermissions = input?.skipPermissions === true
   const ship = shipName(taskText.value, sessionId, PREFIX[start])
-  const prompt = promptFor(start, taskText.value, fleet)
-  const argv = startArgv(sessionId, ship, prompt)
+  const prompt = promptFor(start, taskText.value, fleet, skipPermissions)
+  const argv = startArgv(sessionId, ship, prompt, skipPermissions)
   const command = startCommand(folder, argv)
   const moved = folder === folderText.value ? '' : ` Used the main checkout ${folder}.`
   const common = { ship, sessionId, fleet, folder, start }

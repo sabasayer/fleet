@@ -70,7 +70,7 @@ function crumbHtml() {
 function render() {
   pending = 0
   const band = showScoutBand(manual, anyScout())
-  const { html, animating } = sea.draw({ fleets, view, frame, band })
+  const { html, animating } = sea.draw({ fleets, view, frame, band, admiralJump })
   if (html !== lastUi) ui.innerHTML = lastUi = html
   const crumb = crumbHtml()
   if (crumb !== lastCrumbs) crumbs.innerHTML = lastCrumbs = crumb
@@ -187,6 +187,14 @@ function pressSearchKey(event) {
   } else setSearch({ pick: movePick(resultNames(), search.pick, action === 'next' ? 1 : -1) })
 }
 
+let admiralJump = null
+
+async function startAdmiralJump(convoy) {
+  if (admiralJump?.busy) return
+  admiralJump = { convoy, busy: true }
+  admiralJump = { convoy, busy: false, result: await requestJump(convoy, token, fetch, 'admirals') }
+}
+
 async function startJump(ship) {
   if (jump?.busy) return
   jump = { ship, busy: true }
@@ -199,11 +207,14 @@ function renderModal() {
   modal.innerHTML = newShip ? newShipFormHtml({ fleets: allFleets, form: newShip.form, busy: newShip.busy, result: newShip.result }) : helpOpen ? keysHtml() : ''
 }
 
+const SKIP_PERMISSIONS_KEY = 'fleet.newShip.skipPermissions'
+
 function openNewShip() {
   const fleet = focusFleet(view, fleets)
   const fleetName = fleet?.name ?? ''
   const autoFolder = preselectedRepo(allFleets, fleetName)
-  newShip = { autoFolder, form: { fleet: fleetName, folder: autoFolder, task: '', start: 'crew', copied: false }, busy: false, result: null }
+  const skipPermissions = localStorage.getItem(SKIP_PERMISSIONS_KEY) === '1'
+  newShip = { autoFolder, form: { fleet: fleetName, folder: autoFolder, task: '', start: 'crew', skipPermissions, copied: false }, busy: false, result: null }
   renderModal()
   modal.querySelector('input[name="fleet"]')?.focus()
 }
@@ -235,6 +246,7 @@ document.getElementById('newship-open').addEventListener('click', openNewShip)
 modal.addEventListener('input', event => {
   if (!newShip || !event.target.name) return
   newShip.form[event.target.name] = event.target.type === 'checkbox' ? event.target.checked : event.target.value
+  if (event.target.name === 'skipPermissions') return void localStorage.setItem(SKIP_PERMISSIONS_KEY, event.target.checked ? '1' : '0')
   if (event.target.name === 'start') return void (modal.querySelector('#newship-hint').textContent = startHint(newShip.form.start))
   if (event.target.name !== 'fleet') return
   modal.querySelector('#newship-repos').innerHTML = optionsHtml(repoChoices(allFleets, newShip.form.fleet))
@@ -294,6 +306,8 @@ side.addEventListener('click', async event => {
 })
 
 document.addEventListener('click', event => {
+  const admiral = event.target.closest?.('[data-admiral]')
+  if (admiral) return void startAdmiralJump(admiral.dataset.admiral)
   const target = event.target.closest?.('[data-fleet], [data-armada]')
   if (!target) return
   if (target.dataset.armada !== undefined) setView(toArmada(view, fleets))

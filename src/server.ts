@@ -5,7 +5,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http'
 
 import { readShip, sendToShip } from './relay.ts'
 import { realNewShipDeps, startNewShip, type NewShipDeps } from './newship.ts'
-import { jump, realJumpDeps, type JumpDeps, type JumpResult } from './jump.ts'
+import { jump, realJumpDeps, type JumpDeps, type JumpResult, type JumpShip } from './jump.ts'
 import { applyAction, isAction, isShipName, readStored, writeStored } from './life.ts'
 import { consoleFeed } from './console.ts'
 import { page } from './page.ts'
@@ -204,20 +204,26 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
 
         return
       }
-      const target = /^\/api\/ships\/([^/]+)\/jump$/.exec(url.pathname)?.[1]
+      const target = /^\/api\/(ships|admirals)\/([^/]+)\/jump$/.exec(url.pathname)
       if (target) {
-        const name = safeDecode(target)
-        const entry = readState(env).fleets.flatMap(fleet => fleet.ships.map(ship => ({ fleet, ship }))).find(e => e.ship.ship === name)
-        if (!entry) return send(404, 'text/plain', 'not found')
-        const running = jumping.get(name) ?? jump(
-          { name, fleetName: entry.fleet.name, sessionId: entry.ship.session?.id ?? null, worktrees: entry.ship.mrs.map(mr => mr.worktree) },
-          jumpDeps,
-        )
-        jumping.set(name, running)
+        const name = safeDecode(target[2])
+        const fleets = readState(env).fleets
+        let jumpShip: JumpShip | undefined
+        if (target[1] === 'ships') {
+          const entry = fleets.flatMap(fleet => fleet.ships.map(ship => ({ fleet, ship }))).find(e => e.ship.ship === name)
+          if (entry) jumpShip = { name, fleetName: entry.fleet.name, sessionId: entry.ship.session?.id ?? null, worktrees: entry.ship.mrs.map(mr => mr.worktree) }
+        } else {
+          const entry = fleets.flatMap(fleet => fleet.admirals.map(admiral => ({ fleet, admiral }))).find(e => e.admiral.convoy === name)
+          if (entry) jumpShip = { name: `admiral-${name}`, fleetName: entry.fleet.name, sessionId: entry.admiral.session?.id ?? null, worktrees: [entry.admiral.folder] }
+        }
+        if (!jumpShip) return send(404, 'text/plain', 'not found')
+        const key = `${target[1]}/${name}`
+        const running = jumping.get(key) ?? jump(jumpShip, jumpDeps)
+        jumping.set(key, running)
         running.then(
           result => send(200, 'application/json', JSON.stringify(result)),
           () => send(500, 'application/json', JSON.stringify({ status: 'error', message: 'jump failed' })),
-        ).finally(() => jumping.delete(name))
+        ).finally(() => jumping.delete(key))
         return
       }
     }

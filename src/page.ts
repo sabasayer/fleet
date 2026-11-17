@@ -89,6 +89,9 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 .needs { color: var(--needs-ink); background: var(--gold); padding: 0 5px; font-weight: bold; }
 .fail { color: var(--fail-ink); background: var(--state-failed); padding: 0 5px; font-weight: bold; }
 .label { position: absolute; font-size: 12px; white-space: nowrap; text-shadow: var(--label-shadow); }
+.convoy-head { position: absolute; font-size: 12px; white-space: nowrap; padding: 0 4px; background: var(--bg, transparent); text-shadow: var(--label-shadow); }
+.convoy-head.jumpable { pointer-events: auto; cursor: pointer; }
+.convoy-head.jumpable:hover b { text-decoration: underline; }
 .lane-head { position: absolute; left: 12px; display: flex; gap: 6px; white-space: nowrap; pointer-events: auto; cursor: pointer; font-weight: bold; letter-spacing: 1px; }
 .lane-head.compact { min-height: 40px; align-items: center; }
 .lane-head > * { flex: 0 0 auto; }

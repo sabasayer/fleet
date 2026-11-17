@@ -28,9 +28,9 @@ export function jumpHtml(ship, jump) {
   </div>`
 }
 
-export async function requestJump(ship, token, doFetch = fetch) {
+export async function requestJump(ship, token, doFetch = fetch, kind = 'ships') {
   try {
-    const res = await doFetch(`/api/ships/${encodeURIComponent(ship)}/jump`, { method: 'POST', headers: { 'x-fleet-token': token } })
+    const res = await doFetch(`/api/${kind}/${encodeURIComponent(ship)}/jump`, { method: 'POST', headers: { 'x-fleet-token': token } })
     if (res.status === 200) return await res.json()
 
     return { status: 'error', message: serverError(res.status) }

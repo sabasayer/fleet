@@ -29,6 +29,8 @@ before(async () => {
     join(tmp, 'crew', 'abc-1', 'ship.json'),
     JSON.stringify({ version: 1, ship: 'abc-1', title: 't', task: null, fleet: 'alpha', created: '2026-10-20T10:00:00Z', session: { id: ID, updated: 'x' }, mrs: [{ n: 1, repo: '/r', remote: 'x', worktree: '/w', branch: 'b', url: null }] }),
   )
+  mkdirSync(join(tmp, 'crew', 'conv-1'), { recursive: true })
+  writeFileSync(join(tmp, 'crew', 'conv-1', 'admiral.json'), JSON.stringify({ version: 1, convoy: 'conv-1', fleet: 'alpha', folder: '/work', created: 'x', session: { id: ID, updated: 'x' } }))
   server = await startServer({ port: 0, env: { CREW_BOARD_ROOT: join(tmp, 'crew'), CREW_FLEET_HOME: join(tmp, 'home') }, jumpDeps: deps })
 })
 after(() => server.close())
@@ -61,4 +63,12 @@ test('jump for an unknown ship or a bad name is 404', async () => {
   assert.equal((await post('/api/ships/NOPE/jump', server.token)).status, 404)
   assert.equal((await post('/api/ships/%E0/jump', server.token)).status, 404)
   assert.equal((await post('/api/ships/..%2F..%2Fetc/jump', server.token)).status, 404)
+})
+
+test('jump to the admiral of a convoy uses its session, and an unknown convoy is 404', async () => {
+  assert.equal((await post('/api/admirals/conv-1/jump')).status, 403)
+  const { status, body } = await post('/api/admirals/conv-1/jump', server.token)
+  assert.equal(status, 200)
+  assert.deepEqual([JSON.parse(body).status, JSON.parse(body).pid], ['outside_herdr', 77])
+  assert.equal((await post('/api/admirals/abc-1/jump', server.token)).status, 404)
 })

@@ -11,7 +11,7 @@ disable-model-invocation: true
 /admiral watch <convoy>
 ```
 
-You act for the captain. The design is in `~/Private/fleet/docs/admiral.md`. You start the ships (steps 1-6), then you watch them (step 7). The captain talks only to you. You carry the captain's answers to the ships. `/admiral watch <convoy>` skips to step 7, for example after a restart of this session.
+You act for the captain. The design is in `~/Private/fleet/docs/admiral.md`. You start the ships (steps 1-6), then you watch them (step 7). The captain talks only to you. You carry the captain's answers to the ships. `/admiral watch <convoy>` skips to step 7, for example after a restart of this session. It first runs `crew-ship admiral <convoy> --fleet <fleet> --folder "$PWD"` again, so fleet jumps to this new session.
 
 Never start ships as sub-agents. A sub-agent has no session the captain can open. Every ship starts through fleet, in its own herdr tab.
 
@@ -36,7 +36,9 @@ Done when: each item is an absolute path of a git repo.
 - Add a `## Ship rules` part with the answers from step 4: the reviewers, the Linear issue, and the captain's rules for this work. Read each repo's `AGENTS.md` or `CLAUDE.md` for rules on branch names, for example `eng-<number>-<words>`, and list them there too. Every ship reads the brief, so no ship asks these at its gate again.
 - `auto: plan` is allowed only when the brief points to such a spec. Otherwise, drop it and tell the captain why.
 
-Done when: the brief exists.
+Then record yourself, so fleet shows you above the convoy and can jump to this session: `crew-ship admiral <convoy> --fleet <fleet> --folder "$PWD"`.
+
+Done when: the brief exists and `~/.crew/<convoy>/admiral.json` exists.
 
 ## 4. Ask once
 
@@ -44,7 +46,7 @@ Show the convoy name, the brief path, `auto: plan` on or off, and one line per r
 
 In the same message, ask what every ship needs before it can push. Suggest an answer for each:
 - Who reviews the MRs? The same people for all, or per repo.
-- Linear: one shared issue (its ID or URL), `linear: new` for each ship, or none. Say when a repo's branch rule needs an issue number.
+- Linear: one shared issue (its ID or URL), `linear: new` for each ship, or none. Run `crew-config linear <remote>` for each repo first. When a repo's rule says `"required": true`, "none" is not a choice for it. Ask for the team (when the rule has none) and the project (when the rule has none). Every issue must be in a project.
 - Any rule for this work, for example "do not repeat what the base layer documents, link to it".
 
 Write the answers to the brief's `## Ship rules` part. An answer of "none" is fine. With `linear:`, add that line to each task text in step 5.

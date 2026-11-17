@@ -70,7 +70,7 @@ function crumbHtml() {
 function render() {
   pending = 0
   const band = showScoutBand(manual, anyScout())
-  const { html, animating } = sea.draw({ fleets, view, frame, band })
+  const { html, animating } = sea.draw({ fleets, view, frame, band, admiralJump })
   if (html !== lastUi) ui.innerHTML = lastUi = html
   const crumb = crumbHtml()
   if (crumb !== lastCrumbs) crumbs.innerHTML = lastCrumbs = crumb
@@ -187,6 +187,14 @@ function pressSearchKey(event) {
   } else setSearch({ pick: movePick(resultNames(), search.pick, action === 'next' ? 1 : -1) })
 }
 
+let admiralJump = null
+
+async function startAdmiralJump(convoy) {
+  if (admiralJump?.busy) return
+  admiralJump = { convoy, busy: true }
+  admiralJump = { convoy, busy: false, result: await requestJump(convoy, token, fetch, 'admirals') }
+}
+
 async function startJump(ship) {
   if (jump?.busy) return
   jump = { ship, busy: true }
@@ -298,6 +306,8 @@ side.addEventListener('click', async event => {
 })
 
 document.addEventListener('click', event => {
+  const admiral = event.target.closest?.('[data-admiral]')
+  if (admiral) return void startAdmiralJump(admiral.dataset.admiral)
   const target = event.target.closest?.('[data-fleet], [data-armada]')
   if (!target) return
   if (target.dataset.armada !== undefined) setView(toArmada(view, fleets))

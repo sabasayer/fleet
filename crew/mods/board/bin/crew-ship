@@ -45,6 +45,10 @@ u.add_argument("url")
 o = sub.add_parser("outcome", help="set the one-line outcome of a scout")
 o.add_argument("ship")
 o.add_argument("line")
+ad = sub.add_parser("admiral", help="write the admiral file of a convoy, ~/.crew/<convoy>/admiral.json")
+ad.add_argument("ship", metavar="convoy")
+ad.add_argument("--fleet", required=True)
+ad.add_argument("--folder", required=True, help="the folder the admiral runs in")
 a = p.parse_args()
 
 
@@ -98,6 +102,38 @@ if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", a.ship):
 folder = os.path.join(os.path.expanduser(a.root), a.ship)
 path = os.path.join(folder, "ship.json")
 now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+if a.cmd == "admiral":
+    session = os.environ.get("CLAUDE_CODE_SESSION_ID")
+    if not session:
+        fail("CLAUDE_CODE_SESSION_ID is not set. Run this from the admiral session.")
+    folder_path = os.path.expanduser(clean("--folder", a.folder))
+    if not os.path.isabs(folder_path):
+        fail("--folder must be an absolute path.")
+    admiral_path = os.path.join(folder, "admiral.json")
+    old = {}
+    try:
+        with open(admiral_path) as f:
+            old = json.load(f)
+    except (OSError, ValueError):
+        pass
+    data = {
+        "version": 1,
+        "convoy": a.ship,
+        "fleet": clean("--fleet", a.fleet),
+        "folder": folder_path,
+        "created": old.get("created", now),
+        "session": {"id": session, "updated": now},
+    }
+    os.makedirs(folder, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=folder, prefix="admiral.json.", suffix=".tmp")
+    with os.fdopen(fd, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, admiral_path)
+    print(f"{a.ship}: admiral set")
+    sys.exit(0)
 
 if a.cmd in ("create", "scout"):
     is_scout = a.cmd == "scout"

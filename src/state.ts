@@ -31,7 +31,8 @@ export type Ship = {
   life: Life
 }
 export type FleetInfo = { name: string; color: string; release_check?: string; repos?: string[] }
-export type Fleet = FleetInfo & { id: string; ships: Ship[] }
+export type Admiral = { convoy: string; folder: string; created: string; session: { id: string; updated: string } | null }
+export type Fleet = FleetInfo & { id: string; ships: Ship[]; admirals: Admiral[] }
 export type State = { now: number; fleets: Fleet[] }
 
 export const turnedBackScout = (ship: Pick<Ship, 'kind' | 'mrs' | 'outcome'>) =>
@@ -137,15 +138,46 @@ export function readShip(root: string, home: string, folder: string, folders: st
   }
 }
 
+function readAdmiral(root: string, folder: string): (Admiral & { fleet: string }) | undefined {
+  const j = readJson(join(root, folder, 'admiral.json'))
+  if (!j || typeof j.convoy !== 'string' || typeof j.fleet !== 'string' || typeof j.folder !== 'string') return undefined
+  const session = typeof j.session?.id === 'string' ? { id: j.session.id, updated: String(j.session.updated ?? '') } : null
+
+  return { convoy: j.convoy, fleet: j.fleet, folder: j.folder, created: String(j.created ?? ''), session }
+}
+
+export function convoyOrder(ships: Ship[]) {
+  const firstOf = new Map<string, string>()
+  for (const ship of ships) {
+    if (!ship.convoy) continue
+    const first = firstOf.get(ship.convoy)
+    if (first === undefined || ship.created < first) firstOf.set(ship.convoy, ship.created)
+  }
+  const key = (ship: Ship) => [ship.convoy ? firstOf.get(ship.convoy)! : ship.created, ship.convoy ?? '', ship.created] as const
+
+  return [...ships].sort((a, b) => {
+    const [x, y] = [key(a), key(b)]
+
+    return x[0].localeCompare(y[0]) || x[1].localeCompare(y[1]) || x[2].localeCompare(y[2])
+  })
+}
+
 export function readState(env = process.env, now = Date.now()): State {
   const root = crewRoot(env)
   const folders = readDir(root)
   const home = fleetHome(env)
   const configs = readFleets(home)
   const byFleet = new Map<string, Ship[]>()
+  const admirals = new Map<string, Admiral[]>()
   for (const folder of folders) {
     const ship = readShip(root, home, folder, folders, now)
     if (ship) byFleet.set(ship.fleet, [...(byFleet.get(ship.fleet) ?? []), ship])
+    const admiral = readAdmiral(root, folder)
+    if (admiral) {
+      const { fleet, ...rest } = admiral
+      admirals.set(fleet, [...(admirals.get(fleet) ?? []), rest])
+      if (!byFleet.has(fleet)) byFleet.set(fleet, [])
+    }
   }
   for (const id of Object.keys(configs)) if (!byFleet.has(id)) byFleet.set(id, [])
   const fleets = [...byFleet].map(([id, ships]): Fleet => {
@@ -157,7 +189,8 @@ export function readState(env = process.env, now = Date.now()): State {
       color: config.color || colorFor(id),
       ...(config.release_check ? { release_check: config.release_check } : {}),
       ...(Array.isArray(config.repos) ? { repos: config.repos.filter((r): r is string => typeof r === 'string' && r.startsWith('/')) } : {}),
-      ships: ships.sort((a, b) => a.created.localeCompare(b.created)),
+      ships: convoyOrder(ships),
+      admirals: (admirals.get(id) ?? []).sort((a, b) => a.convoy.localeCompare(b.convoy)),
     }
   })
 

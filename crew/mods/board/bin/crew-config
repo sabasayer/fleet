@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+"""Print the crew rule that applies to a repo, from ~/.crew/config.json, as JSON."""
+import argparse
+import json
+import os
+import sys
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument("--root", default=os.environ.get("CREW_BOARD_ROOT") or "~/.crew")
+sub = p.add_subparsers(dest="cmd", required=True)
+lin = sub.add_parser("linear", help="the Linear rule for a repo remote, or {} when none applies")
+lin.add_argument("remote", help="host and project path, like gitlab.com/group/project")
+a = p.parse_args()
+
+path = os.path.join(os.path.expanduser(a.root), "config.json")
+try:
+    with open(path) as f:
+        config = json.load(f)
+except FileNotFoundError:
+    config = {}
+except ValueError:
+    sys.exit(f"crew-config: {path} is not valid JSON.")
+
+remote = a.remote.strip().lower().removeprefix("https://").removeprefix("http://").removesuffix(".git")
+rules = [r for r in config.get("linear", []) if isinstance(r, dict) and isinstance(r.get("remote"), str)]
+matches = [r for r in rules if remote.startswith(r["remote"].lower())]
+best = max(matches, key=lambda r: len(r["remote"]), default=None)
+print(json.dumps({k: v for k, v in best.items() if v not in (None, "")} if best else {}))

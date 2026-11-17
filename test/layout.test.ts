@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
 import {
-  crewOf, crewRight, currentIndex, headRoom, initialView, LABEL_COLUMN, layoutFor, RIGHT_MARGIN, shipLeft, trackSegments, currentLabel, mixLayout, move, reconcile, scrollShift, shipX, stoneX, toFleet, zoomIn, zoomOut,
+  CONVOY_GAP, CONVOY_HEAD, convoyOffsets, crewOf, crewRight, currentIndex, headRoom, initialView, LABEL_COLUMN, layoutFor, RIGHT_MARGIN, shipLeft, trackSegments, currentLabel, mixLayout, move, reconcile, scrollShift, shipX, stoneX, toFleet, zoomIn, zoomOut,
 } from '../web/layout.js'
 import { onDeck, shipGrid, sizeClass } from '../web/art.js'
 
@@ -211,4 +211,9 @@ test('the deck shows the current member and its neighbours', () => {
   assert.equal(shown.length, 6)
   assert.ok(shown.includes(crew[9]))
   assert.deepEqual(onDeck(crewOfSize(18, 18), 6), crewOfSize(18, 18).slice(12))
+})
+
+test('a convoy gets room for its header above its first ship and a gap after its last', () => {
+  const ships = [{ convoy: null }, { convoy: 'c' }, { convoy: 'c' }, { convoy: null }, { convoy: 'd' }]
+  assert.deepEqual(convoyOffsets(ships), [0, CONVOY_HEAD, CONVOY_HEAD, CONVOY_HEAD + CONVOY_GAP, 2 * CONVOY_HEAD + CONVOY_GAP])
 })

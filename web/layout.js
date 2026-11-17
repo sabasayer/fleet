@@ -12,6 +12,22 @@ export const COMPACT_LABEL_COLUMN = 100
 export const COMPACT_RIGHT_MARGIN = 60
 export const MIN_TAP = 40
 export const LABEL_ROW = 18
+export const CONVOY_HEAD = 24
+export const CONVOY_GAP = 8
+
+export function convoyOffsets(ships) {
+  let extra = 0
+
+  return ships.map((ship, k) => {
+    const before = ships[k - 1]?.convoy
+    if (before && before !== ship.convoy) extra += CONVOY_GAP
+    if (ship.convoy && before !== ship.convoy) extra += CONVOY_HEAD
+
+    return extra
+  })
+}
+
+const convoyTail = ships => (ships.at(-1)?.convoy ? CONVOY_GAP : 0)
 
 const DECK_ROWS = 13
 const FACE_ROWS = 16
@@ -227,13 +243,15 @@ export function layoutFor(view, fleets, size) {
       return
     }
     const shown = fleet.ships.filter(s => view.level !== 'ship' || s.ship === view.cursor)
-    const laneHeight = head + shown.length * rowHeight + 8
+    const offsets = view.level === 'ship' ? shown.map(() => 0) : convoyOffsets(shown)
+    const extra = view.level === 'ship' ? 0 : (offsets.at(-1) ?? 0) + convoyTail(shown)
+    const laneHeight = head + shown.length * rowHeight + extra + 8
     out.lanes[fleet.id] = { y, h: laneHeight, a: 1 }
     shiftable.lanes.push(fleet.id)
     shiftable.ships.push(...fleet.ships.map(s => s.ship))
     fleet.ships.forEach(ship => {
       const k = shown.indexOf(ship)
-      out.ships[ship.ship] = k < 0 ? { y: y + head, a: 0 } : { y: y + head + k * rowHeight, a: 1 }
+      out.ships[ship.ship] = k < 0 ? { y: y + head, a: 0 } : { y: y + head + k * rowHeight + offsets[k], a: 1 }
     })
     if (view.level === 'armada' && fleet.id === view.cursor) target = { top: y, bottom: y + laneHeight }
     if (view.level !== 'armada' && out.ships[view.cursor]?.a === 1) {

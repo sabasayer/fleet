@@ -45,8 +45,8 @@ Done when: the brief exists and `~/.crew/<convoy>/admiral.json` exists.
 Show the convoy name, the brief path, `auto: plan` on or off, and one line per repo. Ask: "Start these N ships?" More than 4 ships: also say that N crew runs at once use the usage limit fast.
 
 In the same message, ask what every ship needs before it can push. Suggest an answer for each:
-- Who reviews the MRs? The same people for all, or per repo.
-- Linear: one shared issue (its ID or URL), `linear: new` for each ship, or none. Run `crew-config linear <remote>` for each repo first. When a repo's rule says `"required": true`, "none" is not a choice for it. Ask for the team (when the rule has none) and the project (when the rule has none). Every issue must be in a project.
+- Who reviews the MRs? The same people for all, or per repo. Suggest the reviewers that `~/.crew/directory.json` lists for each repo's area.
+- Linear: one shared issue (its ID or URL), `linear: new` for each ship, or none. Run `crew-config linear <remote>` for each repo first. When a repo's rule says `"required": true`, "none" is not a choice for it. Ask for the team (when the rule has none) and the project (when the rule has none). Every issue must be in a project. When the `paper-trail` skill is installed, run it once for the whole convoy before step 5. It gives the Notion page and the Linear project. Then each ship gets `linear: new` in that project.
 - Any rule for this work, for example "do not repeat what the base layer documents, link to it".
 
 Write the answers to the brief's `## Ship rules` part. An answer of "none" is fine. With `linear:`, add that line to each task text in step 5.

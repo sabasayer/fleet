@@ -97,6 +97,7 @@ The plugin has a `bin` folder with five commands. Claude Code puts it on the PAT
 - `required`: every branch needs a Linear issue, and the issue must be in a project. With no issue in the task, crew makes one.
 - `team` and `project` are optional. When one is missing, crew asks the captain.
 - Check a repo with `crew-config linear <remote>`.
+- With a required rule, crew runs the `paper-trail` skill when it is installed. That skill is not part of crew: it is the captain's own skill that makes the Notion and Linear trail. Crew and the admiral also read reviewers from `~/.crew/directory.json`, when it exists.
 
 ## Web view (browser or phone)
 

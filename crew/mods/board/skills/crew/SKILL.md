@@ -53,7 +53,7 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
    - Start the dev server on a free port (see [e2e.md](e2e.md)). Restart a stale server. Write the port in the spec folder, in the file `port`.
    - Find the fleet name in the `/crew` text (`fleet: <name>`). If there is none, ask the captain. Suggest the repo name.
    - Linear rule: run `crew-config linear <remote>`. It prints the rule for this repo from `~/.crew/config.json`, or `{}`.
-     - `"required": true`: every branch in this repo needs a Linear issue that is in a project. With no `linear:` text and no Linear task in `ship.json`, act as `linear: new`.
+     - `"required": true`: every branch in this repo needs a Linear issue that is in a project. With no `linear:` text and no Linear task in `ship.json`, run the `paper-trail` skill when it is installed. It makes the Notion and Linear trail with the captain, and gives the issue to use as `linear: <ID>`. Without that skill, act as `linear: new`.
      - Team and project: use the rule's `team` and `project` when it has them. Ask the captain for the missing ones, in one question. Suggest the project from the task.
      - An issue you fetch has no project? Ask the captain for one, and set it with Linear MCP `save_issue`.
    - Without a required rule, Linear is opt-in. Do this only when the `/crew` text has `linear: <issue URL or ID>`, `linear: new`, or a Linear issue URL (`linear.app/.../issue/<ID>`) with no `linear:` label. A bare issue URL counts as `linear: <that URL>`. A Linear issue URL in the `task` of an existing `ship.json` (a scout ran first) also counts, as `linear: <that URL>`. A Linear project or document URL does not count. With none of these, skip this bullet.
@@ -84,7 +84,7 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
 9. **Ship.**
    - The `ship-merge-request` skill exists? Use it for the commit, push, MR and pipeline. Tell it the crew rules below.
    - No such skill? Use the project's ship flow. Then watch the pipeline (see "Watch the pipeline").
-   - Crew rules: stage files by name. Never run `git add docs/` or `git add -A`. Commit only when each commit is green alone, or else squash. Ask who reviews, unless the brief names the reviewers. Do not assign anyone else yourself.
+   - Crew rules: stage files by name. Never run `git add docs/` or `git add -A`. Commit only when each commit is green alone, or else squash. Ask who reviews, unless the brief names the reviewers. When `~/.crew/directory.json` lists reviewers for this repo's area, suggest them. Do not assign anyone else yourself.
    - When the MR is open, run `crew-ship url <ticket> <N> <MR link>`.
 
    Done when: the pipeline is green, the MR link is in the ship file, and no member of the run still shows `running`. Set the state of any member that does.

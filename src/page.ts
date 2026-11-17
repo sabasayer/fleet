@@ -79,6 +79,7 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 #modal { position: fixed; inset: 0; background: var(--scrim); display: flex; align-items: center; justify-content: center; z-index: 10; }
 .modal-box { width: min(520px, 92vw); max-height: 92vh; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 .modal-box label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.modal-box label.check { display: block; }
 .modal-box label.check { flex-direction: row; align-items: center; gap: 6px; }
 .modal-box label.check input { width: auto; }
 .modal-box input, .modal-box textarea, .modal-box select { font: inherit; background: var(--field); color: var(--ink); border: 2px solid var(--line); padding: 5px 6px; }

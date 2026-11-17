@@ -65,7 +65,7 @@ curl -s -X POST localhost:4932/api/ships/new \
   -d '<json>'
 ```
 
-The JSON is `{"fleet": "<fleet>", "folder": "<repo path>", "quiet": true, "task": "<task text>"}`. Build it with `jq -n --arg`, never by hand, so quotes stay safe. The task text is three or four lines:
+The JSON is `{"fleet": "<fleet>", "folder": "<repo path>", "quiet": true, "task": "<task text>"}`. When your `/admiral` text has `permissions: skip`, add `"skipPermissions": true`, so every ship starts like you did. Build it with `jq -n --arg`, never by hand, so quotes stay safe. The task text is three or four lines:
 
 ```
 <task, one line> in <repo name>

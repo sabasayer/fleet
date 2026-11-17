@@ -73,6 +73,7 @@ export function newShipFormHtml({ fleets, form, busy, result }) {
       <textarea name="task" required maxlength="${LIMITS.task}" rows="6">${escapeHtml(form.task)}</textarea></label>
     <label>Start as <select name="start">${START_AS.map(([value, text]) => `<option value="${value}"${form.start === value ? ' selected' : ''}>${text}</option>`).join('')}</select></label>
     <p class="dim" id="newship-hint">${escapeHtml(startHint(form.start))}</p>
+    <label class="check"><input type="checkbox" name="skipPermissions"${form.skipPermissions ? ' checked' : ''}> Skip permission prompts <span class="dim">(starts claude with --dangerously-skip-permissions. The session then runs every tool call without asking)</span></label>
     <div class="buttons"><button type="submit"${busy ? ' disabled' : ''}>${busy ? 'Starting…' : 'Start ship'}</button><button type="button" data-newship-close>Close</button></div>
     ${message}${command}
   </form>`
@@ -94,7 +95,7 @@ export async function requestNewShip(form, token, doFetch = fetch) {
     const res = await doFetch('/api/ships/new', {
       method: 'POST',
       headers: { 'x-fleet-token': token, 'content-type': 'application/json' },
-      body: JSON.stringify({ fleet: form.fleet, folder: form.folder, task: form.task, start: form.start ?? 'crew' }),
+      body: JSON.stringify({ fleet: form.fleet, folder: form.folder, task: form.task, start: form.start ?? 'crew', skipPermissions: form.skipPermissions === true }),
     })
     if (res.status === 200) return await res.json()
 

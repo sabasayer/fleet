@@ -104,6 +104,11 @@ Handle all events of one wake-up together. Then start the waiter again. Between 
 Fleet API for a ship (token: `$(cat ~/.fleet/token)`, header `x-fleet-token`, content-type JSON):
 - Read its last lines: `POST localhost:4932/api/ships/<ship>/read` with `{"lines": 120}`. Do this first: the first mate's question is there.
 - Send it text: `POST localhost:4932/api/ships/<ship>/send` with `{"text": "..."}`. Build the body with `jq -n --arg`. It types the text into the ship's session and presses Enter. A `not_found` reply means no pane runs the ship: tell the captain to jump back to it from fleet.
+- A plain-text `not found` (HTTP 404) means fleet does not know that name. A ship changes its name when crew writes its ship file. Look up its current name in `GET localhost:4932/api/state` by its session ID, and use that.
+
+### After a usage limit
+
+When the usage limit stops you, it stopped the ships too. When you start again, read every ship's pane before anything else. A pane that ends with a usage-limit message has stopped. Send it `continue`. This is not a captain decision, so it does not need the captain's words. Then tell the captain which ships you woke.
 
 ### Policy
 

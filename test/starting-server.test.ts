@@ -78,6 +78,27 @@ test('the relay finds a ship by the name fleet returned, before crew writes its 
   assert.equal((await fetch(`http://127.0.0.1:${server.port}/api/ships/never-started/read`, { method: 'POST', headers: { 'x-fleet-token': server.token }, body: '{}' })).status, 404)
 })
 
+test('the relay still finds a started ship after the server restarts', async () => {
+  const env = { CREW_BOARD_ROOT: join(tmp, 'restart-crew'), CREW_FLEET_HOME: join(tmp, 'restart-home') }
+  mkdirSync(env.CREW_BOARD_ROOT, { recursive: true })
+  const boot = () => startServer({ port: 0, env, jumpDeps, newShipDeps: { uuid: () => SESSION, repoRoot: async path => path }, clock: () => time })
+  const first = await boot()
+  const result = (await (await fetch(`http://127.0.0.1:${first.port}/api/ships/new`, {
+    method: 'POST',
+    headers: { 'x-fleet-token': first.token },
+    body: JSON.stringify({ fleet: 'alpha', folder: '/repo', task: 'Fix it' }),
+  })).json()) as any
+  await first.close()
+
+  const second = await boot()
+  try {
+    const read = await fetch(`http://127.0.0.1:${second.port}/api/ships/${result.ship}/read`, { method: 'POST', headers: { 'x-fleet-token': second.token }, body: '{}' })
+    assert.deepEqual(await read.json(), { status: 'read', text: 'first mate waits' })
+  } finally {
+    await second.close()
+  }
+})
+
 test('the entry goes away once a ship with that session ID shows, whatever its name', async () => {
   mkdirSync(join(tmp, 'crew', 'abc-482'), { recursive: true })
   writeFileSync(

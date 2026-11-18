@@ -14,6 +14,17 @@ import type { Watcher } from './watch.ts'
 
 const HOST = '127.0.0.1'
 const STARTING_TTL_MS = 30 * 60 * 1000
+const MAX_LAUNCHED = 500
+
+// A ship is known only by this name until crew writes its ship file. The admiral must still reach it after a restart.
+function readLaunched(file: string) {
+  try {
+    const saved = JSON.parse(readFileSync(file, 'utf8'))
+    return new Map(Object.entries(saved).filter((entry): entry is [string, string] => typeof entry[1] === 'string'))
+  } catch {
+    return new Map<string, string>()
+  }
+}
 
 type Starting = { ship: string; fleet: string; sessionId: string; startedAt: number }
 
@@ -70,7 +81,14 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
   let own = new Set<string>()
   const jumping = new Map<string, Promise<JumpResult>>()
   let starting: Starting[] = []
-  const launched = new Map<string, string>()
+  const launchedFile = join(fleetHome(env), 'launched.json')
+  const launched = readLaunched(launchedFile)
+  const remember = (ship: string, sessionId: string) => {
+    launched.set(ship, sessionId)
+    for (const name of [...launched.keys()].slice(0, -MAX_LAUNCHED)) launched.delete(name)
+    mkdirSync(fleetHome(env), { recursive: true })
+    writeFileSync(launchedFile, JSON.stringify(Object.fromEntries(launched)), { mode: 0o600 })
+  }
 
   const sameOrigin = (req: IncomingMessage) => {
     const origin = req.headers.origin
@@ -164,7 +182,7 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
             }
             startNewShip(input, readState(env).fleets, jumpDeps, newShipDeps).then(
               result => {
-                if (result.status === 'started') launched.set(result.ship, result.sessionId.toLowerCase())
+                if (result.status === 'started') remember(result.ship, result.sessionId.toLowerCase())
                 if (result.status === 'started' && result.start !== 'admiral') starting.push({ ship: result.ship, fleet: result.fleet, sessionId: result.sessionId, startedAt: clock() })
                 send(200, 'application/json', JSON.stringify(result))
               },

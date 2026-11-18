@@ -20,6 +20,7 @@ Read the repo's `package.json` scripts and README. Do not guess script names.
    - Change a baseline only when the spec says so.
 4. Old-selector audit: `git grep` the whole repo for the old class names and test ids the change removes. Zero hits outside the files you meant to change.
 5. Reach: list each changed UI and how a person opens it in the dev server. A UI with no path needs a mock.
+6. Mutation: only when `package.json` has a `test:mutation` script and the diff changes a file in the Stryker config's `mutate` list. Run the script. Report the mutation score and each surviving mutant in a changed file. A low score does not fail this check yet. Skip the check otherwise, and say why.
 
 ## Claims
 

@@ -1,5 +1,7 @@
 import { execFile } from 'node:child_process'
-import { statSync } from 'node:fs'
+import { existsSync, readdirSync, statSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 import { checkSchema, connectHerdr, herdrDir, socketPaths, type HerdrClient, type SocketRef } from './herdr.ts'
@@ -9,7 +11,8 @@ const run = promisify(execFile)
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export type LiveSession = { sessionId: string; cwd: string; pid?: number; id?: string; kind?: string }
-export type JumpShip = { name: string; fleetName: string; sessionId: string | null; worktrees: string[] }
+export type Agent = 'claude' | 'cursor'
+export type JumpShip = { name: string; fleetName: string; sessionId: string | null; agent: Agent; worktrees: string[] }
 export type JumpResult =
   | { status: 'focused'; message: string }
   | { status: 'resumed'; message: string }
@@ -25,11 +28,16 @@ export type JumpDeps = {
   liveSessions: () => Promise<LiveSession[] | null>
   openGhostty: () => Promise<void>
   isDir: (path: string) => boolean
+  hasTranscript: (agent: Agent, sessionId: string) => boolean
 }
 
 export const shellQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`
 
-export const resumeCommand = (cwd: string, sessionId: string) => `cd ${shellQuote(cwd)} && claude --resume ${sessionId}`
+const BINARY: Record<Agent, string> = { claude: 'claude', cursor: 'cursor-agent' }
+
+export const resumeArgv = (agent: Agent, sessionId: string) => [BINARY[agent], '--resume', sessionId]
+
+export const resumeCommand = (cwd: string, sessionId: string, agent: Agent = 'claude') => `cd ${shellQuote(cwd)} && ${resumeArgv(agent, sessionId).join(' ')}`
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error))
 
@@ -56,10 +64,10 @@ export async function defaultClient(deps: Pick<JumpDeps, 'sockets' | 'connect'>)
   return client
 }
 
-const inWorktree = (agent: any, worktrees: string[]) =>
-  agent?.agent === 'claude' && [agent.cwd, agent.foreground_cwd].some(path => typeof path === 'string' && worktrees.includes(path))
+const inWorktree = (agent: any, worktrees: string[], kind: Agent) =>
+  agent?.agent === kind && [agent.cwd, agent.foreground_cwd].some(path => typeof path === 'string' && worktrees.includes(path))
 
-export async function findPane(deps: JumpDeps, sessionId: string, worktrees: string[]) {
+export async function findPane(deps: JumpDeps, sessionId: string, worktrees: string[], kind: Agent = 'claude') {
   let defaultClient: HerdrClient | null = null
   const byFolder: { pane: any; client: HerdrClient }[] = []
   for (const { path, isDefault } of deps.sockets()) {
@@ -73,7 +81,7 @@ export async function findPane(deps: JumpDeps, sessionId: string, worktrees: str
     if (isDefault) defaultClient = client
     const pane = agents.find(agent => agent?.agent_session?.value?.toLowerCase() === sessionId)
     if (pane) return { pane, client, defaultClient }
-    byFolder.push(...agents.filter(agent => inWorktree(agent, worktrees)).map(agent => ({ pane: agent, client })))
+    byFolder.push(...agents.filter(agent => inWorktree(agent, worktrees, kind)).map(agent => ({ pane: agent, client })))
   }
   // The stored session ID can be stale (resume and compact give a new one). One pane in the ship's folder is the ship.
   if (byFolder.length === 1) return { ...byFolder[0], defaultClient }
@@ -129,11 +137,11 @@ export async function jump(ship: JumpShip, deps: JumpDeps): Promise<JumpResult> 
   const { herdr, message: unsupportedMessage } = await herdrVerdict(deps)
 
   const cwd = [...ship.worktrees].reverse().find(path => path.startsWith('/') && deps.isDir(path)) ?? null
-  const commandOrNull = cwd ? resumeCommand(cwd, sessionId) : null
+  const commandOrNull = cwd ? resumeCommand(cwd, sessionId, ship.agent) : null
 
   let found: Awaited<ReturnType<typeof findPane>> | null = null
   if (herdr === 'ok') {
-    found = await findPane(deps, sessionId, ship.worktrees)
+    found = await findPane(deps, sessionId, ship.worktrees, ship.agent)
     if (found.pane) {
       try {
         await found.client!('agent.focus', { target: found.pane.terminal_id })
@@ -161,6 +169,10 @@ export async function jump(ship: JumpShip, deps: JumpDeps): Promise<JumpResult> 
     }
   }
 
+  if (!deps.hasTranscript(ship.agent, sessionId)) {
+    return { status: 'error', message: `No ${ship.agent} session with this ID exists, so fleet did not open one.` }
+  }
+
   if (herdr === 'unsupported') return { status: 'unsupported', message: unsupportedMessage, command: live ? commandOrNull : null }
   if (!cwd) return { status: 'error', message: 'The ship\'s worktree folder does not exist, so fleet cannot resume it.' }
 
@@ -178,7 +190,7 @@ export async function jump(ship: JumpShip, deps: JumpDeps): Promise<JumpResult> 
   }
 
   try {
-    await startInWorkspace(found.defaultClient, ship, cwd, ['claude', '--resume', sessionId])
+    await startInWorkspace(found.defaultClient, ship, cwd, resumeArgv(ship.agent, sessionId))
     await deps.openGhostty()
   } catch (error) {
     return { status: 'error', message: `Could not resume in herdr: ${message(error)}` }
@@ -198,6 +210,15 @@ async function liveSessions(): Promise<LiveSession[] | null> {
   }
 }
 
+function hasTranscript(root: string, agent: Agent, sessionId: string) {
+  const name = agent === 'claude' ? `${sessionId}.jsonl` : sessionId
+  try {
+    return readdirSync(root).some(folder => existsSync(join(root, folder, name)))
+  } catch {
+    return false
+  }
+}
+
 export function realJumpDeps(env = process.env): JumpDeps {
   return {
     schema: async () => JSON.parse((await run('herdr', ['api', 'schema', '--json'], { timeout: 10000, maxBuffer: 64 * 1024 * 1024 })).stdout),
@@ -207,6 +228,7 @@ export function realJumpDeps(env = process.env): JumpDeps {
     openGhostty: async () => {
       await run('open', ['-a', 'Ghostty'], { timeout: 10000 })
     },
+    hasTranscript: (agent, sessionId) => hasTranscript(join(homedir(), agent === 'claude' ? '.claude/projects' : '.cursor/chats'), agent, sessionId),
     isDir: path => {
       try {
         return statSync(path).isDirectory()

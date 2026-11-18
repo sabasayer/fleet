@@ -5,7 +5,7 @@ import { jump, resumeCommand, type JumpDeps, type JumpShip, type LiveSession } f
 
 const ID = '11111111-2222-3333-4444-555555555555'
 const OTHER = '99999999-2222-3333-4444-555555555555'
-const ship: JumpShip = { name: 'abc-1', fleetName: 'Alpha', sessionId: ID, worktrees: ['/old', '/work'] }
+const ship: JumpShip = { name: 'abc-1', fleetName: 'Alpha', sessionId: ID, agent: 'claude', worktrees: ['/old', '/work'] }
 const goodSchema = {
   protocol: 16,
   schemas: {
@@ -26,6 +26,7 @@ type Setup = {
   tabs?: { label: string; tab_id: string }[]
   dirs?: string[]
   failStart?: boolean
+  transcripts?: string[]
 }
 
 function build(setup: Setup = {}) {
@@ -54,6 +55,7 @@ function build(setup: Setup = {}) {
     liveSessions: async () => (setup.live === undefined ? [] : setup.live),
     openGhostty: async () => void ghostty++,
     isDir: path => (setup.dirs ?? ['/work']).includes(path),
+    hasTranscript: (agent, id) => (setup.transcripts ?? [`claude:${ID}`]).includes(`${agent}:${id}`),
   }
 
   return { deps, calls, ghostty: () => ghostty, methods: () => calls.map(c => c.method) }
@@ -235,4 +237,29 @@ test('two panes in the ship worktree are ambiguous, so the folder match is not u
   const t = build({ panes: { '/default': [{ session: 'a', terminal: 't1', cwd: '/work' }, { session: 'b', terminal: 't2', cwd: '/work' }] } })
   const result = await jump(ship, t.deps)
   assert.equal(result.status, 'resumed')
+})
+
+test('no transcript for the session: opens nothing and gives no command', async () => {
+  const t = build({ transcripts: [] })
+  const result = await jump(ship, t.deps)
+  assert.equal(result.status, 'error')
+  assert.match(result.message, /No claude session/)
+  assert.equal(started(t.calls).length, 0)
+  assert.equal(t.ghostty(), 0)
+})
+
+test('a cursor ship resumes with cursor-agent', async () => {
+  const t = build({ transcripts: [`cursor:${ID}`] })
+  assert.equal((await jump({ ...ship, agent: 'cursor' }, t.deps)).status, 'resumed')
+  assert.deepEqual(started(t.calls)[0].params.argv, ['cursor-agent', '--resume', ID])
+})
+
+test('a cursor ship never resumes a claude session with the same ID', async () => {
+  const t = build()
+  assert.equal((await jump({ ...ship, agent: 'cursor' }, t.deps)).status, 'error')
+  assert.equal(started(t.calls).length, 0)
+})
+
+test('the copy command for a cursor ship uses cursor-agent', () => {
+  assert.equal(resumeCommand('/w', ID, 'cursor'), `cd '/w' && cursor-agent --resume ${ID}`)
 })

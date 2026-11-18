@@ -23,7 +23,7 @@ export type Ship = {
   convoy: string | null
   fleet: string
   created: string
-  session: { id: string; updated: string } | null
+  session: { id: string; updated: string; agent?: 'cursor' } | null
   mrs: Mr[]
   needsCaptain: NeedsCaptain | null
   kind: 'ship' | 'scout'

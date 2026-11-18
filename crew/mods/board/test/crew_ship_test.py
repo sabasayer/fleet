@@ -180,6 +180,13 @@ class CrewShip(unittest.TestCase):
         self.assertEqual(run(self.root, "crew-ship", ["scout", "s-1", "--title", "t", "--fleet", "f"], **env).returncode, 0)
         self.assertEqual(ship(self.root, "s-1")["session"]["id"], "child")
 
+    def test_cursor_records_its_own_chat_and_ignores_a_leaked_claude_session(self):
+        env = {"CLAUDE_CODE_SESSION_ID": "leaked", "CURSOR_AGENT": "1", "CURSOR_CONVERSATION_ID": "chat-1"}
+        self.assertEqual(run(self.root, "crew-ship", ["create", "abc-1", "--title", "t", "--fleet", "f", *MR], **env).returncode, 0)
+        self.assertEqual(ship(self.root)["session"], {"id": "chat-1", "updated": ship(self.root)["session"]["updated"], "agent": "cursor"})
+        self.assertEqual(run(self.root, "crew-ship", ["add-mr", "abc-1", *MR], **env).returncode, 0)
+        self.assertEqual(ship(self.root)["session"]["id"], "chat-1")
+
     def test_an_old_file_with_no_kind_still_works(self):
         self.assertEqual(create(self.root).returncode, 0)
         path = f"{self.root}/abc-1/ship.json"

@@ -211,10 +211,10 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
         let jumpShip: JumpShip | undefined
         if (target[1] === 'ships') {
           const entry = fleets.flatMap(fleet => fleet.ships.map(ship => ({ fleet, ship }))).find(e => e.ship.ship === name)
-          if (entry) jumpShip = { name, fleetName: entry.fleet.name, sessionId: entry.ship.session?.id ?? null, worktrees: entry.ship.mrs.map(mr => mr.worktree) }
+          if (entry) jumpShip = { name, fleetName: entry.fleet.name, sessionId: entry.ship.session?.id ?? null, agent: entry.ship.session?.agent ?? 'claude', worktrees: entry.ship.mrs.map(mr => mr.worktree) }
         } else {
           const entry = fleets.flatMap(fleet => fleet.admirals.map(admiral => ({ fleet, admiral }))).find(e => e.admiral.convoy === name)
-          if (entry) jumpShip = { name: `admiral-${name}`, fleetName: entry.fleet.name, sessionId: entry.admiral.session?.id ?? null, worktrees: [entry.admiral.folder] }
+          if (entry) jumpShip = { name: `admiral-${name}`, fleetName: entry.fleet.name, sessionId: entry.admiral.session?.id ?? null, agent: 'claude', worktrees: [entry.admiral.folder] }
         }
         if (!jumpShip) return send(404, 'text/plain', 'not found')
         const key = `${target[1]}/${name}`

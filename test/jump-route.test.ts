@@ -21,6 +21,7 @@ const deps: JumpDeps = {
   liveSessions: async () => [{ sessionId: ID, cwd: '/elsewhere', pid: 77 }],
   openGhostty: async () => {},
   isDir: () => true,
+  hasTranscript: () => true,
 }
 
 before(async () => {

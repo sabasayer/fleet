@@ -91,8 +91,10 @@ Open questions:
 
 - The admiral waits for the release check, then runs the e2e test in **acceptance**, never production.
 - Each repo states its acceptance URL and test command in its docs. With no such section, the admiral skips the test and reports the gap.
+- Green is not safe. Before the admiral lands or reports a stack of MRs, each MR needs its own independent verdict. Only the unbroken run of verified MRs from the root counts as done.
 
 ## Intake (level 4)
 
 - Only items the captain marks for the admiral, for example `Delegate` = yes on a task row.
 - The admiral proposes first. It starts work only after the captain's yes.
+- Routing: a small file in each fleet maps a kind of report to a repo and a ship type. A triage step reads the report and picks a route. A second step reproduces the bug before any fix starts. A bug that does not reproduce goes back to the captain.

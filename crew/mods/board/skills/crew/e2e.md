@@ -29,3 +29,4 @@ Every e2e run must do these things. This holds in any repo.
 5. If the repo has no script, run the repo's own e2e command once in one blocking call. Send the output to a log file, then read the log.
 
 Before a long call, set the phase with `crew-status` ([status.md](status.md), "Long call"). Write it again after.
+- The repo has a feature map in its docs (one short file per feature: how to open it, what to click, what to see)? Read the entry for each touched feature first. It saves exploring. Never write the map into the repo yourself. Tell the captain when a touched feature has no entry.

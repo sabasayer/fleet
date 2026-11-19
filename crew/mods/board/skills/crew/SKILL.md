@@ -14,6 +14,8 @@ If an agent fails twice, or reaches its e2e budget, stop and ask the captain. Ne
 
 Before you ask, find the shared premise. Two failed attempts often rest on one wrong belief. Write that belief in one sentence. Tell the captain the sentence with the failure. Do not start a third attempt until the captain answers.
 
+At the start of a run, tell the captain in three lines: the goal, the problem, and the smallest change you expect. Do not wait for a reply. If the code shows the asked change is not needed, show the proof and stop.
+
 ## Pick the mode
 
 - **Feature or bugfix:** Spec, Red, Green. Tests fail first, then pass.
@@ -129,6 +131,17 @@ Estimates for lean builds come from this ticket's size, as for any run.
 - **Lean builder:** [briefs/build.md](briefs/build.md).
 
 Before each agent starts, tell the captain the expected time. Work out the estimate then, from this ticket: the size of the spec, the files to change, and the checks to run. Do not reuse numbers from an earlier run. Put the estimate in the phase of the status, for example `--phase "building, about 12 min"`. When the captain asks, show the newest line of each file. Do not say "still working".
+
+## Gate messages
+
+The captain must be able to decide from the message alone. List every open decision as a numbered line with your recommended answer. Say what changed since the last message in plain words. Do not ask the captain to open a file to find the question.
+
+## Extra checks (only when the captain asks)
+
+These cost extra tokens. Never run them by default.
+
+- **Adversary:** one extra agent with [briefs/review.md](briefs/review.md) and the role `review-adversary`. It tries to break the change. It reports only a finding it proved by running a command.
+- **Reflect:** after Ship, one agent reads the decision lists and handoff notes of the run. It proposes edits to the briefs. It edits nothing.
 
 ## Handoff
 

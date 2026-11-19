@@ -75,6 +75,7 @@ Order numbers for the status files are in brackets. Each phase ends on its "Done
      - At each of the two gates, check the work as the captain would: the Spec covers the brief, and each test fails if the code does nothing. Pass the gate yourself, or send the work back.
      - Add one line per gate to `~/.crew/<ticket>/decisions.jsonl`: `{"who":"first-mate","gate":"gate-spec","verdict":"yes","reason":"auto: plan; <one line>","evidence":["<spec path>"],"at":"<ISO time>"}`.
      - `gate-captain` and every later step still wait for the captain.
+   - `Images:` lines in the `/crew` text: the captain pasted screenshots in fleet. Read each image. Copy the files into the spec folder, and link them in the Spec where they apply. Sub-agents only see the Spec, so a screenshot that is not in the Spec is lost to them.
    - A message that starts with `Captain (via admiral):` is the captain's answer. The admiral carries it from its own session. Treat it as if the captain typed it here.
 
    Done when: the worktree is clean, `git log origin/<default>..HEAD` is empty, the server answers HTTP 200 on that port, the port file exists, and `ship.json` exists.

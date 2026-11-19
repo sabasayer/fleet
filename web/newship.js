@@ -19,6 +19,32 @@ export const startHint = start => START_HINT[start] ?? START_HINT.crew
 
 export const LIMITS = { fleet: 60, task: 4000, folder: 1000 }
 export const WAIT_MS = 3 * 60 * 1000
+export const MAX_IMAGES = 4
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+
+export const imagesHtml = images =>
+  images
+    .map((url, i) => `<span class="newship-image"><img src="${escapeHtml(url)}" alt="Pasted image ${i + 1}"><button type="button" data-remove-image="${i}" aria-label="Remove image ${i + 1}">×</button></span>`)
+    .join('')
+
+export function pastedImageFiles(items, have) {
+  if ([...items].some(item => item.kind === 'string' && item.type === 'text/plain')) return { files: [], message: '' }
+  const files = [...items].filter(item => item.kind === 'file' && IMAGE_TYPES.includes(item.type)).map(item => item.getAsFile())
+  if (files.length === 0) return { files: [], message: '' }
+  if (have + files.length > MAX_IMAGES) return { files: [], message: `Paste at most ${MAX_IMAGES} images.` }
+  if (files.some(file => file.size > MAX_IMAGE_BYTES)) return { files: [], message: 'An image is larger than 5 MB.' }
+
+  return { files, message: '' }
+}
+
+export const readAsDataUrl = file =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
 
 export function fleetChoices(fleets) {
   return fleets.map(f => ({ id: f.id, name: f.name }))
@@ -69,8 +95,10 @@ export function newShipFormHtml({ fleets, form, busy, result }) {
     <label>Repo folder <span class="dim">(pick one, or paste an absolute path. A folder that holds several repos works for a ship with several MRs)</span>
       <input name="folder" list="newship-repos" required maxlength="${LIMITS.folder}" value="${escapeHtml(form.folder)}"></label>
     ${datalistHtml('newship-repos', repoChoices(fleets, form.fleet))}
-    <label>Task <span class="dim">(text or link, line breaks allowed)</span>
+    <label>Task <span class="dim">(text or link, line breaks allowed. Paste up to ${MAX_IMAGES} images)</span>
       <textarea name="task" required maxlength="${LIMITS.task}" rows="6">${escapeHtml(form.task)}</textarea></label>
+    <div class="newship-images" id="newship-images">${imagesHtml(form.images ?? [])}</div>
+    <p class="jump-msg bad" id="newship-image-msg"${form.imageMessage ? '' : ' hidden'}>${escapeHtml(form.imageMessage ?? '')}</p>
     <label>Start as <select name="start">${START_AS.map(([value, text]) => `<option value="${value}"${form.start === value ? ' selected' : ''}>${text}</option>`).join('')}</select></label>
     <p class="dim" id="newship-hint">${escapeHtml(startHint(form.start))}</p>
     <label class="check"><input type="checkbox" name="skipPermissions"${form.skipPermissions ? ' checked' : ''}> Skip permission prompts <span class="dim">(starts claude with --dangerously-skip-permissions. The session then runs every tool call without asking)</span></label>
@@ -95,7 +123,7 @@ export async function requestNewShip(form, token, doFetch = fetch) {
     const res = await doFetch('/api/ships/new', {
       method: 'POST',
       headers: { 'x-fleet-token': token, 'content-type': 'application/json' },
-      body: JSON.stringify({ fleet: form.fleet, folder: form.folder, task: form.task, start: form.start ?? 'crew', skipPermissions: form.skipPermissions === true }),
+      body: JSON.stringify({ fleet: form.fleet, folder: form.folder, task: form.task, start: form.start ?? 'crew', skipPermissions: form.skipPermissions === true, images: form.images ?? [] }),
     })
     if (res.status === 200) return await res.json()
 

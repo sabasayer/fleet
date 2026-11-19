@@ -33,6 +33,7 @@ Done when: each item is an absolute path of a git repo.
 
 - Pick a convoy name: a short slug of the task plus the date, for example `translations-1113`. It must match `[A-Za-z0-9][A-Za-z0-9._-]*`.
 - Write `~/.crew/<convoy>/brief.md`: the task in the captain's words, what "done" means, and the repo list. If the captain named a spec or an `impl-details` output, copy its path in.
+- `Images:` lines in your `/admiral` text: the captain pasted screenshots. Read them. Copy the files to `~/.crew/<convoy>/images/` and list them in the brief, with what each one shows. Every ship reads the brief, so it sees them too.
 - Add a `## Ship rules` part with the answers from step 4: the reviewers, the Linear issue, and the captain's rules for this work. Read each repo's `AGENTS.md` or `CLAUDE.md` for rules on branch names, for example `eng-<number>-<words>`, and list them there too. Every ship reads the brief, so no ship asks these at its gate again.
 - `auto: plan` is allowed only when the brief points to such a spec. Otherwise, drop it and tell the captain why.
 
@@ -106,9 +107,34 @@ Fleet API for a ship (token: `$(cat ~/.fleet/token)`, header `x-fleet-token`, co
 - Send it text: `POST localhost:4932/api/ships/<ship>/send` with `{"text": "..."}`. Build the body with `jq -n --arg`. It types the text into the ship's session and presses Enter. A `not_found` reply means no pane runs the ship: tell the captain to jump back to it from fleet.
 - A plain-text `not found` (HTTP 404) means fleet does not know that name. A ship changes its name when crew writes its ship file. Look up its current name in `GET localhost:4932/api/state` by its session ID, and use that.
 
+### Check every send
+
+A reply of `{"status":"sent"}` only means the text was typed. It does not mean the ship got it. A hook can stop the ship: the keepwarm prompt ("send it again to pay the cache"), a 429, or a usage limit. Then the text stays in the input box and the ship does nothing.
+
+After every send, wait 30 to 60 seconds. Then read the pane (40 lines).
+- The text is still in the input line, and the ship shows no new work? It did not go through. Send `continue`. Read again.
+- The pane shows a keepwarm prompt, a 429, or a usage-limit message? Send `continue`. Read again.
+- Still stuck after 2 tries? Tell the captain which ship, and what the pane shows. Suggest `/keepwarm off` in that tab.
+- It works again (new tool lines, a running agent, or a new status)? Go on.
+
+Never tell the captain "sent" or "done" before you read the pane. Say what you saw.
+
+### Sweep for stopped ships
+
+The waiter only wakes you on a `blocked` or `failed` state. A ship that stopped on its own writes no event, so the waiter cannot see it. Look for it yourself.
+
+Start a sweep timer in the background next to the waiter: `sleep 600; echo sweep`. It exits after 10 minutes. When it does, run the sweep, then start the timer again. Do not use more than one timer.
+
+Sweep: for each ship of the convoy, read the pane (40 lines). Count a ship as stopped when:
+- the pane ends with a keepwarm stop, a 429, "Automatic continue did not run", or a usage-limit message, or
+- unsent text sits in the input line, or
+- the pane shows the same last line as at the last sweep, and no agent or shell is running, and no gate waits for the captain.
+
+For a stopped ship, send `continue` and check the send (see above). This is not a captain decision, so it does not need the captain's words. Tell the captain in one line which ships you woke and why. Say nothing when all ships work.
+
 ### After a usage limit
 
-When the usage limit stops you, it stopped the ships too. When you start again, read every ship's pane before anything else. A pane that ends with a usage-limit message has stopped. Send it `continue`. This is not a captain decision, so it does not need the captain's words. Then tell the captain which ships you woke.
+When the usage limit stops you, it stopped the ships too. When you start again, read every ship's pane before anything else. Run the sweep at once. Then tell the captain which ships you woke.
 
 ### Policy
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { startHint, newShipFormHtml, preselectedRepo, repoChoices, requestNewShip, startingHtml, WAIT_MS } from '../web/newship.js'
+import { startHint, newShipFormHtml, preselectedRepo, repoChoices, requestNewShip, startingHtml, WAIT_MS, imagesHtml, pastedImageFiles, MAX_IMAGE_BYTES } from '../web/newship.js'
 import { panelHtml } from '../web/panel.js'
 
 const ID = '11111111-2222-3333-4444-555555555555'
@@ -92,7 +92,7 @@ test('the request sends the token and the form fields only', async () => {
   assert.equal(ok.status, 'started')
   assert.equal(seen[0], '/api/ships/new')
   assert.equal(seen[1].headers['x-fleet-token'], 'tok')
-  assert.deepEqual(JSON.parse(seen[1].body), { fleet: 'f', folder: '/r', task: 't', start: 'crew', skipPermissions: false })
+  assert.deepEqual(JSON.parse(seen[1].body), { fleet: 'f', folder: '/r', task: 't', start: 'crew', skipPermissions: false, images: [] })
   assert.equal((await requestNewShip({}, 't', (async () => ({ status: 403 })) as any)).status, 'error')
   assert.equal((await requestNewShip({}, 't', (async () => { throw new Error('x') }) as any)).status, 'error')
 })
@@ -124,4 +124,37 @@ test('the form has a skip permissions box, kept when drawn again, and the reques
   let body: any
   await requestNewShip({ fleet: 'f', folder: '/r', task: 't', skipPermissions: true }, 'tok', (async (_: string, init: any) => ((body = JSON.parse(init.body)), { status: 200, json: async () => ({}) })) as any)
   assert.equal(body.skipPermissions, true)
+})
+
+const item = (type: string, size = 10) => ({ kind: type.startsWith('image/') ? 'file' : 'string', type, getAsFile: () => ({ size, type }) })
+
+test('a pasted screenshot becomes an image file', () => {
+  const { files, message } = pastedImageFiles([item('image/png')], 0)
+  assert.equal(files.length, 1)
+  assert.equal(message, '')
+})
+
+test('a paste with plain text stays a text paste, even with an image beside it', () => {
+  assert.deepEqual(pastedImageFiles([item('text/plain'), item('text/html'), item('image/png')], 0), { files: [], message: '' })
+})
+
+test('too many or too large images give a message and no files', () => {
+  assert.match(pastedImageFiles([item('image/png'), item('image/png')], 3).message, /at most 4/)
+  assert.match(pastedImageFiles([item('image/png', MAX_IMAGE_BYTES + 1)], 0).message, /larger than 5 MB/)
+  assert.equal(pastedImageFiles([item('image/svg+xml')], 0).files.length, 0)
+})
+
+test('image previews escape the data URL and each has a remove button', () => {
+  const html = imagesHtml(['data:image/png;base64,AA"><script>'])
+  assert.ok(!html.includes('<script>'))
+  assert.match(html, /data-remove-image="0"/)
+})
+
+test('the new ship request sends the pasted images', async () => {
+  let sent: any
+  await requestNewShip({ fleet: 'f', folder: '/r', task: 't', images: ['data:image/png;base64,AA'] }, 'tok', async (_url: string, init: any) => {
+    sent = JSON.parse(init.body)
+    return { status: 200, json: async () => ({ status: 'started' }) } as any
+  })
+  assert.deepEqual(sent.images, ['data:image/png;base64,AA'])
 })

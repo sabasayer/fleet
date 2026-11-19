@@ -82,6 +82,10 @@ body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-mo
 .modal-box label.check { display: block; }
 .modal-box label.check { flex-direction: row; align-items: center; gap: 6px; }
 .modal-box label.check input { width: auto; }
+.newship-images { display: flex; flex-wrap: wrap; gap: 6px; }
+.newship-image { position: relative; }
+.newship-image img { display: block; height: 64px; max-width: 120px; object-fit: cover; border: 2px solid var(--line); }
+.newship-image button { position: absolute; top: 2px; right: 2px; padding: 0 5px; line-height: 1.2; }
 .modal-box input, .modal-box textarea, .modal-box select { font: inherit; background: var(--field); color: var(--ink); border: 2px solid var(--line); padding: 5px 6px; }
 .modal-box button { font: inherit; font-size: 12px; background: var(--active); color: var(--ink); border: 2px solid var(--line); padding: 3px 10px; cursor: pointer; }
 .modal-box button:disabled { opacity: 0.5; cursor: default; }

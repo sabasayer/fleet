@@ -1,12 +1,12 @@
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join } from 'node:path'
 import { promisify } from 'node:util'
 
 import { defaultClient, herdrVerdict, shellQuote, startInWorkspace, type JumpDeps } from './jump.ts'
 import { isShipName } from './life.ts'
-import type { Fleet } from './state.ts'
+import { fleetHome, type Fleet } from './state.ts'
 
 const run = promisify(execFile)
 
@@ -18,6 +18,7 @@ export type NewShipDeps = {
   repoRoot: (path: string) => Promise<string | null>
   holdsRepos: (path: string) => boolean
   uuid: () => string
+  saveImage: (sessionId: string, name: string, data: Buffer) => string
 }
 export type NewShipResult =
   | { status: 'started'; message: string; ship: string; sessionId: string; fleet: string; folder: string; start: StartAs }
@@ -27,6 +28,14 @@ export type NewShipResult =
 
 export const realNewShipDeps: NewShipDeps = {
   uuid: () => randomUUID(),
+  saveImage: (sessionId, name, data) => {
+    const folder = join(fleetHome(process.env), 'images', sessionId)
+    mkdirSync(folder, { recursive: true, mode: 0o700 })
+    const path = join(folder, name)
+    writeFileSync(path, data, { mode: 0o600 })
+
+    return path
+  },
   holdsRepos: path => {
     try {
       return readdirSync(path, { withFileTypes: true }).some(entry => entry.isDirectory() && existsSync(join(path, entry.name, '.git')))
@@ -57,6 +66,29 @@ function text(value: unknown, label: string, max: number, multiline = false): Te
   if (trimmed.length > max) return { ok: false, message: `${label} is longer than ${max} characters.` }
 
   return { ok: true, value: trimmed }
+}
+
+export const MAX_IMAGES = 4
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024
+const IMAGE_TYPES: Record<string, string> = { png: 'png', jpeg: 'jpg', gif: 'gif', webp: 'webp' }
+const DATA_URL = /^data:image\/(png|jpeg|gif|webp);base64,([A-Za-z0-9+/]+={0,2})$/
+
+type Images = { ok: true; value: { ext: string; data: Buffer }[] } | { ok: false; message: string }
+
+function images(value: unknown): Images {
+  if (value === undefined) return { ok: true, value: [] }
+  if (!Array.isArray(value)) return { ok: false, message: 'Images must be a list.' }
+  if (value.length > MAX_IMAGES) return { ok: false, message: `Paste at most ${MAX_IMAGES} images.` }
+  const parsed = []
+  for (const url of value) {
+    const match = typeof url === 'string' ? DATA_URL.exec(url) : null
+    if (!match) return { ok: false, message: 'Images must be PNG, JPEG, GIF or WebP.' }
+    const data = Buffer.from(match[2], 'base64')
+    if (data.length > MAX_IMAGE_BYTES) return { ok: false, message: 'An image is larger than 5 MB.' }
+    parsed.push({ ext: IMAGE_TYPES[match[1]], data })
+  }
+
+  return { ok: true, value: parsed }
 }
 
 const SLUG_MAX = 40
@@ -124,6 +156,8 @@ export async function startNewShip(input: any, fleets: Pick<Fleet, 'id' | 'name'
   if (!fleetText.ok) return { status: 'error', message: fleetText.message }
   const taskText = text(input?.task, 'Task', LIMITS.task, true)
   if (!taskText.ok) return { status: 'error', message: taskText.message }
+  const pasted = images(input?.images)
+  if (!pasted.ok) return { status: 'error', message: pasted.message }
   const folderText = text(input?.folder, 'Repo folder', LIMITS.folder)
   if (!folderText.ok) return { status: 'error', message: folderText.message }
   if (!isAbsolute(folderText.value)) return { status: 'error', message: 'Repo folder must be an absolute path.' }
@@ -139,7 +173,9 @@ export async function startNewShip(input: any, fleets: Pick<Fleet, 'id' | 'name'
   const quiet = input?.quiet === true
   const skipPermissions = input?.skipPermissions === true
   const ship = shipName(taskText.value, sessionId, PREFIX[start])
-  const prompt = promptFor(start, taskText.value, fleet, skipPermissions)
+  const paths = pasted.value.map(({ ext, data }, i) => deps.saveImage(sessionId, `${i + 1}.${ext}`, data))
+  const task = paths.length ? `${taskText.value}\nImages:\n${paths.map(path => `- ${path}`).join('\n')}` : taskText.value
+  const prompt = promptFor(start, task, fleet, skipPermissions)
   const argv = startArgv(sessionId, ship, prompt, skipPermissions)
   const command = startCommand(folder, argv)
   const moved = folder === folderText.value ? '' : ` Used the main checkout ${folder}.`

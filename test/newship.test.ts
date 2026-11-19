@@ -334,3 +334,51 @@ test('start wins over the old scout flag, and an unknown start is a crew start',
     assert.ok(only(t.calls, 'agent.start')[0].params.argv[5].startsWith(prompt), JSON.stringify(input))
   }
 })
+
+const PNG = `data:image/png;base64,${Buffer.from('png-bytes').toString('base64')}`
+const withImages = () => {
+  const t = build({ workspaces: [{ label: 'Patient portal', workspace_id: 'w1' }] })
+  const saved: { sessionId: string; name: string; data: string }[] = []
+  t.deps.saveImage = (sessionId, name, data) => {
+    saved.push({ sessionId, name, data: data.toString() })
+    return `/images/${sessionId}/${name}`
+  }
+
+  return { ...t, saved }
+}
+
+test('pasted images are saved and their paths go into the prompt', async () => {
+  const t = withImages()
+  const result = await startNewShip(form({ images: [PNG, PNG.replace('image/png', 'image/jpeg')] }), fleets, t.jumpDeps, t.deps)
+  assert.equal(result.status, 'started')
+  assert.deepEqual(t.saved, [
+    { sessionId: UUID, name: '1.png', data: 'png-bytes' },
+    { sessionId: UUID, name: '2.jpg', data: 'png-bytes' },
+  ])
+  const prompt = only(t.calls, 'agent.start')[0].params.argv.at(-1)
+  assert.equal(prompt, `/crew Fix the login bug\nImages:\n- /images/${UUID}/1.png\n- /images/${UUID}/2.jpg\nfleet: portal`)
+})
+
+test('bad images stop the start and save nothing', async () => {
+  const cases: [unknown, RegExp][] = [
+    ['not-a-list', /Images/],
+    [['data:text/html;base64,PGI+'], /PNG, JPEG, GIF or WebP/],
+    [['https://x.com/a.png'], /PNG, JPEG, GIF or WebP/],
+    [Array(5).fill(PNG), /at most 4/],
+    [[`data:image/png;base64,${Buffer.alloc(5 * 1024 * 1024 + 1).toString('base64')}`], /larger than 5 MB/],
+  ]
+  for (const [images, message] of cases) {
+    const t = withImages()
+    const result = await startNewShip(form({ images }), fleets, t.jumpDeps, t.deps)
+    assert.equal(result.status, 'error', String(images).slice(0, 40))
+    assert.match((result as any).message, message)
+    assert.equal(t.saved.length, 0)
+    assert.equal(only(t.calls, 'agent.start').length, 0)
+  }
+})
+
+test('no images leaves the prompt as it was', async () => {
+  const t = withImages()
+  await startNewShip(form({ images: [] }), fleets, t.jumpDeps, t.deps)
+  assert.equal(only(t.calls, 'agent.start')[0].params.argv.at(-1), '/crew Fix the login bug fleet: portal')
+})

@@ -33,6 +33,7 @@ Done when: each item is an absolute path of a git repo.
 
 - Pick a convoy name: a short slug of the task plus the date, for example `translations-1113`. It must match `[A-Za-z0-9][A-Za-z0-9._-]*`.
 - Write `~/.crew/<convoy>/brief.md`: the task in the captain's words, what "done" means, and the repo list. If the captain named a spec or an `impl-details` output, copy its path in.
+- `Images:` lines in your `/admiral` text: the captain pasted screenshots. Read them. Copy the files to `~/.crew/<convoy>/images/` and list them in the brief, with what each one shows. Every ship reads the brief, so it sees them too.
 - Add a `## Ship rules` part with the answers from step 4: the reviewers, the Linear issue, and the captain's rules for this work. Read each repo's `AGENTS.md` or `CLAUDE.md` for rules on branch names, for example `eng-<number>-<words>`, and list them there too. Every ship reads the brief, so no ship asks these at its gate again.
 - `auto: plan` is allowed only when the brief points to such a spec. Otherwise, drop it and tell the captain why.
 

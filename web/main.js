@@ -5,7 +5,7 @@ import { isTyping, keyAction, keysHtml, pressAction } from './keys.js'
 import { sendAction } from './actions.js'
 import { onSea, seaFleets, shipPhase } from './life.js'
 import { chipsHtml, filterCount, filterLabel, isActive, movePick, pickedName, searchKey, shownFleets } from './search.js'
-import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml, startHint } from './newship.js'
+import { newShipFormHtml, requestNewShip, repoChoices, preselectedRepo, optionsHtml, startHint, imagesHtml, pastedImageFiles, readAsDataUrl } from './newship.js'
 import { allShips, openShipName, panelHtml, resultShips } from './panel.js'
 import { createSea } from './sea.js'
 import { applyTheme, cssVars, DARK, LIGHT } from './theme.js'
@@ -214,7 +214,7 @@ function openNewShip() {
   const fleetName = fleet?.name ?? ''
   const autoFolder = preselectedRepo(allFleets, fleetName)
   const skipPermissions = localStorage.getItem(SKIP_PERMISSIONS_KEY) === '1'
-  newShip = { autoFolder, form: { fleet: fleetName, folder: autoFolder, task: '', start: 'crew', skipPermissions, copied: false }, busy: false, result: null }
+  newShip = { autoFolder, form: { fleet: fleetName, folder: autoFolder, task: '', images: [], imageMessage: '', start: 'crew', skipPermissions, copied: false }, busy: false, result: null }
   renderModal()
   modal.querySelector('input[name="fleet"]')?.focus()
 }
@@ -256,6 +256,28 @@ modal.addEventListener('input', event => {
   modal.querySelector('[name=folder]').value = newShip.autoFolder
 })
 
+function showImages() {
+  modal.querySelector('#newship-images').innerHTML = imagesHtml(newShip.form.images)
+  const note = modal.querySelector('#newship-image-msg')
+  note.textContent = newShip.form.imageMessage
+  note.hidden = !newShip.form.imageMessage
+}
+
+modal.addEventListener('paste', async event => {
+  if (!newShip || event.target.name !== 'task' || !event.clipboardData) return
+  const { files, message } = pastedImageFiles(event.clipboardData.items, newShip.form.images.length)
+  if (files.length === 0 && !message) return
+  event.preventDefault()
+  const form = newShip.form
+  form.imageMessage = message
+  try {
+    form.images.push(...(await Promise.all(files.map(readAsDataUrl))))
+  } catch {
+    form.imageMessage = 'Could not read the pasted image.'
+  }
+  if (newShip?.form === form) showImages()
+})
+
 modal.addEventListener('submit', event => {
   event.preventDefault()
   void submitNewShip()
@@ -264,6 +286,12 @@ modal.addEventListener('submit', event => {
 modal.addEventListener('click', async event => {
   if (helpOpen) return toggleHelp()
   if (event.target === modal || event.target.closest('[data-newship-close]')) return closeNewShip()
+  const remove = event.target.closest('[data-remove-image]')
+  if (remove && newShip) {
+    newShip.form.images.splice(Number(remove.dataset.removeImage), 1)
+    newShip.form.imageMessage = ''
+    return showImages()
+  }
   const copy = event.target.closest('[data-copy-new]')
   if (!copy) return
   try {

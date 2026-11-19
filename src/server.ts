@@ -38,6 +38,7 @@ const safeDecode = (text: string) => {
 const WEB = new URL('../web/', import.meta.url)
 const MAX_BODY = 4096
 const MAX_NEW_SHIP_BODY = 16384
+const MAX_NEW_SHIP_WITH_IMAGES_BODY = 30 * 1024 * 1024
 
 const readBody = (req: IncomingMessage, max = MAX_BODY) =>
   new Promise<string>((resolve, reject) => {
@@ -172,7 +173,7 @@ export async function startServer({ port, env = process.env, watcher, jumpDeps =
         return
       }
       if (url.pathname === '/api/ships/new') {
-        readBody(req, MAX_NEW_SHIP_BODY).then(
+        readBody(req, MAX_NEW_SHIP_WITH_IMAGES_BODY).then(
           body => {
             let input: unknown
             try {

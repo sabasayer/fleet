@@ -35,6 +35,7 @@ const fakes = (over: Partial<Deps> = {}) => {
     cli: async (file, args): Promise<CliResult> => (calls.push({ file, args }), { ok: true, stdout: '{"state":"opened"}' }),
     check: async (command, options): Promise<CheckResult> => (checks.push({ command, options }), { code: 1, timedOut: false }),
     now: () => 1_000_000,
+    clean: async () => ({ status: 'gone' }),
     ...over,
   }
 
@@ -264,4 +265,31 @@ test('readState lists a configured fleet that has no ships yet, so the new ship 
   const { env } = setup({ f: {}, empty: { name: 'Empty', repos: ['/r'] } })
   const empty = readState(env).fleets.find(f => f.id === 'empty')
   assert.deepEqual([empty?.name, empty?.repos, empty?.ships], ['Empty', ['/r'], []])
+})
+
+test('a merged MR gets its worktree cleaned, an MR in review does not', async () => {
+  const { env, tmp } = setup()
+  mkdirSync(join(tmp, 'wt'))
+  const cleaned: string[][] = []
+  const { deps } = fakes({ cli: async () => ({ ok: true, stdout: '{"state":"opened"}' }), clean: async (worktree, branch) => (cleaned.push([worktree, branch]), { status: 'removed' }) })
+  const w = startWatcher({ env, deps, auto: false })
+  await w.tick()
+  assert.equal(stage(env).state, 'in_review')
+  assert.deepEqual(cleaned, [])
+
+  deps.cli = async () => ({ ok: true, stdout: '{"state":"merged","merge_commit_sha":"abc123"}' })
+  await w.tick()
+  await w.tick()
+  assert.equal(stage(env).state, 'merged')
+  assert.deepEqual(cleaned[0], [join(tmp, 'wt'), 'feat/x'])
+})
+
+test('no cleanup when the worktree folder is already gone', async () => {
+  const { env } = setup()
+  const cleaned: string[] = []
+  const { deps } = fakes({ cli: async () => ({ ok: true, stdout: '{"state":"merged","merge_commit_sha":"abc123"}' }), clean: async worktree => (cleaned.push(worktree), { status: 'removed' }) })
+  const w = startWatcher({ env, deps, auto: false })
+  await w.tick()
+  await w.tick()
+  assert.deepEqual(cleaned, [])
 })

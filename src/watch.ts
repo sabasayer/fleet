@@ -2,6 +2,7 @@ import { execFile, spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 
+import { cleanWorktree, type CleanResult } from './clean.ts'
 import { observeMr, readStored, withFound, withSha, writeStored } from './life.ts'
 import { fleetHome, readState, turnedBackScout, type Mr } from './state.ts'
 
@@ -17,8 +18,11 @@ export type Deps = {
   cli: (file: 'glab' | 'gh', args: string[]) => Promise<CliResult>
   check: (command: string, options: CheckOptions) => Promise<CheckResult>
   now: () => number
+  clean: (worktree: string, branch: string) => Promise<CleanResult>
 }
 export type Seen = { n: number; kind: 'merge' | 'release'; text: string; at: number }
+
+export const PAST_REVIEW = ['merged', 'released', 'testing', 'done', 'abandoned']
 
 export const realDeps: Deps = {
   cli: (file, args) =>
@@ -49,6 +53,7 @@ export const realDeps: Deps = {
       child.on('close', code => finish({ code, timedOut: false }))
     }),
   now: () => Date.now(),
+  clean: (worktree, branch) => cleanWorktree(worktree, branch, true),
 }
 
 export const hostCli = (url: string): 'glab' | 'gh' => {
@@ -239,6 +244,7 @@ export function startWatcher({
         const found = readStored(home, ship.ship).found
         ship.mrs.forEach((mr, i) => {
           const life = ship.life.mrs[i]
+          if (PAST_REVIEW.includes(life.state) && mr.branch && existsSync(mr.worktree)) jobs.push(...once(`${ship.ship}#${mr.n}#clean`, () => deps.clean(mr.worktree, mr.branch)))
           if (life.state === 'sailing' && !mr.url && mr.branch && !DEFAULT_BRANCHES.includes(mr.branch)) jobs.push(...once(`${ship.ship}#${mr.n}#search`, () => searchMr(ship.ship, mr)))
           else if ((life.state === 'in_review' || (life.state === 'sailing' && found[String(mr.n)])) && mr.url) jobs.push(...once(`${ship.ship}#${mr.n}#merge`, () => pollMerge(ship.ship, mr)))
           else if (life.state === 'merged') {
